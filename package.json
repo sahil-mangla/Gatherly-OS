@@ -1,0 +1,26 @@
+{
+  "name": "gatherly",
+  "version": "1.0.0",
+  "description": "Gatherly — Intelligent Celebration & Event Planning Assistant",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "python backend/run.py",
+    "dev": "python backend/run.py",
+    "test": "python -m pytest backend/tests",
+    "lint": "ruff check backend",
+    "format": "ruff format backend"
+  },
+  "keywords": [
+    "event-planning",
+    "fastapi",
+    "pydantic",
+    "budget-dag",
+    "timeline-dag",
+    "vendor-quotes",
+    "risk-radar",
+    "mirofish-sandbox"
+  ],
+  "author": "Gatherly Team",
+  "license": "MIT"
+}
