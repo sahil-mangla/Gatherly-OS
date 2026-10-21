@@ -16,12 +16,15 @@ def generate_deterministic_mara_response(
     operation: str, context: dict[str, Any], prompt: str = ""
 ) -> dict[str, Any]:
     """Deterministic, schema-compliant copilot response generator."""
-    event = context.get("event", {})
-    budget = context.get("budget", {})
-    risks = context.get("risks", [])
+    ctx = context if isinstance(context, dict) else {}
+    event = ctx.get("event") if isinstance(ctx.get("event"), dict) else {}
+    budget = ctx.get("budget") if isinstance(ctx.get("budget"), dict) else {}
+    risks = ctx.get("risks") if isinstance(ctx.get("risks"), list) else []
 
     if operation == "cost_saving_proposals":
-        catering_alloc = budget.get("categories", {}).get("catering", {}).get("allocated", 4780)
+        cats = budget.get("categories") if isinstance(budget.get("categories"), dict) else {}
+        catering_info = cats.get("catering") if isinstance(cats.get("catering"), dict) else {}
+        catering_alloc = catering_info.get("allocated", 4780)
         realloc_amount = min(1200.0, round(catering_alloc * 0.15))
 
         return {
@@ -96,12 +99,13 @@ def generate_deterministic_mara_response(
             "provider": "deterministic_mock",
         }
 
+    total_b = budget.get("total_budget", 24000) if isinstance(budget, dict) else 24000
+    rem_u = budget.get("remaining_uncommitted", 5540) if isinstance(budget, dict) else 5540
     return {
         "success": True,
         "response": (
             f"Mara analyzed the current state for '{event.get('name', 'your celebration')}'. "
-            f"Total budget is ${budget.get('total_budget', 24000):,.0f} with "
-            f"${budget.get('remaining_uncommitted', 5540):,.0f} breathing room remaining."
+            f"Total budget is ${total_b:,.0f} with ${rem_u:,.0f} breathing room remaining."
         ),
         "provider": "deterministic_mock",
     }
@@ -135,7 +139,7 @@ def query_mara_copilot(operation: str, prompt: str, context: dict[str, Any]) -> 
                 },
             }
 
-            model = settings.gemini_model or "gemini-3.5-flash"
+            model = settings.gemini_model or "gemini-2.5-flash"
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             req = urllib.request.Request(
                 url,
@@ -149,8 +153,10 @@ def query_mara_copilot(operation: str, prompt: str, context: dict[str, Any]) -> 
                     data = json.loads(resp.read().decode("utf-8"))
                     text = data["candidates"][0]["content"]["parts"][0]["text"]
                     parsed = json.loads(text)
-                    parsed["provider"] = "gemini-live"
-                    return parsed
+                    if isinstance(parsed, dict):
+                        parsed.setdefault("success", True)
+                        parsed["provider"] = "gemini-live"
+                        return parsed
         except Exception:
             # Gracefully log and fall through to deterministic mock
             pass
