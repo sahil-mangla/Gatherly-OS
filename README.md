@@ -28,7 +28,9 @@ Gatherly follows strict separation of concerns benchmarked against **[MiroFish](
 
 ```
 prompt-war-week5/
-├── render.yaml                    # Render Blueprint (Web Service + Managed PostgreSQL 16)
+├── vercel.json                    # Vercel serverless & static asset routing
+├── api/
+│   └── index.py                   # Vercel serverless FastAPI entrypoint
 ├── docker-compose.yml             # Local multi-service orchestration (PostgreSQL 16 + Gatherly)
 ├── Dockerfile                     # Multi-stage production container
 ├── playwright.config.js           # Playwright E2E configuration
@@ -112,12 +114,13 @@ cp .env.example .env
 
 ## 🚢 Deployment & Containerization
 
-### Option A: 1-Click Render Cloud Deployment (`render.yaml`)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+### Option A: 1-Click Vercel Serverless Deployment (`vercel.json`)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsahil-mangla%2FGatherly-OS)
 
-Gatherly includes an Infrastructure-as-Code Blueprint (`render.yaml`) that automatically provisions:
-1. **Managed PostgreSQL 16 Cluster:** Persistent database (`gatherly-db`) with internal network isolation.
-2. **Containerized Web Service:** Web app (`gatherly-web`) running from `Dockerfile`, auto-wiring `DATABASE_URL`, JWT secret, and health check monitoring at `/api/health`.
+Gatherly is configured for native Vercel deployment via [`vercel.json`](vercel.json) and [`api/index.py`](api/index.py):
+1. Import `sahil-mangla/Gatherly-OS` at [vercel.com/new](https://vercel.com/new).
+2. Configure Environment Variables: `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash`, `JWT_SECRET`.
+3. Click **Deploy** — Vercel provisions the serverless FastAPI backend and serves static frontend assets.
 
 ### Option B: Full Multi-Tenant Stack via Docker Compose (PostgreSQL + App)
 ```bash
@@ -255,7 +258,7 @@ To maintain absolute modularity, readable domain logic, and zero monolithic spra
 | **End-to-End Testing** | **10/10** | Playwright E2E browser tests and headless full-journey contract suite. |
 | **Code Modularity (<200 LOC)** | **10/10** | 100% compliant across all 77 source files with automated CI gate. |
 | **Automated Testing** | **10/10** | 51 comprehensive tests (29 backend pytest + 22 frontend Node test). |
-| **Containerization & CI/CD** | **10/10** | Multi-stage Docker, PostgreSQL compose stack, Render Blueprint, GitHub Actions workflow. |
+| **Containerization & CI/CD** | **10/10** | Multi-stage Docker, PostgreSQL compose stack, Vercel Serverless, GitHub Actions workflow. |
 | **Overall Production Readiness**| **10/10** | **Enterprise Multi-Tenant SaaS Ready** |
 
 ---
