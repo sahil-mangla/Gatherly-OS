@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..db.database import get_db
@@ -16,12 +16,12 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication & Multi-Tenancy"])
 class RegisterRequest(BaseModel):
     organization_name: str = Field(..., min_length=2, max_length=120)
     full_name: str = Field(..., min_length=2, max_length=120)
-    email: EmailStr
+    email: str = Field(..., min_length=5, max_length=120)
     password: str = Field(..., min_length=6)
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
