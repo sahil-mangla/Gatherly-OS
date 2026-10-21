@@ -17,6 +17,11 @@ export function safeNonNegativeNumber(val) {
   return isNaN(num) || num < 0 ? 0 : num;
 }
 
+export function formatMoney(val, currency = '$') {
+  const num = safeNonNegativeNumber(val);
+  return `${currency}${Math.round(num).toLocaleString()}`;
+}
+
 export function validateExpenseInput(item) {
   const errors = [];
   if (!item || typeof item !== 'object') {

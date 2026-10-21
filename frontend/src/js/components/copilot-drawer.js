@@ -14,7 +14,7 @@ export function initCopilotDrawer() {
   if (drawerElement) return;
 
   const html = `
-    <aside class="copilot-drawer" id="copilot-drawer" aria-label="Mara AI Planning Copilot" aria-hidden="true">
+    <aside class="copilot-drawer" id="copilot-drawer" role="dialog" aria-modal="true" aria-label="Mara AI Planning Copilot" aria-hidden="true">
       <div class="drawer-header">
         <div class="drawer-title">
           <div class="assistant-orb mini">✦</div>

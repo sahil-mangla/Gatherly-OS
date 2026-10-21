@@ -26,6 +26,12 @@ def safe_non_negative_number(val: Any) -> float:
         return 0.0
 
 
+def format_money(val: Any, currency: str = "$") -> str:
+    """Format numeric amount into a currency-prefixed string with comma grouping."""
+    num = safe_non_negative_number(val)
+    return f"{currency}{num:,.0f}"
+
+
 def validate_expense_input(item: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate expense record fields and boundary conditions."""
     errors: list[str] = []

@@ -14,7 +14,7 @@ export function initQuoteModal() {
 
   const html = `
     <div class="modal-backdrop" id="quote-modal-backdrop">
-      <div class="modal-dialog modal-large" id="quote-modal">
+      <div class="modal-dialog modal-large" id="quote-modal" role="dialog" aria-modal="true" aria-label="Vendor Quote Comparison and Seed Parser">
         <div class="modal-header">
           <div>
             <span class="eyebrow">INTELLIGENT VENDOR AUDIT</span>

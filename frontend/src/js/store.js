@@ -204,6 +204,20 @@ class EventStore {
   }
 
   /**
+   * Reschedule a task to a new due date.
+   * @param {string} taskId
+   * @param {string} newDate
+   */
+  rescheduleTask(taskId, newDate) {
+    const event = this.getActiveEvent();
+    const task = (event.tasks || []).find(t => t.id === taskId);
+    if (!task) throw new Error('Task not found.');
+    task.due_date = newDate;
+    this.save();
+    this.emit('task:rescheduled', { task, newDate });
+  }
+
+  /**
    * Add a new idea spark card.
    * @param {Object} rawIdea
    */

@@ -5,19 +5,21 @@
  */
 
 import { store } from './store.js';
-import { calculateBudgetSummary } from './domain/budget.js';
+import { calculateBudgetSummary, formatMoney } from './domain/budget.js';
 import { calculateTimelineProgress } from './domain/timeline.js';
 import { evaluateEventRisks } from './domain/risks.js';
-import { initCopilotDrawer, openCopilot } from './components/copilot-drawer.js';
-import { initRiskTray, toggleRiskTray } from './components/risk-tray.js';
-import { initQuoteModal, openQuoteModal } from './components/quote-modal.js';
+import { initCopilotDrawer, openCopilot, closeCopilot } from './components/copilot-drawer.js';
+import { initRiskTray, toggleRiskTray, closeRiskTray } from './components/risk-tray.js';
+import { initQuoteModal, openQuoteModal, closeQuoteModal } from './components/quote-modal.js';
 import { renderWhatIfPanel } from './components/whatif-panel.js';
 import {
   initFormModals,
   openAddExpenseModal,
   openAddMilestoneModal,
   openAddVendorModal,
-  openAddIdeaModal
+  openAddIdeaModal,
+  openRescheduleModal,
+  closeFormModal
 } from './components/forms.js';
 
 // Global Toast helper
@@ -145,12 +147,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Global Escape key listener to close modals/drawers (A11Y requirement)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      closeCopilot();
+      closeQuoteModal();
+      closeFormModal();
+      closeRiskTray();
+    }
+  });
+
   // Subscribe to store updates for reactive updates across views
-  store.subscribe(({ type }) => {
+  store.subscribe(({ type, payload }) => {
     setupSidebarEvents();
     renderAllViews();
     if (type === 'proposal:applied') {
       showToast('Proposal Applied', 'Event state updated transactionally.');
+    } else if (type === 'task:rescheduled') {
+      showToast('Milestone Rescheduled', `Updated due date for "${payload?.task?.title || 'milestone'}".`);
     }
   });
 
@@ -258,6 +272,8 @@ function renderOverview() {
     if (sub) sub.innerText = `Your wedding weekend is coming together beautifully, Maya.`;
   }
 
+  const cur = event.currency || '$';
+
   // Mara Overview Quote
   const maraQuote = document.getElementById('mara-overview-quote');
   if (maraQuote) {
@@ -265,7 +281,7 @@ function renderOverview() {
       const topRisk = risks.risks[0];
       maraQuote.innerText = `“Alert: ${topRisk.evidence} Want me to propose 3 ways to balance this without compromise?”`;
     } else {
-      maraQuote.innerText = `“Your event plan has $${budget.remaining_uncommitted.toLocaleString()} in breathing room. Everything is tracking smoothly.”`;
+      maraQuote.innerText = `“Your event plan has ${formatMoney(budget.remaining_uncommitted, cur)} in breathing room. Everything is tracking smoothly.”`;
     }
   }
 
@@ -275,16 +291,16 @@ function renderOverview() {
   const budgetPct = document.getElementById('overview-budget-pct');
   const budgetLeft = document.getElementById('overview-budget-left');
 
-  if (budgetVal) budgetVal.innerHTML = `$${budget.total_allocated.toLocaleString()} <span>/ $${budget.total_budget.toLocaleString()}</span>`;
+  if (budgetVal) budgetVal.innerHTML = `${formatMoney(budget.total_allocated, cur)} <span>/ ${formatMoney(budget.total_budget, cur)}</span>`;
   if (budgetBar) budgetBar.style.width = `${Math.min(100, budget.percent_committed)}%`;
   if (budgetPct) budgetPct.innerText = `${budget.percent_committed}% committed`;
   if (budgetLeft) {
     if (budget.is_over_budget) {
       budgetLeft.className = 'warn';
-      budgetLeft.innerText = `⚠️ $${budget.deficit_amount.toLocaleString()} over`;
+      budgetLeft.innerText = `⚠️ ${formatMoney(budget.deficit_amount, cur)} over`;
     } else {
       budgetLeft.className = 'good';
-      budgetLeft.innerText = `$${budget.remaining_uncommitted.toLocaleString()} left`;
+      budgetLeft.innerText = `${formatMoney(budget.remaining_uncommitted, cur)} left`;
     }
   }
 
@@ -379,22 +395,23 @@ function renderOverview() {
 function renderBudget() {
   const event = store.getActiveEvent();
   const summary = calculateBudgetSummary(event);
+  const cur = event.currency || '$';
 
   const bigNum = document.getElementById('budget-big-number');
   const bigBar = document.getElementById('budget-big-bar');
   const committedLabel = document.getElementById('budget-committed-label');
   const availableLabel = document.getElementById('budget-available-label');
 
-  if (bigNum) bigNum.innerHTML = `$${summary.total_allocated.toLocaleString()} <small>allocated of $${summary.total_budget.toLocaleString()}</small>`;
+  if (bigNum) bigNum.innerHTML = `${formatMoney(summary.total_allocated, cur)} <small>allocated of ${formatMoney(summary.total_budget, cur)}</small>`;
   if (bigBar) bigBar.style.width = `${Math.min(100, summary.percent_committed)}%`;
   if (committedLabel) committedLabel.innerText = `${summary.percent_committed}% committed`;
   if (availableLabel) {
     if (summary.is_over_budget) {
       availableLabel.style.color = '#d84534';
-      availableLabel.innerText = `⚠️ Deficit: $${summary.deficit_amount.toLocaleString()}`;
+      availableLabel.innerText = `⚠️ Deficit: ${formatMoney(summary.deficit_amount, cur)}`;
     } else {
       availableLabel.style.color = '#a9d2a9';
-      availableLabel.innerText = `$${summary.remaining_uncommitted.toLocaleString()} available`;
+      availableLabel.innerText = `${formatMoney(summary.remaining_uncommitted, cur)} available`;
     }
   }
 
@@ -423,10 +440,10 @@ function renderBudget() {
             <b>${capitalize(catKey.replace('_', ' '))}</b>
             <small>${catData.percent_of_budget}% of total budget</small>
           </div>
-          <strong>$${catData.allocated.toLocaleString()}</strong>
+          <strong>${formatMoney(catData.allocated, cur)}</strong>
           <div class="tiny-bar"><span style="width:${pctWidth}%;background:${color}"></span></div>
           <small style="color:${catData.is_overrun ? '#d84534' : 'var(--muted)'}; font-size:10px; margin-top:6px; display:block;">
-            ${catData.is_overrun ? `⚠️ Overrun by $${catData.variance.toLocaleString()}` : `Planned: $${catData.planned.toLocaleString()}`}
+            ${catData.is_overrun ? `⚠️ Overrun by ${formatMoney(catData.variance, cur)}` : `Planned: ${formatMoney(catData.planned, cur)}`}
           </small>
         </div>
       `;
@@ -449,10 +466,10 @@ function renderBudget() {
         const pillClass = exp.status === 'paid' ? 'pill paid' : 'pill pending';
 
         row.innerHTML = `
-          <span><b>${escapeHtml(exp.description)}</b><small>Planned $${(exp.planned_amount || 0).toLocaleString()}</small></span>
+          <span><b>${escapeHtml(exp.description)}</b><small>Planned ${formatMoney(exp.planned_amount || 0, cur)}</small></span>
           <span>${capitalize((exp.category || 'other').replace('_', ' '))}</span>
           <span class="${pillClass}">${capitalize(exp.status || 'pending')}</span>
-          <strong>$${((exp.actual_amount || 0) + (exp.committed_amount || 0)).toLocaleString()}</strong>
+          <strong>${formatMoney((exp.actual_amount || 0) + (exp.committed_amount || 0), cur)}</strong>
         `;
         tableRows.appendChild(row);
       });
@@ -524,16 +541,21 @@ function renderTimeline() {
         const evDiv = document.createElement('div');
         evDiv.className = `timeline-event ${isDone ? 'complete' : ''}`;
         evDiv.innerHTML = `
-          <span class="timeline-dot" style="cursor:pointer" title="Toggle completion">${isDone ? '✓' : ''}</span>
-          <div>
+          <span class="timeline-dot" style="cursor:pointer" title="Toggle completion" tabindex="0" role="button" aria-label="Toggle completion for ${escapeHtml(t.title)}">${isDone ? '✓' : ''}</span>
+          <div style="flex:1">
             <b>${escapeHtml(t.title)}</b>
             <small>Due ${t.due_date} · ${capitalize(t.status)} ${t.is_fixed_deadline ? '· [Fixed Deadline]' : ''}</small>
           </div>
+          <button class="reschedule-btn" title="Reschedule and audit dependencies" style="background:none;border:none;color:var(--terracotta);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit;font-weight:600;">📅 Reschedule →</button>
           <span class="event-type">${(t.category || 'GENERAL').toUpperCase()}</span>
         `;
 
         evDiv.querySelector('.timeline-dot').addEventListener('click', () => {
           store.toggleTask(t.id);
+        });
+
+        evDiv.querySelector('.reschedule-btn').addEventListener('click', () => {
+          openRescheduleModal(t);
         });
 
         monthDiv.appendChild(evDiv);
