@@ -33,7 +33,7 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi uvicorn pydantic pytest ruff python-dotenv google-genai httpx sqlalchemy pyjwt psycopg2-binary opentelemetry-api opentelemetry-sdk
+          pip install fastapi uvicorn pydantic pytest ruff python-dotenv google-genai httpx sqlalchemy pyjwt psycopg2-binary opentelemetry-api opentelemetry-sdk email-validator
 
       - name: Run Ruff Linter & Formatter Check
         run: |

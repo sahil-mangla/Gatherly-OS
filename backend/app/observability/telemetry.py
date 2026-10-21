@@ -85,9 +85,7 @@ def get_tracer() -> Any:
 
 
 @contextmanager
-def trace_span(
-    name: str, attributes: dict[str, Any] | None = None
-) -> Generator[Any, None, None]:
+def trace_span(name: str, attributes: dict[str, Any] | None = None) -> Generator[Any, None, None]:
     """Context manager to trace critical calculation blocks with custom spans."""
     tracer = get_tracer()
     with tracer.start_as_current_span(name) as span:
@@ -112,4 +110,3 @@ def get_current_trace_context() -> tuple[str | None, str | None]:
     except Exception:
         pass
     return None, None
-

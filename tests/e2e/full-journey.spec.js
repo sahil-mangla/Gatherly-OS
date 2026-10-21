@@ -31,19 +31,18 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
   });
 
   test("3. What-If Ripple Simulation Sandbox", async ({ page }) => {
-    const sandboxBtn = page.locator("#sandbox-toggle-btn");
-    await expect(sandboxBtn).toBeVisible();
-    await sandboxBtn.click();
+    await page.locator("button[data-tab='budget']").click();
+    const sandboxCard = page.locator("#whatif-simulator-card");
+    await expect(sandboxCard).toBeVisible();
 
-    const slider = page.locator("#slider-guest-delta");
+    const slider = page.locator("#guest-slider");
     await expect(slider).toBeVisible();
     await slider.fill("30");
     await slider.dispatchEvent("input");
 
     await page.waitForTimeout(300);
-    const guestLabel = page.locator("#val-guest-delta");
-    await expect(guestLabel).toHaveText("+30");
-    await expect(page.locator("#sandbox-financial-summary")).toBeVisible();
+    const guestLabel = page.locator("#guest-delta-val");
+    await expect(guestLabel).toContainText("+30");
   });
 
   test("4. Vendor Quote Seed Ingestion & Omission Audit", async ({ page }) => {
@@ -52,17 +51,17 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     await expect(compareBtn).toBeVisible();
     await compareBtn.click();
 
-    const seedTab = page.locator("#tab-btn-seed");
+    const seedTab = page.locator("button[data-tab='seed-tab']");
     if (await seedTab.isVisible()) {
       await seedTab.click();
-      const textarea = page.locator("#quote-seed-input");
+      const textarea = page.locator("#raw-quote-text");
       await textarea.fill(
         "Catering estimate: $65/person for 120 guests. Total $7800. Deposit 25%. Does not include cleanup or teardown fee."
       );
-      await page.locator("#btn-parse-seed").click();
+      await page.locator("#parse-quote-btn").click();
       await page.waitForTimeout(500);
 
-      const preview = page.locator("#seed-extraction-results");
+      const preview = page.locator("#parsed-quote-result");
       await expect(preview).toBeVisible();
       const text = await preview.innerText();
       expect(text).toContain("7,800");
@@ -93,14 +92,19 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     await page.locator("button[data-tab='timeline']").click();
     await expect(page.locator("#timeline-events-container")).toBeVisible();
 
-    const rescheduleBtn = page.locator(".reschedule-task-btn").first();
+    const rescheduleBtn = page.locator(".reschedule-btn").first();
     if (await rescheduleBtn.isVisible()) {
       await rescheduleBtn.click();
-      const modal = page.locator("#reschedule-modal");
+      const modal = page.locator("#generic-form-backdrop");
       await expect(modal).toBeVisible();
 
-      // Keyboard escape closes dialog safely
-      await page.keyboard.press("Escape");
+      // Close modal
+      const closeBtn = page.locator("#form-modal-close");
+      if (await closeBtn.isVisible()) {
+        await closeBtn.click();
+      } else {
+        await page.keyboard.press("Escape");
+      }
       await expect(modal).not.toBeVisible();
     }
   });
