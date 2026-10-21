@@ -16,6 +16,14 @@ class ObservabilityMiddleware(BaseHTTPMiddleware):
     """Intercepts all HTTP traffic to record correlation IDs, spans, and structured logs."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
+        # Normalize serverless path artifacts (Vercel rewrite destinations and stripped prefixes)
+        req_path = request.scope.get("path", "")
+        if req_path.startswith("/api/index.py"):
+            sub = req_path[len("/api/index.py") :]
+            request.scope["path"] = "/api" + sub if sub else "/api/health"
+        elif req_path.startswith(("/health", "/simulate", "/mara", "/vendors", "/auth", "/events")):
+            request.scope["path"] = "/api" + req_path
+
         # Correlation ID from client or new UUID
         correlation_id = request.headers.get("X-Correlation-ID") or f"corr-{uuid.uuid4().hex[:12]}"
         start_time = time.perf_counter()

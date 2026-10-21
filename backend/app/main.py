@@ -38,12 +38,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.get("/health", tags=["Health"])
+def health_endpoint():
+    """Direct health check endpoint for container and serverless probes."""
+    return {"status": "ok", "service": settings.otel_service_name, "version": settings.app_version}
+
+
 # Include API Routers
 app.include_router(router)
 app.include_router(auth_router)
 app.include_router(event_router)
 
-# Mount frontend static directory
-frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
-if frontend_dir.exists():
+# Mount frontend static directory across local, Docker, and Vercel environments
+frontend_candidates = [
+    Path(__file__).resolve().parent.parent.parent / "frontend",
+    Path.cwd() / "frontend",
+    Path("/var/task/frontend"),
+]
+frontend_dir = next((d for d in frontend_candidates if d.exists()), None)
+if frontend_dir:
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
