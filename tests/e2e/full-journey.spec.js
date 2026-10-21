@@ -64,7 +64,8 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
       const preview = page.locator("#parsed-quote-result");
       await expect(preview).toBeVisible();
       const text = await preview.innerText();
-      expect(text).toContain("7,800");
+      expect(text).toContain("65");
+      expect(text).toContain("Missing Disclosures Detected");
     }
   });
 
