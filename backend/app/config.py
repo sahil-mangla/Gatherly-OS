@@ -28,5 +28,28 @@ class Settings(BaseModel):
     debug: bool = Field(default_factory=lambda: os.getenv("DEBUG", "false").lower() == "true")
     environment: str = Field(default_factory=lambda: os.getenv("ENVIRONMENT", "production"))
 
+    # Enterprise Multi-Tenant Database
+    database_url: str = Field(
+        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./gatherly.db")
+    )
+
+    # Enterprise JWT & RBAC Security
+    jwt_secret: str = Field(
+        default_factory=lambda: os.getenv("JWT_SECRET", "gatherly-super-secure-enterprise-secret-32-chars")
+    )
+    jwt_algorithm: str = Field(default_factory=lambda: os.getenv("JWT_ALGORITHM", "HS256"))
+    jwt_expiration_minutes: int = Field(
+        default_factory=lambda: int(os.getenv("JWT_EXPIRATION_MINUTES", "1440"))
+    )
+
+    # Distributed Observability & Logging
+    log_format: str = Field(default_factory=lambda: os.getenv("LOG_FORMAT", "json"))
+    otel_enabled: bool = Field(
+        default_factory=lambda: os.getenv("OTEL_ENABLED", "true").lower() == "true"
+    )
+    otel_service_name: str = Field(
+        default_factory=lambda: os.getenv("OTEL_SERVICE_NAME", "gatherly-backend")
+    )
+
 
 settings = Settings()

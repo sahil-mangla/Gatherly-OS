@@ -24,6 +24,7 @@ import { renderTimeline } from './views/timeline-view.js';
 import { renderVendors } from './views/vendors-view.js';
 import { renderIdeas } from './views/ideas-view.js';
 import { formatDateSub, capitalize, escapeHtml } from './views/helpers.js';
+import { initTenantAuthBadge } from './components/tenant-auth-badge.js';
 
 // Global Toast helper
 let toastTimer = null;
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initRiskTray();
   initQuoteModal();
   initFormModals();
+  initTenantAuthBadge(showToast);
 
   // Primary navigation switching
   const navItems = document.querySelectorAll('.nav-item');

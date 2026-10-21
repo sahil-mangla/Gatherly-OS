@@ -44,3 +44,9 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Databases & Local State
+*.db
+*.sqlite
+*.sqlite3
+

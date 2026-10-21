@@ -6,14 +6,28 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from .api.event_routes import router as event_router
 from .api.routes import router
+from .auth.routes import router as auth_router
 from .config import settings
+from .db.database import init_db
+from .observability.logging import configure_logging
+from .observability.middleware import ObservabilityMiddleware
+from .observability.telemetry import init_telemetry
+
+# Configure Observability & Database on startup
+configure_logging()
+init_telemetry()
+init_db()
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Gatherly Celebration Planning & Decision Loop API",
 )
+
+# Observability Middleware (Correlation IDs, Tracing, JSON Access Logs)
+app.add_middleware(ObservabilityMiddleware)
 
 # CORS Middleware
 app.add_middleware(
@@ -24,10 +38,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API Router
+# Include API Routers
 app.include_router(router)
+app.include_router(auth_router)
+app.include_router(event_router)
 
 # Mount frontend static directory
 frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
 if frontend_dir.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+

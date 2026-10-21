@@ -37,7 +37,13 @@
 
     <main class="main-content">
       <header class="topbar">
-        <div class="breadcrumbs"><span>Events</span><i>/</i><strong id="topbar-event-name">Leila & Noor</strong></div>
+        <div class="breadcrumbs">
+          <span>Events</span><i>/</i><strong id="topbar-event-name">Leila & Noor</strong>
+          <span class="enterprise-badge" id="enterprise-auth-badge" title="Multi-Tenant Enterprise RBAC (Click to switch role)" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; background:#f4eee8; border:1px solid #e5dad2; border-radius:12px; padding:3px 8px; cursor:pointer; margin-left:12px; user-select:none;">
+            <span style="width:6px; height:6px; border-radius:50%; background:#2e7d32; display:inline-block;"></span>
+            <b id="enterprise-tenant-label">Gatherly Studio</b> · <span id="enterprise-role-label">OWNER</span> ↻
+          </span>
+        </div>
         <div class="top-actions">
           <button class="icon-btn" id="topbar-risk-btn" aria-label="Notifications" title="Event Risk Radar">♧<span class="notification-dot"></span></button>
           <button class="share-btn" id="share-plan-btn">↗ Share plan</button>
