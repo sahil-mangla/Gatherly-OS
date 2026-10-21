@@ -135,7 +135,8 @@ def query_mara_copilot(operation: str, prompt: str, context: dict[str, Any]) -> 
                 },
             }
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+            model = settings.gemini_model or "gemini-3.5-flash"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
             req = urllib.request.Request(
                 url,
                 data=json.dumps(payload).encode("utf-8"),

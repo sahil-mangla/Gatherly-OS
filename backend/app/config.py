@@ -30,7 +30,10 @@ class Settings(BaseModel):
 
     # Enterprise Multi-Tenant Database
     database_url: str = Field(
-        default_factory=lambda: os.getenv("DATABASE_URL", "sqlite:///./gatherly.db")
+        default_factory=lambda: os.getenv(
+            "DATABASE_URL",
+            "sqlite:////tmp/gatherly.db" if os.getenv("VERCEL") else "sqlite:///./gatherly.db",
+        )
     )
 
     # Enterprise JWT & RBAC Security
