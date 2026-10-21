@@ -5,7 +5,7 @@ import os
 import sys
 
 MAX_LINES = 200
-TARGET_DIRS = ["backend", "frontend/src"]
+TARGET_DIRS = ["backend", "frontend", "scripts", "tests"]
 EXTENSIONS = (".py", ".js")
 
 

@@ -29,20 +29,29 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi uvicorn pydantic pytest ruff python-dotenv google-genai httpx
+          pip install fastapi uvicorn pydantic pytest ruff python-dotenv google-genai httpx sqlalchemy pyjwt psycopg2-binary opentelemetry-api opentelemetry-sdk
 
       - name: Run Ruff Linter & Formatter Check
         run: |
           ruff check backend
           ruff format --check backend
 
-      - name: Run Automated Test Suite (Pytest + Node Test)
+      - name: Run Automated Test Suite (Pytest + Node Test + E2E Contracts)
         run: |
           npm test
 
       - name: Enforce Max 200 Lines of Code Rule
         run: |
           python scripts/check_line_limits.py
+
+      - name: Run Asynchronous Load Test & SLA Gate (Sub-150ms p95 & 0% Errors)
+        run: |
+          python scripts/load_test.py --requests 200 --concurrency 30 --max-p95 150
+
+      - name: Run Playwright End-to-End Suite
+        run: |
+          npx -y playwright install --with-deps chromium
+          npm run test:e2e
 
 
   container-build:
