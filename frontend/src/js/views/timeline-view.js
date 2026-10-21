@@ -59,30 +59,37 @@ export function renderTimeline() {
       const monthName = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
       monthDiv.innerHTML = `<span>${monthName}</span>`;
 
-      groups[mKey].forEach(t => {
-        const isDone = t.status === 'done';
-        const evDiv = document.createElement('div');
-        evDiv.className = `timeline-event ${isDone ? 'complete' : ''}`;
-        evDiv.innerHTML = `
-          <span class="timeline-dot" style="cursor:pointer" title="Toggle completion" tabindex="0" role="button" aria-label="Toggle completion for ${escapeHtml(t.title)}">${isDone ? '✓' : ''}</span>
-          <div style="flex:1">
-            <b>${escapeHtml(t.title)}</b>
-            <small>Due ${t.due_date} · ${capitalize(t.status)} ${t.is_fixed_deadline ? '· [Fixed Deadline]' : ''}</small>
-          </div>
-          <button class="reschedule-btn" title="Reschedule and audit dependencies" style="background:none;border:none;color:var(--terracotta);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit;font-weight:600;">📅 Reschedule →</button>
-          <span class="event-type">${(t.category || 'GENERAL').toUpperCase()}</span>
-        `;
+      groups[mKey]
+        .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''))
+        .forEach(t => {
+          const isDone = t.status === 'done';
+          const evDiv = document.createElement('div');
+          evDiv.className = `timeline-event ${isDone ? 'complete' : ''}`;
+          evDiv.innerHTML = `
+            <span class="timeline-dot" style="cursor:pointer" title="Toggle completion" tabindex="0" role="button" aria-label="Toggle completion for ${escapeHtml(t.title)}">${isDone ? '✓' : ''}</span>
+            <div style="flex:1">
+              <b>${escapeHtml(t.title)}</b>
+              <small>Due ${t.due_date} · ${capitalize(t.status)} ${t.is_fixed_deadline ? '· [Fixed Deadline]' : ''}</small>
+            </div>
+            <button class="reschedule-btn" title="Reschedule and audit dependencies" style="background:none;border:none;color:var(--terracotta);cursor:pointer;font-size:12px;padding:4px 8px;font-family:inherit;font-weight:600;">📅 Reschedule →</button>
+            <span class="event-type">${(t.category || 'GENERAL').toUpperCase()}</span>
+          `;
 
-        evDiv.querySelector('.timeline-dot').addEventListener('click', () => {
-          store.toggleTask(t.id);
+          const dot = evDiv.querySelector('.timeline-dot');
+          dot.addEventListener('click', () => store.toggleTask(t.id));
+          dot.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              store.toggleTask(t.id);
+            }
+          });
+
+          evDiv.querySelector('.reschedule-btn').addEventListener('click', () => {
+            openRescheduleModal(t);
+          });
+
+          monthDiv.appendChild(evDiv);
         });
-
-        evDiv.querySelector('.reschedule-btn').addEventListener('click', () => {
-          openRescheduleModal(t);
-        });
-
-        monthDiv.appendChild(evDiv);
-      });
 
       container.appendChild(monthDiv);
     });

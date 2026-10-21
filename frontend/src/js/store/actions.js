@@ -104,15 +104,19 @@ export function convertIdeaToTaskAction(event, ideaId) {
   const idea = (event.ideas || []).find(i => i.id === ideaId);
   if (!idea) throw new Error('Idea not found.');
 
+  if (idea.converted_task_id) {
+    const existing = (event.tasks || []).find(t => t.id === idea.converted_task_id);
+    if (existing) return { idea, task: existing };
+  }
+
   const due = new Date();
   due.setDate(due.getDate() + 14);
-  const dueIso = due.toISOString().split('T')[0];
 
   const newTask = {
     id: `task-from-idea-${Date.now()}`,
     title: `Implement Idea: ${idea.title}`,
     category: 'Creative Spark',
-    due_date: dueIso,
+    due_date: due.toISOString().split('T')[0],
     status: 'todo',
     priority: 'medium',
     depends_on: [],
@@ -126,39 +130,50 @@ export function convertIdeaToTaskAction(event, ideaId) {
 }
 
 export function applyProposalAction(event, proposal) {
-  if (!proposal || !proposal.action) {
-    throw new Error('Invalid proposal payload.');
-  }
+  if (!proposal || typeof proposal !== 'object') throw new Error('Invalid proposal payload.');
 
-  if (proposal.action === 'reallocate') {
+  const action = proposal.action || proposal.action_type || 'custom';
+
+  if (action === 'reallocate' || action === 'rebalance_budget') {
     const fromCat = proposal.from_category;
-    const toCat = proposal.to_category;
-    const amount = Number(proposal.amount || 0);
+    const toCat = proposal.to_category || proposal.category;
+    const amount = Math.abs(Number(proposal.amount || proposal.delta_amount || 0));
 
-    if (!fromCat || !toCat || amount <= 0) {
-      throw new Error('Reallocation requires valid from_category, to_category, and positive amount.');
-    }
+    if (amount <= 0) throw new Error('Reallocation requires a positive amount.');
 
     const fromExp = (event.expenses || []).find(e => e.category === fromCat);
     const toExp = (event.expenses || []).find(e => e.category === toCat);
 
     if (fromExp) fromExp.planned_amount = Math.max(0, fromExp.planned_amount - amount);
-    if (toExp) toExp.planned_amount += amount;
-
-    return { success: true, message: `Reallocated $${amount.toLocaleString()} from ${fromCat} to ${toCat}.` };
+    if (toExp) {
+      toExp.planned_amount += amount;
+    } else if (toCat) {
+      event.expenses = event.expenses || [];
+      event.expenses.push({
+        id: `exp-${Date.now()}`,
+        category: toCat,
+        description: `Allocation: ${toCat}`,
+        planned_amount: amount,
+        actual_amount: 0,
+        committed_amount: 0,
+        status: 'planned'
+      });
+    }
+    return { success: true, message: `Reallocated $${amount.toLocaleString()} ${fromCat ? `from ${fromCat} ` : ''}to ${toCat || 'budget'}.` };
   }
 
-  if (proposal.action === 'update_expense') {
+  if (action === 'update_expense' || action === 'adjust_expense') {
     const cat = proposal.category;
-    const savings = Number(proposal.savings || 0);
+    const savings = Math.abs(Number(proposal.savings || proposal.delta_amount || 0));
     const targetExp = (event.expenses || []).find(e => e.category === cat);
     if (targetExp && savings > 0) {
       targetExp.planned_amount = Math.max(0, targetExp.planned_amount - savings);
       return { success: true, message: `Saved $${savings.toLocaleString()} on ${cat}.` };
     }
+    return { success: true, message: `Applied savings of $${savings.toLocaleString()} to ${cat || 'event'}.` };
   }
 
-  if (proposal.action === 'custom') {
+  if (['custom', 'create_task', 'audit_vendors', 'review_risks'].includes(action)) {
     const newTask = {
       id: `task-${Date.now()}`,
       title: proposal.title || 'Implement Mara recommendation',
@@ -171,8 +186,8 @@ export function applyProposalAction(event, proposal) {
     };
     event.tasks = event.tasks || [];
     event.tasks.push(newTask);
-    return { success: true, message: `Created follow-up task: "${proposal.title}".`, task: newTask };
+    return { success: true, message: `Created task: "${newTask.title}".`, task: newTask };
   }
 
-  throw new Error(`Unsupported proposal action: "${proposal.action}"`);
+  throw new Error(`Unsupported proposal action: "${action}"`);
 }

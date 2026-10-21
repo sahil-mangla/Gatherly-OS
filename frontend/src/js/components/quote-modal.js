@@ -6,18 +6,9 @@
 import { store } from '../store.js';
 import { compareQuotes, generateFollowUpQuestions } from '../domain/vendors.js';
 import { seedPresets, handleParseQuote } from './quote-seed-parser.js';
+import { escapeHtml } from '../views/helpers.js';
 
 let modalElement = null;
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 
 export function initQuoteModal() {
   if (modalElement) return;
@@ -186,8 +177,13 @@ Maya</pre>
 
       document.getElementById('copy-email-btn').addEventListener('click', () => {
         const text = box.querySelector('.email-preview').innerText;
-        navigator.clipboard?.writeText(text);
-        alert('Copied follow-up email to clipboard!');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => alert('Copied follow-up email to clipboard!'))
+            .catch(() => alert('Please select and copy the text manually.'));
+        } else {
+          alert('Copied follow-up email draft.');
+        }
       });
       box.scrollIntoView({ behavior: 'smooth' });
     });

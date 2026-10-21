@@ -24,7 +24,7 @@ export async function askMara(operation, prompt = '', context = {}) {
         return {
           operation: 'parse_quote_seed',
           summary: 'Successfully extracted vendor quote parameters.',
-          extracted_quote: data
+          extracted_quote: data.extracted_quote || data
         };
       }
     } else {

@@ -7,6 +7,7 @@ import { store } from '../store.js';
 import { askMara } from '../ai/mara-client.js';
 import { calculateBudgetSummary } from '../domain/budget.js';
 import { evaluateEventRisks } from '../domain/risks.js';
+import { escapeHtml } from '../views/helpers.js';
 
 let drawerElement = null;
 
@@ -112,9 +113,16 @@ async function handleUserAction(operation, userText) {
   const risks = evaluateEventRisks(event);
   const context = { event: { id: event.id, name: event.name, expected_guests: event.expected_guests }, budget, risks: risks.risks };
 
-  // Call client
-  const response = await askMara(operation, userText, context);
-  thinkingEl.remove();
+  // Call client safely with guaranteed thinking indicator cleanup
+  let response;
+  try {
+    response = await askMara(operation, userText, context);
+  } catch (err) {
+    console.error('Mara copilot error:', err);
+    response = { response: "I encountered a minor hitch retrieving advice. Here's my quick recommendation: check your critical path milestones." };
+  } finally {
+    thinkingEl.remove();
+  }
 
   const replyEl = document.createElement('div');
   replyEl.className = 'msg assistant-msg';
@@ -178,14 +186,4 @@ async function handleUserAction(operation, userText) {
   });
 
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }

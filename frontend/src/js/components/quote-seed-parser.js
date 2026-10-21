@@ -5,21 +5,14 @@
 
 import { store } from '../store.js';
 import { askMara } from '../ai/mara-client.js';
+import { escapeHtml } from '../views/helpers.js';
 
 export const seedPresets = {
   photo: `Hi Maya! We would love to capture your wedding on Sep 14. Our standard package is $2,400 with a $720 retainer upon signing. Includes 8 hours of photography and a high-resolution online gallery. Second shooter available upon request. Let us know if you want to proceed!`,
   cater: `Catering Estimate for Leila & Noor: 150 guests plated dinner buffet at $42/person plus welcome drinks ($6,300 base). Includes table linens and dinnerware. Deposit of $1,800 due on confirmation. Note: Bar setup and venue corkage billed separately.`
 };
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+
 
 export async function handleParseQuote(closeModalCallback) {
   const text = document.getElementById('raw-quote-text').value.trim();
@@ -33,9 +26,16 @@ export async function handleParseQuote(closeModalCallback) {
   btn.disabled = true;
   btn.innerText = 'Extracting entities with Mara...';
 
-  const res = await askMara('parse_quote_seed', text);
-  btn.disabled = false;
-  btn.innerText = '✦ Extract & Audit Quote with Mara';
+  let res;
+  try {
+    res = await askMara('parse_quote_seed', text);
+  } catch (err) {
+    console.error('Quote extraction failed:', err);
+    res = {};
+  } finally {
+    btn.disabled = false;
+    btn.innerText = '✦ Extract & Audit Quote with Mara';
+  }
 
   if (!res.extracted_quote) {
     alert('Could not extract structured data. Please try again.');

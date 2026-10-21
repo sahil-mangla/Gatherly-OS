@@ -6,6 +6,8 @@
 import { store } from '../store.js';
 import { evaluateEventRisks } from '../domain/risks.js';
 import { openCopilot } from './copilot-drawer.js';
+import { openQuoteModal } from './quote-modal.js';
+import { escapeHtml } from '../views/helpers.js';
 
 let trayElement = null;
 
@@ -154,12 +156,13 @@ function renderRiskList() {
     btn.addEventListener('click', () => {
       const type = btn.dataset.type;
       const prompt = btn.dataset.prompt;
+      let payload = {};
+      try { payload = JSON.parse(btn.dataset.payload || '{}'); } catch (e) {}
 
       closeRiskTray();
       if (type === 'ask_mara') {
         openCopilot(prompt);
       } else if (type === 'open_whatif') {
-        // Switch to budget view and scroll to simulator
         const budgetNav = document.querySelector('.nav-item[data-view="budget"]');
         if (budgetNav) budgetNav.click();
         const whatIfCard = document.getElementById('whatif-simulator-card');
@@ -170,17 +173,10 @@ function renderRiskList() {
       } else if (type === 'open_quotes') {
         const vendorNav = document.querySelector('.nav-item[data-view="vendors"]');
         if (vendorNav) vendorNav.click();
+        openQuoteModal(payload.vendor_id || null);
       }
     });
   });
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+

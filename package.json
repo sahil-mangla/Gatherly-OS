@@ -7,7 +7,7 @@
   "scripts": {
     "start": "python backend/run.py",
     "dev": "python backend/run.py",
-    "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js",
+    "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js frontend/tests/actions.test.js",
     "lint": "ruff check backend",
     "format": "ruff format backend",
     "check:lines": "python scripts/check_line_limits.py",

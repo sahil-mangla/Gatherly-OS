@@ -5,16 +5,7 @@
 
 import { store } from '../store.js';
 import { evaluateReschedule } from '../domain/timeline.js';
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
+import { escapeHtml } from '../views/helpers.js';
 
 export function openRescheduleModal(task, openFormModal, closeFormModal) {
   if (!task || !task.id) return;

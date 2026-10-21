@@ -37,6 +37,9 @@ export function closeFormModal() {
 export function openFormModal(title, bodyHtml) {
   if (!formModalBackdrop) initFormModals();
   document.getElementById('form-modal-title').innerText = title;
-  document.getElementById('form-modal-body').innerHTML = bodyHtml;
+  const bodyEl = document.getElementById('form-modal-body');
+  bodyEl.innerHTML = bodyHtml;
+  bodyEl.querySelector('.cancel-btn')?.addEventListener('click', closeFormModal);
   formModalBackdrop.classList.add('open');
 }
+

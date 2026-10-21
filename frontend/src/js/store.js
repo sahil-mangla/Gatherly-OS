@@ -14,11 +14,15 @@ import {
 } from './store/actions.js';
 
 const STORAGE_KEY = 'gatherly_events_v2';
+const ACTIVE_EVENT_KEY = 'gatherly_active_event_v2';
 
 export class EventStore {
   constructor() {
     this.events = this.load();
-    this.activeEventId = Object.keys(this.events)[0] || 'wedding-leila-noor';
+    const savedActiveId = localStorage.getItem(ACTIVE_EVENT_KEY);
+    this.activeEventId = (savedActiveId && this.events[savedActiveId])
+      ? savedActiveId
+      : (Object.keys(this.events)[0] || 'wedding-leila-noor');
     this.subscribers = new Set();
   }
 
@@ -71,6 +75,9 @@ export class EventStore {
   switchEvent(eventId) {
     if (this.events[eventId]) {
       this.activeEventId = eventId;
+      try {
+        localStorage.setItem(ACTIVE_EVENT_KEY, eventId);
+      } catch (e) {}
       this.emit('event:switched', { eventId });
     }
   }
@@ -78,6 +85,9 @@ export class EventStore {
   resetToDefaults() {
     this.events = JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
     this.activeEventId = Object.keys(this.events)[0];
+    try {
+      localStorage.removeItem(ACTIVE_EVENT_KEY);
+    } catch (e) {}
     this.save();
     this.emit('store:reset', { events: this.events });
   }
