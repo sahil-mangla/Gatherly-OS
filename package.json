@@ -9,7 +9,11 @@
     "dev": "python backend/run.py",
     "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js",
     "lint": "ruff check backend",
-    "format": "ruff format backend"
+    "format": "ruff format backend",
+    "check:lines": "python scripts/check_line_limits.py",
+    "docker:build": "docker build -t gatherly .",
+    "docker:run": "docker run -p 8080:8080 --env-file .env gatherly",
+    "docker:compose": "docker compose up --build"
   },
   "keywords": [
     "event-planning",

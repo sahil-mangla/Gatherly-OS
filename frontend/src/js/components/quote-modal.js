@@ -1,13 +1,23 @@
 /**
  * @file quote-modal.js
- * @description Side-by-side vendor quote comparison modal and Raw Quote Seed Parser.
+ * @description Side-by-side vendor quote comparison modal and seed parser dialog.
  */
 
 import { store } from '../store.js';
 import { compareQuotes, generateFollowUpQuestions } from '../domain/vendors.js';
-import { askMara } from '../ai/mara-client.js';
+import { seedPresets, handleParseQuote } from './quote-seed-parser.js';
 
 let modalElement = null;
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 export function initQuoteModal() {
   if (modalElement) return;
@@ -73,11 +83,6 @@ export function initQuoteModal() {
   });
 
   // Seed Presets
-  const seedPresets = {
-    photo: `Hi Maya! We would love to capture your wedding on Sep 14. Our standard package is $2,400 with a $720 retainer upon signing. Includes 8 hours of photography and a high-resolution online gallery. Second shooter available upon request. Let us know if you want to proceed!`,
-    cater: `Catering Estimate for Leila & Noor: 150 guests plated dinner buffet at $42/person plus welcome drinks ($6,300 base). Includes table linens and dinnerware. Deposit of $1,800 due on confirmation. Note: Bar setup and venue corkage billed separately.`
-  };
-
   modalElement.querySelectorAll('.seed-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       const p = chip.dataset.preset;
@@ -86,7 +91,9 @@ export function initQuoteModal() {
   });
 
   // Parse button handler
-  document.getElementById('parse-quote-btn').addEventListener('click', handleParseQuote);
+  document.getElementById('parse-quote-btn').addEventListener('click', () => {
+    handleParseQuote(closeQuoteModal);
+  });
 }
 
 export function openQuoteModal(vendorId = null) {
@@ -107,7 +114,6 @@ function renderComparisonView(vendorId) {
   const event = store.getActiveEvent();
   const vendors = event.vendors || [];
 
-  // Look for vendors with multiple quotes or shortlist quotes
   const solStudio = vendors.find(v => v.id === 'ven-sol-studio') || vendors[1] || vendors[0];
   const quotesToCompare = solStudio?.quotes || [
     { name: 'Sol Studio (Main)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
@@ -118,75 +124,61 @@ function renderComparisonView(vendorId) {
 
   let html = `
     <div class="comparison-banner">
-      <span class="sparkle-icon">✦</span>
-      <p><b>Mara's Analysis:</b> ${escapeHtml(compResult.comparison_summary)}</p>
+      <div class="banner-summary">
+        <strong>Intelligent Audit Result</strong>
+        <p>${escapeHtml(compResult.comparison_summary)}</p>
+      </div>
     </div>
 
-    <div class="quote-matrix-grid">
+    <div class="comparison-matrix">
   `;
 
   compResult.normalized.forEach(q => {
     const isCheapest = q.id === compResult.cheapest_id;
     const isLowestRisk = q.id === compResult.lowest_risk_id;
+    const incList = q.inclusions.map(i => `<li>✓ ${escapeHtml(i)}</li>`).join('');
+    const misList = q.missing_disclosures.length > 0 
+      ? q.missing_disclosures.map(m => `<li class="missing-li">? ${escapeHtml(m)}</li>`).join('')
+      : '<li class="clean-li">✓ Fully disclosed terms</li>';
 
     html += `
-      <div class="quote-column ${isCheapest ? 'cheapest' : ''} ${isLowestRisk ? 'recommended' : ''}">
-        <div class="quote-col-header">
-          ${isCheapest ? '<span class="quote-ribbon">Lowest Base Price</span>' : ''}
-          ${isLowestRisk ? '<span class="quote-ribbon gold">Lowest Hidden Fee Risk</span>' : ''}
-          <h3>${escapeHtml(q.name)}</h3>
-          <div class="quote-price-tag">$${q.base_price.toLocaleString()}<small> / total base</small></div>
-          <div class="quote-deposit">Deposit: $${q.deposit_amount.toLocaleString()} (${q.deposit_percent}%)</div>
+      <div class="matrix-card ${isCheapest ? 'highlight-card' : ''}">
+        <div class="matrix-badges">
+          ${isCheapest ? '<span class="badge-cheapest">Lowest Base Fee</span>' : ''}
+          ${isLowestRisk ? '<span class="badge-risk-low">Most Disclosed Terms</span>' : ''}
         </div>
-
-        <div class="quote-section">
-          <h5>Inclusions</h5>
-          <ul>
-            ${q.inclusions.map(i => `<li>✓ ${escapeHtml(i)}</li>`).join('')}
-          </ul>
+        <h3>${escapeHtml(q.name)}</h3>
+        <div class="matrix-price">
+          <span class="price-val">$${q.base_price.toLocaleString()}</span>
+          <small>Deposit: $${q.deposit_amount.toLocaleString()} (${q.deposit_percent}%)</small>
         </div>
-
-        <div class="quote-section warnings">
-          <h5>Missing Fee Disclosures</h5>
-          ${q.missing_disclosures.length > 0 ? `
-            <ul class="missing-list">
-              ${q.missing_disclosures.map(m => `<li>⚠️ <b>Unverified:</b> ${escapeHtml(m)}</li>`).join('')}
-            </ul>
-          ` : '<p class="clean-terms">✓ All standard terms disclosed.</p>'}
-        </div>
-
-        <div class="quote-footer">
-          <button class="primary-btn draft-questions-btn" data-quote='${JSON.stringify(q).replace(/'/g, "&#39;")}'>
-            Draft Follow-Up Email
-          </button>
-        </div>
-      </div>
-    `;
+        <div class="matrix-section"><b>Included:</b><ul>${incList}</ul></div>
+        <div class="matrix-section risk-section"><b>⚠️ Undisclosed Terms:</b><ul>${misList}</ul></div>
+        <button class="select-quote-btn" data-quote-id="${q.id}">Draft Clarification Questions</button>
+      </div>`;
   });
-
-  html += `</div><div id="drafted-email-box" style="display:none; margin-top:20px;"></div>`;
+  html += `</div><div id="followup-questions-box" style="display:none; margin-top:24px;"></div>`;
   container.innerHTML = html;
 
-  // Wire draft questions buttons
-  container.querySelectorAll('.draft-questions-btn').forEach(btn => {
+  container.querySelectorAll('.select-quote-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const quoteData = JSON.parse(btn.dataset.quote);
-      const questions = generateFollowUpQuestions(quoteData);
-      const box = document.getElementById('drafted-email-box');
+      const qId = btn.dataset.quoteId;
+      const quote = quotesToCompare.find(q => (q.quote_id || q.id) === qId) || quotesToCompare[0];
+      const questions = generateFollowUpQuestions(quote);
 
+      const box = document.getElementById('followup-questions-box');
       box.style.display = 'block';
       box.innerHTML = `
-        <div class="drafted-email-card">
-          <h4>Generated Clarification Email for ${escapeHtml(quoteData.name)}</h4>
-          <p><em>Copy and send this message to ensure no surprise charges arise:</em></p>
-          <pre class="email-preview">Hi ${escapeHtml(quoteData.name)},
+        <div class="draft-email-card">
+          <h4>Generated Clarification Draft for Vendor:</h4>
+          <pre class="email-preview">Hi ${escapeHtml(quote.tier_name || quote.name)},
 
-Thank you so much for sending over the proposal for our upcoming celebration! We love your work and would love to clarify a few operational details before signing:
+Thank you so much for sending over your detailed proposal! Before we finalize our agreement and deposit, could you clarify these items:
 
-${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+${questions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
 
-Looking forward to hearing from you!
-Best regards,
+Looking forward to hearing from you.
+Warmly,
 Maya</pre>
           <button class="text-btn" id="copy-email-btn">Copy message to clipboard ↗</button>
         </div>
@@ -200,87 +192,4 @@ Maya</pre>
       box.scrollIntoView({ behavior: 'smooth' });
     });
   });
-}
-
-async function handleParseQuote() {
-  const text = document.getElementById('raw-quote-text').value.trim();
-  if (!text) {
-    alert('Please enter or paste vendor quote text first.');
-    return;
-  }
-
-  const btn = document.getElementById('parse-quote-btn');
-  const resultContainer = document.getElementById('parsed-quote-result');
-  btn.disabled = true;
-  btn.innerText = 'Extracting entities with Mara...';
-
-  const res = await askMara('parse_quote_seed', text);
-  btn.disabled = false;
-  btn.innerText = '✦ Extract & Audit Quote with Mara';
-
-  if (!res.extracted_quote) {
-    alert('Could not extract structured data. Please try again.');
-    return;
-  }
-
-  const eq = res.extracted_quote;
-  resultContainer.style.display = 'block';
-  resultContainer.innerHTML = `
-    <div class="parsed-result-card">
-      <div class="parsed-header">
-        <span class="sparkle-icon">✦</span>
-        <div>
-          <h4>Extracted: ${escapeHtml(eq.vendor_name)}</h4>
-          <span class="badge-notice">${eq.service_type.toUpperCase()}</span>
-        </div>
-        <div class="parsed-amount">$${eq.quoted_base_amount.toLocaleString()}</div>
-      </div>
-
-      <div class="parsed-grid">
-        <div>
-          <b>Deposit:</b> $${eq.deposit_amount.toLocaleString()}
-        </div>
-        <div>
-          <b>Confidence Score:</b> ${Math.round((eq.confidence_score || 0.9) * 100)}%
-        </div>
-      </div>
-
-      ${eq.missing_fields && eq.missing_fields.length > 0 ? `
-        <div class="parsed-missing">
-          <b>⚠️ Missing Disclosures Detected:</b>
-          <ul>
-            ${eq.missing_fields.map(m => `<li>${escapeHtml(m)}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-
-      <div class="parsed-actions">
-        <button class="primary-btn" id="save-parsed-vendor-btn">Save to Vendor Roster</button>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('save-parsed-vendor-btn').addEventListener('click', () => {
-    store.addVendor({
-      name: eq.vendor_name,
-      category: eq.service_type,
-      quoted_amount: eq.quoted_base_amount,
-      deposit_paid: 0,
-      summary: `Imported via Mara raw seed parser. Base estimate: $${eq.quoted_base_amount}.`,
-      inclusions: eq.inclusions || [],
-      exclusions: eq.missing_fields || []
-    });
-    alert(`Added "${eq.vendor_name}" to your Vendor roster!`);
-    closeQuoteModal();
-  });
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
 }
