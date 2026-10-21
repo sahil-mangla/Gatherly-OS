@@ -40,18 +40,20 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String(64), primary_key=True, default=lambda: f"user-{uuid.uuid4().hex[:12]}")
-    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(
+        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     email = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
-    role = Column(String(32), default="planner", nullable=False)  # owner, planner, collaborator, vendor
+    role = Column(
+        String(32), default="planner", nullable=False
+    )  # owner, planner, collaborator, vendor
     created_at = Column(DateTime, default=utc_now, nullable=False)
 
     tenant = relationship("Tenant", back_populates="users")
 
-    __table_args__ = (
-        Index("ix_user_tenant_email", "tenant_id", "email", unique=True),
-    )
+    __table_args__ = (Index("ix_user_tenant_email", "tenant_id", "email", unique=True),)
 
 
 class EventModel(Base):
@@ -60,7 +62,9 @@ class EventModel(Base):
     __tablename__ = "events"
 
     id = Column(String(64), primary_key=True)
-    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(
+        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     name = Column(String(255), nullable=False)
     type = Column(String(64), default="wedding", nullable=False)
     date = Column(String(32), nullable=True)
@@ -74,9 +78,7 @@ class EventModel(Base):
 
     tenant = relationship("Tenant", back_populates="events")
 
-    __table_args__ = (
-        Index("ix_events_tenant_id_type", "tenant_id", "type"),
-    )
+    __table_args__ = (Index("ix_events_tenant_id_type", "tenant_id", "type"),)
 
 
 class AuditLog(Base):
@@ -85,7 +87,9 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(String(64), primary_key=True, default=lambda: f"audit-{uuid.uuid4().hex[:12]}")
-    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id = Column(
+        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     user_id = Column(String(64), nullable=True)
     action = Column(String(64), nullable=False)  # create, update, delete, approve_proposal
     resource_type = Column(String(64), nullable=False)

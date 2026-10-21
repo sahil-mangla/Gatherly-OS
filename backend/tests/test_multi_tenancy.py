@@ -14,6 +14,7 @@ def client():
 def test_tenant_boundary_data_isolation(client):
     """Verify Tenant A and Tenant B cannot access or leak each other's celebration events."""
     import uuid
+
     unique_event_id = f"event-alpha-{uuid.uuid4().hex[:8]}"
     token_tenant_a = create_access_token("u-alice", "tenant-alpha-org", role="owner")
     token_tenant_b = create_access_token("u-bob", "tenant-beta-org", role="owner")
@@ -38,7 +39,9 @@ def test_tenant_boundary_data_isolation(client):
     list_a = client.get("/api/events", headers={"Authorization": f"Bearer {token_tenant_a}"})
     assert any(e["id"] == created_id for e in list_a.json())
 
-    get_a = client.get(f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_a}"})
+    get_a = client.get(
+        f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_a}"}
+    )
     assert get_a.status_code == 200
     assert get_a.json()["name"] == "Alpha Secret Launch"
 
@@ -48,7 +51,9 @@ def test_tenant_boundary_data_isolation(client):
     assert not any(e["id"] == created_id for e in list_b.json())
 
     # Tenant B attempts direct access to Tenant A's event -> 404 Not Found (Zero Leakage)
-    get_b = client.get(f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_b}"})
+    get_b = client.get(
+        f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_b}"}
+    )
     assert get_b.status_code == 404
 
     # Tenant B attempts to update Tenant A's event -> 404 Not Found
@@ -60,7 +65,9 @@ def test_tenant_boundary_data_isolation(client):
     assert put_b.status_code == 404
 
     # Tenant B attempts to delete Tenant A's event -> 404 Not Found
-    del_b = client.delete(f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_b}"})
+    del_b = client.delete(
+        f"/api/events/{created_id}", headers={"Authorization": f"Bearer {token_tenant_b}"}
+    )
     assert del_b.status_code == 404
 
 

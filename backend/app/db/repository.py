@@ -33,7 +33,10 @@ class EventRepository:
 
     def create_event(self, event_data: dict[str, Any], user_id: str | None = None) -> EventModel:
         """Create new event partitioned under the active tenant."""
-        event_id = event_data.get("id") or f"event-{event_data.get('type', 'generic')}-{int(self.db.bind.dialect.name == 'sqlite')}"
+        event_id = (
+            event_data.get("id")
+            or f"event-{event_data.get('type', 'generic')}-{int(self.db.bind.dialect.name == 'sqlite')}"
+        )
         model = EventModel(
             id=event_id,
             tenant_id=self.tenant_id,
@@ -66,7 +69,15 @@ class EventRepository:
         if not event:
             return None
 
-        for field in ("name", "type", "date", "total_budget", "expected_guests", "venue_capacity", "theme"):
+        for field in (
+            "name",
+            "type",
+            "date",
+            "total_budget",
+            "expected_guests",
+            "venue_capacity",
+            "theme",
+        ):
             if field in updates:
                 setattr(event, field, updates[field])
 

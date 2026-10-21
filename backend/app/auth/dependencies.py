@@ -73,9 +73,7 @@ def get_current_user(
 def require_role(*allowed_roles: str):
     """Factory creating dependency to enforce RBAC permissions."""
 
-    def role_checker(
-        auth: Annotated[AuthContext, Depends(get_current_user)]
-    ) -> AuthContext:
+    def role_checker(auth: Annotated[AuthContext, Depends(get_current_user)]) -> AuthContext:
         if not auth.has_role(*allowed_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

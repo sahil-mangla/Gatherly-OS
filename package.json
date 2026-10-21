@@ -28,5 +28,8 @@
     "mirofish-sandbox"
   ],
   "author": "Gatherly Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.42.0"
+  }
 }

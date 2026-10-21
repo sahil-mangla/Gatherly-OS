@@ -48,7 +48,9 @@ def get_tracer() -> trace.Tracer:
 
 
 @contextmanager
-def trace_span(name: str, attributes: dict[str, Any] | None = None) -> Generator[trace.Span, None, None]:
+def trace_span(
+    name: str, attributes: dict[str, Any] | None = None
+) -> Generator[trace.Span, None, None]:
     """Context manager to trace critical calculation blocks with custom OpenTelemetry spans."""
     tracer = get_tracer()
     with tracer.start_as_current_span(name) as span:

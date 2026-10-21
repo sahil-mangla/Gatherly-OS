@@ -34,7 +34,9 @@ def test_opentelemetry_span_context():
     tracer = get_tracer()
     assert tracer is not None
 
-    with trace_span("simulate_ripple_calculation", {"guest_delta": 25, "is_critical": True}) as span:
+    with trace_span(
+        "simulate_ripple_calculation", {"guest_delta": 25, "is_critical": True}
+    ) as span:
         assert span is not None
 
 

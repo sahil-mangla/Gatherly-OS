@@ -33,7 +33,15 @@ class JsonLogFormatter(logging.Formatter):
             log_payload["dd.span_id"] = span_id
 
         # Inject HTTP contextual metadata
-        for field in ("correlation_id", "tenant_id", "user_id", "http_method", "path", "status_code", "duration_ms"):
+        for field in (
+            "correlation_id",
+            "tenant_id",
+            "user_id",
+            "http_method",
+            "path",
+            "status_code",
+            "duration_ms",
+        ):
             val = getattr(record, field, None)
             if val is not None:
                 log_payload[field] = val

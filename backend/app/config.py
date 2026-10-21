@@ -38,7 +38,9 @@ class Settings(BaseModel):
 
     # Enterprise JWT & RBAC Security
     jwt_secret: str = Field(
-        default_factory=lambda: os.getenv("JWT_SECRET", "gatherly-super-secure-enterprise-secret-32-chars")
+        default_factory=lambda: os.getenv(
+            "JWT_SECRET", "gatherly-super-secure-enterprise-secret-32-chars"
+        )
     )
     jwt_algorithm: str = Field(default_factory=lambda: os.getenv("JWT_ALGORITHM", "HS256"))
     jwt_expiration_minutes: int = Field(

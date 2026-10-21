@@ -39,6 +39,7 @@ def test_jwt_token_lifecycle():
 def test_auth_registration_and_login_flow(client):
     """Test full multi-tenant registration and login loop."""
     import uuid
+
     uid = uuid.uuid4().hex[:8]
     unique_email = f"elena-{uid}@lumina.example.com"
     reg_payload = {
@@ -81,7 +82,9 @@ def test_auth_registration_and_login_flow(client):
 def test_rbac_endpoint_protection(client):
     """Test that unauthorized roles cannot execute restricted operations."""
     # Issue a vendor-role token
-    vendor_token = create_access_token(user_id="u-vendor", tenant_id="tenant-default", role="vendor")
+    vendor_token = create_access_token(
+        user_id="u-vendor", tenant_id="tenant-default", role="vendor"
+    )
 
     # Creating an event requires owner or planner role
     res = client.post(
