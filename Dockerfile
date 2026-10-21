@@ -14,18 +14,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
-COPY backend/pyproject.toml .
-RUN pip install --no-cache-dir \
-    fastapi==0.115.0 \
-    uvicorn==0.31.0 \
-    pydantic==2.9.2 \
-    python-dotenv==1.0.1 \
-    google-genai==0.1.1 \
-    sqlalchemy>=2.0.0 \
-    pyjwt>=2.8.0 \
-    psycopg2-binary>=2.9.9 \
-    opentelemetry-api>=1.20.0 \
-    opentelemetry-sdk>=1.20.0
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application backend and frontend
 COPY backend/ ./backend/
