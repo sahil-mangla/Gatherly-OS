@@ -13,8 +13,8 @@ import {
   applyProposalAction
 } from './store/actions.js';
 
-const STORAGE_KEY = 'gatherly_events_v2';
-const ACTIVE_EVENT_KEY = 'gatherly_active_event_v2';
+const STORAGE_KEY = 'gatherly_events_v4';
+const ACTIVE_EVENT_KEY = 'gatherly_active_event_v4';
 
 export class EventStore {
   constructor() {

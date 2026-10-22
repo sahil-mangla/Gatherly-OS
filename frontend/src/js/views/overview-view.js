@@ -17,17 +17,26 @@ export function renderOverview() {
   const risks = evaluateEventRisks(event);
   const cur = event.currency || '$';
 
-  // Hero Date Card
+  // Hero Date Card & Dynamic Eyebrow
   if (event.date) {
-    const d = new Date(event.date);
+    const [yStr, mStr, dStr] = event.date.split('-');
+    const d = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, parseInt(dStr, 10));
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const cardDay = document.getElementById('card-day');
     const cardMonth = document.getElementById('card-month');
     const cardYear = document.getElementById('card-year');
+    const eyebrow = document.getElementById('overview-eyebrow');
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
 
     if (cardDay) cardDay.innerText = d.getDate();
     if (cardMonth) cardMonth.innerText = months[d.getMonth()] || 'SEP';
-    if (cardYear) cardYear.innerText = `${d.getFullYear()} · ${d.toLocaleDateString('en-US', { weekday: 'long' })}`;
+    if (cardYear) cardYear.innerText = `${d.getFullYear()} · ${dayName}`;
+
+    if (eyebrow) {
+      const diffDays = Math.round((d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000);
+      const countdown = diffDays > 0 ? ` · ${Math.max(1, Math.round(diffDays / 7))} weeks to go` : '';
+      eyebrow.innerHTML = `<span class="live-dot"></span> ${dayName} · ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${countdown}`;
+    }
   }
 
   // Hero Copy
@@ -117,24 +126,51 @@ export function renderOverview() {
     riskChip.onclick = () => toggleRiskTray();
   }
 
-  // Recent Updates Feed
-  const updatesContainer = document.getElementById('recent-updates-container');
-  if (updatesContainer) {
-    updatesContainer.innerHTML = '';
-    const recentTasks = (event.tasks || []).slice(0, 3);
-    recentTasks.forEach(task => {
-      const item = document.createElement('div');
-      item.className = 'update-item';
-      const isDone = task.status === 'done';
-      item.innerHTML = `
-        <div class="update-icon ${isDone ? 'cake' : 'ring'}">${isDone ? '✓' : '◌'}</div>
-        <div class="update-text">
-          <p><b>${escapeHtml(task.title)}</b> — ${isDone ? 'Marked complete' : 'Scheduled milestone'}</p>
-          <small>Due ${formatDateSub(task.due_date)} · ${capitalize(task.category || 'General')}</small>
-        </div>
-      `;
-      updatesContainer.appendChild(item);
-    });
+  // Keep Moving: Next Up Tasks in Vertical Order (1., 2., 3.)
+  const taskListContainer = document.getElementById('overview-task-list');
+  if (taskListContainer) {
+    taskListContainer.innerHTML = '';
+    const allTasks = event.tasks || [];
+    const pendingTasks = allTasks
+      .filter(t => t.status !== 'done')
+      .sort((a, b) => (a.due_date || '').localeCompare(b.due_date || ''));
+    const completedTasks = allTasks.filter(t => t.status === 'done');
+    const nextTasks = [...pendingTasks, ...completedTasks].slice(0, 3);
+
+    if (nextTasks.length === 0) {
+      taskListContainer.innerHTML = `<div class="empty-task-card" style="padding:16px;text-align:center;color:var(--muted);font-size:12px;">All milestones complete!</div>`;
+    } else {
+      nextTasks.forEach((task, idx) => {
+        const isDone = task.status === 'done';
+        const card = document.createElement('div');
+        card.className = `next-task-card ${isDone ? 'is-done' : ''}`;
+        card.setAttribute('data-task-id', task.id);
+        card.innerHTML = `
+          <div class="task-num-badge">${idx + 1}</div>
+          <div class="task-card-content">
+            <div class="task-card-title-row">
+              <span class="task-card-title">${escapeHtml(task.title)}</span>
+              <span class="task-priority-tag ${task.priority || 'medium'}">${capitalize(task.priority || 'Normal')}</span>
+            </div>
+            <div class="task-card-sub">
+              <span>📅 Due ${formatDateSub(task.due_date)}</span>
+              <span>🏷️ ${capitalize(task.category || 'General')}</span>
+              <span class="task-status-pill ${task.status}">${isDone ? 'Completed' : 'Pending'}</span>
+            </div>
+          </div>
+          <button class="task-check-circle" aria-label="Toggle ${escapeHtml(task.title)}" title="${isDone ? 'Mark incomplete' : 'Mark complete'}">${isDone ? '✓' : ''}</button>
+        `;
+        card.querySelector('.task-check-circle').addEventListener('click', (e) => {
+          e.stopPropagation();
+          store.toggleTask(task.id);
+        });
+        card.addEventListener('click', () => {
+          const tab = document.querySelector('[data-tab="timeline"]') || document.querySelector('[data-view="timeline"]');
+          if (tab) tab.click();
+        });
+        taskListContainer.appendChild(card);
+      });
+    }
   }
 
   const moodCaption = document.getElementById('overview-mood-caption');

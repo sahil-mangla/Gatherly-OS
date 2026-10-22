@@ -87,6 +87,16 @@ export const birthdayTemplate = {
       priority: 'medium',
       depends_on: [],
       is_fixed_deadline: false
+    },
+    {
+      id: 'task-dad-playlist',
+      title: 'Curate 70s vinyl jazz and funk dinner playlist',
+      category: 'Music',
+      due_date: '2025-10-25',
+      status: 'todo',
+      priority: 'medium',
+      depends_on: [],
+      is_fixed_deadline: false
     }
   ],
   vendors: [

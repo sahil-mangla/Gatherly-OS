@@ -77,6 +77,26 @@ export const communityTemplate = {
       priority: 'high',
       depends_on: ['task-comm-permit'],
       is_fixed_deadline: false
+    },
+    {
+      id: 'task-comm-stage',
+      title: 'Confirm stage, sound PA & shade tent delivery schedule',
+      category: 'Logistics',
+      due_date: '2026-05-20',
+      status: 'todo',
+      priority: 'high',
+      depends_on: ['task-comm-permit'],
+      is_fixed_deadline: false
+    },
+    {
+      id: 'task-comm-flyers',
+      title: 'Distribute festival map flyers & neighbor RSVP cards',
+      category: 'Outreach',
+      due_date: '2026-06-05',
+      status: 'todo',
+      priority: 'medium',
+      depends_on: ['task-comm-volunteers'],
+      is_fixed_deadline: false
     }
   ],
   vendors: [
