@@ -9,6 +9,7 @@ export const birthdayTemplate = {
   subtitle: 'Milestone birthday celebration',
   type: 'birthday',
   date: '2025-11-02',
+  schedule_anchor: '2025-08-20', // the story's "today"; all dates below are shifted to the real date at runtime
   currency: '$',
   total_budget: 6000,
   expected_guests: 50,
@@ -120,7 +121,7 @@ export const birthdayTemplate = {
       title: '1965 to 2025 Life Milestone Wall',
       description: 'Photo clothesline displaying one notable memory per decade of Dad’s life.',
       author: 'Maya',
-      date_added: 'June 01',
+      date_added: '2025-08-12',
       bg_color: 'idea-yellow',
       estimated_cost: 45,
       converted_task_id: null,

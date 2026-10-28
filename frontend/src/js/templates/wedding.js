@@ -11,6 +11,7 @@ export const weddingTemplate = {
   subtitle: 'Wedding celebration',
   type: 'wedding',
   date: '2025-09-14',
+  schedule_anchor: '2025-06-04', // the story's "today"; all dates below are shifted to the real date at runtime
   currency: '$',
   total_budget: 24000,
   expected_guests: 150,

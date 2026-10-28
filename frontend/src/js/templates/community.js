@@ -9,6 +9,7 @@ export const communityTemplate = {
   subtitle: 'Neighborhood summer festival',
   type: 'community',
   date: '2026-06-20',
+  schedule_anchor: '2026-03-10', // the story's "today"; all dates below are shifted to the real date at runtime
   currency: '$',
   total_budget: 3500,
   expected_guests: 200,
@@ -120,7 +121,7 @@ export const communityTemplate = {
       title: 'Heritage Recipe Exchange Table',
       description: 'Neighbors bring printed family recipes from their cultures to swap.',
       author: 'Neighborhood Committee',
-      date_added: 'May 10',
+      date_added: '2026-03-05',
       bg_color: 'idea-green',
       estimated_cost: 20,
       converted_task_id: null,

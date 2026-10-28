@@ -59,7 +59,7 @@ def list_events(
 ) -> list[dict[str, Any]]:
     """List all events scoped to the authenticated tenant."""
     repo = EventRepository(db, auth.tenant_id)
-    events = repo.list_events()
+    events = [repo.sync_schedule(e, user_id=auth.user_id) for e in repo.list_events()]
     return [_format_event_response(e) for e in events]
 
 
@@ -77,7 +77,7 @@ def get_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event '{event_id}' not found for tenant '{auth.tenant_id}'.",
         )
-    return _format_event_response(event)
+    return _format_event_response(repo.sync_schedule(event, user_id=auth.user_id))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -89,7 +89,7 @@ def create_event(
     """Create a new event within the authenticated tenant."""
     repo = EventRepository(db, auth.tenant_id)
     created = repo.create_event(req.model_dump(), user_id=auth.user_id)
-    return _format_event_response(created)
+    return _format_event_response(repo.sync_schedule(created, user_id=auth.user_id))
 
 
 @router.put("/{event_id}")
@@ -108,7 +108,7 @@ def update_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Event '{event_id}' not found for tenant '{auth.tenant_id}'.",
         )
-    return _format_event_response(updated)
+    return _format_event_response(repo.sync_schedule(updated, user_id=auth.user_id))
 
 
 @router.delete("/{event_id}")

@@ -8,6 +8,8 @@ import { calculateBudgetSummary, formatMoney } from '../domain/budget.js';
 import { calculateTimelineProgress } from '../domain/timeline.js';
 import { evaluateEventRisks } from '../domain/risks.js';
 import { toggleRiskTray } from '../components/risk-tray.js';
+import { parseDate } from '../domain/timeline-dates.js';
+import { defaultEventDate, describeCountdown } from '../domain/event-dates.js';
 import { formatDateSub, capitalize, escapeHtml } from './helpers.js';
 
 export function renderOverview() {
@@ -17,26 +19,25 @@ export function renderOverview() {
   const risks = evaluateEventRisks(event);
   const cur = event.currency || '$';
 
-  // Hero Date Card & Dynamic Eyebrow
-  if (event.date) {
-    const [yStr, mStr, dStr] = event.date.split('-');
-    const d = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, parseInt(dStr, 10));
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    const cardDay = document.getElementById('card-day');
-    const cardMonth = document.getElementById('card-month');
-    const cardYear = document.getElementById('card-year');
-    const eyebrow = document.getElementById('overview-eyebrow');
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+  // Hero Date Card & Dynamic Real-Time Eyebrow (read-only: dates are normalized in the store)
+  const today = new Date();
+  const eventDate = parseDate(event.date) || defaultEventDate(today);
 
-    if (cardDay) cardDay.innerText = d.getDate();
-    if (cardMonth) cardMonth.innerText = months[d.getMonth()] || 'SEP';
-    if (cardYear) cardYear.innerText = `${d.getFullYear()} · ${dayName}`;
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  const cardDay = document.getElementById('card-day');
+  const cardMonth = document.getElementById('card-month');
+  const cardYear = document.getElementById('card-year');
+  const eyebrow = document.getElementById('overview-eyebrow');
+  const eventDayName = eventDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-    if (eyebrow) {
-      const diffDays = Math.round((d.getTime() - new Date().setHours(0, 0, 0, 0)) / 86400000);
-      const countdown = diffDays > 0 ? ` · ${Math.max(1, Math.round(diffDays / 7))} weeks to go` : '';
-      eyebrow.innerHTML = `<span class="live-dot"></span> ${dayName} · ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}${countdown}`;
-    }
+  if (cardDay) cardDay.innerText = eventDate.getDate();
+  if (cardMonth) cardMonth.innerText = months[eventDate.getMonth()] || 'MAR';
+  if (cardYear) cardYear.innerText = `${eventDate.getFullYear()} · ${eventDayName}`;
+
+  if (eyebrow) {
+    const todayDay = today.toLocaleDateString('en-US', { weekday: 'long' });
+    const todayStr = `${today.getDate()} ${today.toLocaleDateString('en-US', { month: 'short' })}`;
+    eyebrow.innerHTML = `<span class="live-dot"></span> ${todayDay} · ${todayStr}${describeCountdown(eventDate, today)}`;
   }
 
   // Hero Copy

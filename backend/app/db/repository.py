@@ -1,9 +1,12 @@
 """Repository layer enforcing strict tenant boundary isolation across database operations."""
 
+import copy
+from datetime import date
 from typing import Any
 
 from sqlalchemy.orm import Session
 
+from ..domain.event_schedule import sync_event_schedule
 from .models import AuditLog, EventModel
 
 
@@ -22,6 +25,32 @@ class EventRepository:
             .order_by(EventModel.created_at.desc())
             .all()
         )
+
+    def sync_schedule(
+        self, event: EventModel, today: date | None = None, user_id: str | None = None
+    ) -> EventModel:
+        """Advance an anchored event's schedule to the current week and persist the change."""
+        view = copy.deepcopy(event.state_json or {})
+        # The anchor lives in state_json, so the state's own date must move with it. Seed it from
+        # the column when absent, then mirror the result back; shifting the column independently
+        # would double-shift whenever a client resends a stale state over an already-live column.
+        if "date" not in view:
+            view["date"] = event.date
+        if not sync_event_schedule(view, today):
+            return event
+
+        event.date = view["date"]
+        event.state_json = view
+        self.log_audit(
+            user_id=user_id,
+            action="schedule_sync",
+            resource_type="event",
+            resource_id=event.id,
+            details={"date": event.date, "schedule_anchor": view.get("schedule_anchor")},
+        )
+        self.db.commit()
+        self.db.refresh(event)
+        return event
 
     def get_event(self, event_id: str) -> EventModel | None:
         """Fetch single event with strict tenant check."""
@@ -83,6 +112,10 @@ class EventRepository:
 
         if "state_json" in updates:
             event.state_json = updates["state_json"]
+        elif (
+            "date" in updates and isinstance(event.state_json, dict) and "date" in event.state_json
+        ):
+            event.state_json = {**event.state_json, "date": updates["date"]}
 
         self.log_audit(
             user_id=user_id,

@@ -4,6 +4,7 @@
  */
 
 import { INITIAL_TEMPLATES } from './templates.js';
+import { normalizeAllEventDates } from './domain/event-dates.js';
 import {
   addExpenseAction,
   addTaskAction,
@@ -19,6 +20,7 @@ const ACTIVE_EVENT_KEY = 'gatherly_active_event_v4';
 export class EventStore {
   constructor() {
     this.events = this.load();
+    if (normalizeAllEventDates(this.events, new Date(), INITIAL_TEMPLATES)) this.save();
     const savedActiveId = localStorage.getItem(ACTIVE_EVENT_KEY);
     this.activeEventId = (savedActiveId && this.events[savedActiveId])
       ? savedActiveId
@@ -84,6 +86,7 @@ export class EventStore {
 
   resetToDefaults() {
     this.events = JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
+    normalizeAllEventDates(this.events, new Date(), INITIAL_TEMPLATES);
     this.activeEventId = Object.keys(this.events)[0];
     try {
       localStorage.removeItem(ACTIVE_EVENT_KEY);

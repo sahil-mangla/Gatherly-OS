@@ -5,7 +5,7 @@
 
 import { store } from '../store.js';
 import { openAddIdeaModal } from '../components/forms.js';
-import { escapeHtml } from './helpers.js';
+import { escapeHtml, formatAdded } from './helpers.js';
 
 export function renderIdeas(showToast) {
   const event = store.getActiveEvent();
@@ -26,7 +26,7 @@ export function renderIdeas(showToast) {
     card.innerHTML = `
       <span class="idea-pin">${pin}</span>
       <p>“${escapeHtml(idea.description || idea.title)}”</p>
-      <small>Added by ${escapeHtml(idea.author || 'You')} · ${idea.date_added || 'Recently'}</small>
+      <small>Added by ${escapeHtml(idea.author || 'You')} · ${escapeHtml(formatAdded(idea.date_added))}</small>
       <div class="idea-action-row">
         ${idea.estimated_cost ? `<small>Est: $${idea.estimated_cost}</small>` : '<small>Cost: Free</small>'}
         ${isConverted 

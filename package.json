@@ -7,7 +7,7 @@
   "scripts": {
     "start": "python backend/run.py",
     "dev": "python backend/run.py",
-    "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js frontend/tests/actions.test.js frontend/tests/e2e-contracts.test.js",
+    "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js frontend/tests/event-dates.test.js frontend/tests/actions.test.js frontend/tests/e2e-contracts.test.js",
     "test:load": "python scripts/load_test.py --requests 200 --concurrency 30 --max-p95 150",
     "test:e2e": "npx playwright test",
     "lint": "ruff check backend",

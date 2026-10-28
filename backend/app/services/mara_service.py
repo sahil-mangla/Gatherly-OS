@@ -6,6 +6,7 @@ Provides structured recommendations, diagnostic explanations, and fallback mode.
 import json
 import urllib.error
 import urllib.request
+from datetime import date
 from typing import Any
 
 from ..config import settings
@@ -120,7 +121,8 @@ def query_mara_copilot(operation: str, prompt: str, context: dict[str, Any]) -> 
             system_instruction = (
                 "You are Mara, an expert celebration and event planning copilot for Gatherly. "
                 "Always return valid JSON conforming to the requested schema. "
-                "Do not wrap output in markdown code blocks."
+                "Do not wrap output in markdown code blocks. "
+                f"Today's date is {date.today().isoformat()}; judge deadlines against it."
             )
             payload = {
                 "system_instruction": {"parts": [{"text": system_instruction}]},
