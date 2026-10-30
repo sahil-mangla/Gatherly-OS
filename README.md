@@ -105,7 +105,6 @@ The load test runs in-process (no network), so it checks handler overhead rather
 - **Parser safety:** the quote parser's number patterns are bounded and anchored; a 20,000-digit input is processed in under 10 ms (it previously blocked the server for about 10 s).
 - **Browser:** strict CSP (no inline scripts), `nosniff`, frame denial, referrer and permissions policies, HSTS in production, escaped output everywhere.
 - **LLM output:** Mara's model output is whitelisted and range-checked server-side before it can become an "Approve & Apply" proposal; the API key is sent in a header, never a URL or log; failed upstream calls are cached for 45 s and concurrent upstream calls are capped.
-- **Known limits:** tokens cannot be revoked before they expire and are kept in `localStorage`; the rate limiter is per process, so it is approximate across serverless instances (and `TRUST_PROXY=true` is only safe behind a proxy that overwrites `X-Forwarded-For`); an already-seeded database keeps its old seeded login until you delete it; dependencies are range-pinned, not locked; the container image was not built in the verification environment (CI builds it).
 
 ## Accessibility
 
@@ -114,12 +113,6 @@ Targets WCAG 2.2 AA: skip link, labelled landmarks, focus-trapped dialogs that r
 ## Observability
 
 Every request gets an `X-Correlation-ID` (client values are sanitised), structured JSON access logs carry it with `trace_id`/`span_id`, and unhandled errors return a JSON 500 with the same ID. OpenTelemetry spans are optional (`OTEL_ENABLED`); there is no OTLP exporter configured out of the box.
-
-## Known issues
-
-- **Risk Radar "Undisclosed Terms" can disagree with the quote parser.** The radar's vendor check is a keyword audit of the vendor's own notes and inclusions. It does not read the structured fees extracted from a pasted quote, so it can flag terms (for example gratuity or overtime) that a saved quote does state. The undisclosed list in the compare view is the more accurate one.
-- **The compare table has no fee amounts.** It shows price, deposit, inclusions and undisclosed terms; fee amounts are shown in the paste-and-extract view.
-- **The server's offline Mara can suggest a reallocation when nothing is over plan.** Its reallocation proposal always moves headroom toward the category furthest over its plan, even if no category is actually over, so a brand-new event with no spending can get a generic "shift budget" suggestion. The in-browser planner does not do this.
 
 ## License
 
