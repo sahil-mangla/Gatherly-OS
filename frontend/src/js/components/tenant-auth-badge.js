@@ -1,9 +1,12 @@
 /**
  * @file tenant-auth-badge.js
- * @description Multi-tenant RBAC indicator and role switcher component.
+ * @description Multi-tenant RBAC indicator and role switcher (a real button in the topbar).
  */
 
 import { api, setAuthToken } from '../api.js';
+
+const ROLES = ['owner', 'planner', 'vendor'];
+const DEFAULT_TENANT = 'Gatherly Studio';
 
 export async function initTenantAuthBadge(showToast) {
   const badge = document.getElementById('enterprise-auth-badge');
@@ -12,34 +15,36 @@ export async function initTenantAuthBadge(showToast) {
   const tenantLabel = document.getElementById('enterprise-tenant-label');
   const roleLabel = document.getElementById('enterprise-role-label');
 
+  function showProfile(tenant, role) {
+    if (tenantLabel) tenantLabel.textContent = tenant;
+    if (roleLabel) roleLabel.textContent = role.toUpperCase();
+  }
+
   async function refreshProfile() {
     try {
       const me = await api.getMe();
-      if (tenantLabel) tenantLabel.innerText = me.tenant_name || 'Gatherly Studio';
-      if (roleLabel) roleLabel.innerText = (me.role || 'owner').toUpperCase();
+      showProfile(me.tenant_name || DEFAULT_TENANT, me.role || 'owner');
     } catch {
-      if (tenantLabel) tenantLabel.innerText = 'Gatherly Studio';
-      if (roleLabel) roleLabel.innerText = 'OWNER';
+      showProfile(DEFAULT_TENANT, 'owner');
     }
   }
 
   badge.addEventListener('click', async () => {
-    const roles = ['owner', 'planner', 'vendor'];
-    const currentRole = (roleLabel?.innerText || 'OWNER').toLowerCase();
-    const nextRole = roles[(roles.indexOf(currentRole) + 1) % roles.length];
+    const currentRole = (roleLabel ? roleLabel.textContent : 'OWNER').trim().toLowerCase();
+    const nextRole = ROLES[(ROLES.indexOf(currentRole) + 1) % ROLES.length];
 
+    badge.setAttribute('aria-busy', 'true');
     try {
       const data = await api.getDemoToken(nextRole);
       setAuthToken(data.access_token);
-      if (roleLabel) roleLabel.innerText = nextRole.toUpperCase();
+      if (roleLabel) roleLabel.textContent = nextRole.toUpperCase();
       if (showToast) {
-        showToast(
-          'RBAC Role Switched',
-          `Active context: ${nextRole.toUpperCase()} (Tenant: ${data.tenant_id})`
-        );
+        showToast('RBAC Role Switched', `Active context: ${nextRole.toUpperCase()} (Tenant: ${data.tenant_id})`);
       }
     } catch (err) {
       console.warn('Could not switch demo token:', err);
+    } finally {
+      badge.removeAttribute('aria-busy');
     }
   });
 

@@ -6,10 +6,18 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   lint-and-test:
     name: Lint & Automated Test Suite
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: test
+      DATABASE_URL: sqlite:///./ci-test.db
+      PBKDF2_ITERATIONS: "1000"
+      RATE_LIMIT_ENABLED: "false"
 
     steps:
       - name: Check out repository
@@ -20,6 +28,7 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: requirements.txt
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -33,16 +42,40 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install fastapi uvicorn pydantic pytest ruff python-dotenv google-genai httpx sqlalchemy pyjwt psycopg2-binary opentelemetry-api opentelemetry-sdk email-validator
+          pip install -r requirements.txt
+          pip install pytest pytest-cov ruff radon bandit pip-audit
 
       - name: Run Ruff Linter & Formatter Check
         run: |
-          ruff check backend
+          ruff check backend scripts api
           ruff format --check backend
 
-      - name: Run Automated Test Suite (Pytest + Node Test + E2E Contracts)
+      - name: Cyclomatic Complexity Gate (max 9)
         run: |
-          npm test
+          ruff check --select C901 --config 'lint.mccabe.max-complexity=9' backend scripts api
+          radon cc -s -n B backend scripts api
+          python scripts/check_complexity.py --max 9
+
+      - name: JavaScript Lint & Complexity Gate (max 9)
+        run: |
+          npm run lint:js
+
+      - name: Static Security Scan (bandit)
+        run: |
+          bandit -r backend -ll
+
+      - name: Dependency Vulnerability Audit (pip-audit, advisory)
+        continue-on-error: true
+        run: |
+          pip-audit -r requirements.txt
+
+      - name: Python Tests with Coverage Gate (>= 85%)
+        run: |
+          python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+
+      - name: JavaScript Unit Tests
+        run: |
+          node --test frontend/tests/*.test.js
 
       - name: Enforce Max 200 Lines of Code Rule
         run: |
@@ -50,7 +83,7 @@ jobs:
 
       - name: Run Asynchronous Load Test & SLA Gate (Sub-150ms p95 & 0% Errors)
         run: |
-          python scripts/load_test.py --requests 200 --concurrency 30 --max-p95 150
+          python scripts/load_test.py --asgi --requests 200 --concurrency 30 --max-p95 150
 
       - name: Run Playwright End-to-End Suite
         run: |

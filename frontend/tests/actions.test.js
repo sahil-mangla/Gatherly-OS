@@ -9,8 +9,6 @@ import assert from 'node:assert';
 import {
   addExpenseAction,
   addTaskAction,
-  addVendorAction,
-  addIdeaAction,
   convertIdeaToTaskAction,
   applyProposalAction
 } from '../src/js/store/actions.js';

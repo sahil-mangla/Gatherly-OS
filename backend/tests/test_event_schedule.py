@@ -3,11 +3,8 @@
 import uuid
 from datetime import date, timedelta
 
-from backend.app.auth.security import create_access_token
-from fastapi.testclient import TestClient
-
+from app.auth.security import create_access_token
 from app.domain.event_schedule import sync_event_schedule
-from app.main import app
 
 TODAY = date(2026, 10, 28)
 
@@ -59,8 +56,7 @@ def test_events_without_anchor_are_never_touched():
     assert ev["date"] == "2020-01-01"
 
 
-def test_api_returns_live_schedule_and_persists_it():
-    client = TestClient(app)
+def test_api_returns_live_schedule_and_persists_it(client):
     token = create_access_token("u-sched", f"tenant-sched-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
     event_id = f"event-sched-{uuid.uuid4().hex[:8]}"
@@ -80,8 +76,7 @@ def test_api_returns_live_schedule_and_persists_it():
     assert fetched["state_json"]["tasks"] == created["state_json"]["tasks"]
 
 
-def test_api_stale_state_put_does_not_double_shift_date():
-    client = TestClient(app)
+def test_api_stale_state_put_does_not_double_shift_date(client):
     token = create_access_token("u-stale", f"tenant-stale-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
     event_id = f"event-stale-{uuid.uuid4().hex[:8]}"
@@ -99,8 +94,7 @@ def test_api_stale_state_put_does_not_double_shift_date():
     assert updated["state_json"]["date"] == created["date"]
 
 
-def test_api_anchored_event_without_state_date_stays_consistent():
-    client = TestClient(app)
+def test_api_anchored_event_without_state_date_stays_consistent(client):
     token = create_access_token("u-col", f"tenant-col-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
     event_id = f"event-col-{uuid.uuid4().hex[:8]}"

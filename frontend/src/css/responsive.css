@@ -1,0 +1,223 @@
+/**
+ * Gatherly responsive overrides. Kept last so breakpoints win the cascade.
+ */
+
+@media (max-width: 950px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .main-content {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+  }
+
+  .stats-grid,
+  .vendor-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .category-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .copilot-drawer {
+    width: 100vw;
+  }
+
+  .whatif-controls-grid,
+  .whatif-stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 15px;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .primary-nav {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+  }
+
+  .nav-item {
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    height: auto;
+    min-height: 48px;
+    padding: 6px 2px;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .nav-icon {
+    font-size: 1.0625rem;
+  }
+
+  .nav-count {
+    display: none;
+  }
+
+  .workspace-switcher,
+  .sidebar-divider,
+  .side-label,
+  .event-list,
+  .sidebar-bottom {
+    display: none;
+  }
+
+  .brand {
+    padding: 4px 7px 14px;
+  }
+
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .topbar {
+    padding: 8px 18px;
+  }
+
+  .page-content {
+    padding: 35px 18px 55px;
+  }
+
+  .hero-row {
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .date-card {
+    width: 100px;
+    height: 120px;
+    padding: 13px;
+  }
+
+  .date-card strong {
+    font-size: 2.6875rem;
+    margin-top: 10px;
+  }
+
+  .hero-row h1,
+  .view-header h1 {
+    font-size: clamp(2rem, 11vw, 2.5625rem);
+    letter-spacing: -1.8px;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-sub {
+    font-size: 0.8125rem;
+  }
+
+  .assistant-card {
+    margin: 40px 0 34px;
+    padding: 18px;
+    align-items: flex-start;
+  }
+
+  .assistant-copy p {
+    font-size: 0.875rem;
+  }
+
+  .assistant-arrow {
+    align-self: flex-end;
+  }
+
+  .stats-grid,
+  .category-grid,
+  .vendor-summary,
+  .vendor-grid,
+  .idea-board,
+  .lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .view-header {
+    display: block;
+    margin-bottom: 30px;
+  }
+
+  .view-header .primary-btn {
+    margin-top: 20px;
+  }
+
+  .header-actions .primary-btn {
+    margin-top: 0;
+  }
+
+  .expense-table th,
+  .expense-table td {
+    padding-right: 6px;
+    font-size: 0.75rem;
+  }
+
+  .expense-table .pill {
+    padding: 3px 6px;
+  }
+
+  .timeline-shell {
+    padding: 18px;
+  }
+
+  .timeline {
+    padding: 20px 5px;
+  }
+
+  .timeline-event {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .panel {
+    padding: 19px;
+  }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  .modal-backdrop {
+    padding: 10px;
+  }
+
+  .modal-header,
+  .modal-body {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .modal-tabs {
+    flex-wrap: wrap;
+    padding: 0 12px;
+  }
+
+  .form-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-tray {
+    right: 5vw;
+    left: 5vw;
+    width: auto;
+  }
+}

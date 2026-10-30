@@ -3,16 +3,8 @@
 import json
 import logging
 
-import pytest
-from backend.app.main import app
-from backend.app.observability.logging import JsonLogFormatter
-from backend.app.observability.telemetry import get_tracer, trace_span
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
+from app.observability.logging import JsonLogFormatter
+from app.observability.telemetry import get_tracer, trace_span
 
 
 def test_correlation_id_middleware(client):

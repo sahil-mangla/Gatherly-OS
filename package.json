@@ -7,10 +7,12 @@
   "scripts": {
     "start": "python backend/run.py",
     "dev": "python backend/run.py",
-    "test": "python -m pytest backend/tests && node --test frontend/tests/domain.test.js frontend/tests/event-dates.test.js frontend/tests/actions.test.js frontend/tests/e2e-contracts.test.js",
+    "test": "python -m pytest backend/tests && node --test frontend/tests/*.test.js",
+    "test:coverage": "node --test --experimental-test-coverage frontend/tests/*.test.js",
     "test:load": "python scripts/load_test.py --requests 200 --concurrency 30 --max-p95 150",
     "test:e2e": "npx playwright test",
-    "lint": "ruff check backend",
+    "lint": "ruff check backend scripts api",
+    "lint:js": "eslint --no-error-on-unmatched-pattern frontend tests scripts",
     "format": "ruff format backend",
     "check:lines": "python scripts/check_line_limits.py",
     "docker:build": "docker build -t gatherly .",
@@ -30,6 +32,9 @@
   "author": "Gatherly Team",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.42.0"
+    "@playwright/test": "^1.42.0",
+    "axe-core": "^4.10.0",
+    "eslint": "^8.57.1",
+    "jsdom": "^25.0.1"
   }
 }

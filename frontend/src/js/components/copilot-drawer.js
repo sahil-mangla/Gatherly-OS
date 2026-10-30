@@ -8,63 +8,64 @@ import { askMara } from '../ai/mara-client.js';
 import { calculateBudgetSummary } from '../domain/budget.js';
 import { evaluateEventRisks } from '../domain/risks.js';
 import { escapeHtml } from '../views/helpers.js';
+import { replyHtml, wireProposals, providerLabel } from './copilot-reply.js';
+import { openLayer, closeLayer } from './dialog-focus.js';
 
 let drawerElement = null;
+let backdropElement = null;
+
+const DRAWER_HTML = `
+  <aside class="copilot-drawer" id="copilot-drawer" role="dialog" aria-modal="true" aria-labelledby="copilot-title" aria-describedby="copilot-desc" tabindex="-1" inert>
+    <div class="drawer-header">
+      <div class="drawer-title">
+        <div class="assistant-orb mini" aria-hidden="true">✦</div>
+        <div>
+          <h2 id="copilot-title">Mara</h2>
+          <span class="drawer-status"><span class="status-dot" aria-hidden="true"></span> <span id="copilot-status">Ready to advise</span></span>
+        </div>
+      </div>
+      <button type="button" class="drawer-close-btn" id="copilot-close" aria-label="Close assistant"><span aria-hidden="true">✕</span></button>
+    </div>
+    <p class="sr-only" id="copilot-desc">Ask Mara about your budget, timeline and vendors. Proposals only change your plan after you approve them.</p>
+
+    <div class="drawer-quick-prompts" role="group" aria-label="Suggested questions">
+      <button type="button" class="chip-btn" data-op="cost_saving_proposals" data-prompt="Smart ways to save"><span aria-hidden="true">💰</span> Smart ways to save</button>
+      <button type="button" class="chip-btn" data-op="prioritize_tasks" data-prompt="What to do this week"><span aria-hidden="true">⚡</span> What to do this week</button>
+      <button type="button" class="chip-btn" data-op="risk_explanation" data-prompt="Explain active risks"><span aria-hidden="true">🛡️</span> Explain active risks</button>
+    </div>
+
+    <div class="drawer-messages" id="copilot-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation with Mara" tabindex="0">
+      <div class="msg assistant-msg">
+        <p>Hello Maya! I'm observing your event state. What would you like to explore or optimize today?</p>
+      </div>
+    </div>
+
+    <form class="drawer-input-bar" id="copilot-form">
+      <label class="sr-only" for="copilot-input">Ask Mara</label>
+      <input type="text" id="copilot-input" name="message" placeholder="Ask Mara or propose a change..." autocomplete="off" />
+      <button type="submit" id="copilot-submit" aria-label="Send message"><span aria-hidden="true">↑</span></button>
+    </form>
+  </aside>
+  <div class="drawer-backdrop" id="copilot-backdrop"></div>
+`;
 
 export function initCopilotDrawer() {
   if (drawerElement) return;
 
-  const html = `
-    <aside class="copilot-drawer" id="copilot-drawer" role="dialog" aria-modal="true" aria-label="Mara AI Planning Copilot" aria-hidden="true">
-      <div class="drawer-header">
-        <div class="drawer-title">
-          <div class="assistant-orb mini">✦</div>
-          <div>
-            <h3>Mara</h3>
-            <span class="drawer-status"><span class="status-dot"></span> Ready to advise</span>
-          </div>
-        </div>
-        <button class="drawer-close-btn" id="copilot-close" aria-label="Close assistant">✕</button>
-      </div>
-
-      <div class="drawer-quick-prompts">
-        <button class="chip-btn" data-op="cost_saving_proposals">💰 Smart ways to save</button>
-        <button class="chip-btn" data-op="prioritize_tasks">⚡ What to do this week</button>
-        <button class="chip-btn" data-op="risk_explanation">🛡️ Explain active risks</button>
-      </div>
-
-      <div class="drawer-messages" id="copilot-messages">
-        <div class="msg assistant-msg">
-          <p>Hello Maya! I'm observing your event state. What would you like to explore or optimize today?</p>
-        </div>
-      </div>
-
-      <form class="drawer-input-bar" id="copilot-form">
-        <input type="text" id="copilot-input" placeholder="Ask Mara or propose a change..." aria-label="Ask Mara" autocomplete="off" />
-        <button type="submit" id="copilot-submit" aria-label="Send">↑</button>
-      </form>
-    </aside>
-    <div class="drawer-backdrop" id="copilot-backdrop"></div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', html);
+  document.body.insertAdjacentHTML('beforeend', DRAWER_HTML);
   drawerElement = document.getElementById('copilot-drawer');
+  backdropElement = document.getElementById('copilot-backdrop');
 
-  // Event handlers
   document.getElementById('copilot-close').addEventListener('click', closeCopilot);
-  document.getElementById('copilot-backdrop').addEventListener('click', closeCopilot);
+  backdropElement.addEventListener('click', closeCopilot);
 
-  document.querySelectorAll('.chip-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const op = btn.dataset.op;
-      const text = btn.innerText;
-      handleUserAction(op, text);
-    });
+  drawerElement.querySelector('.drawer-quick-prompts').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip-btn');
+    if (chip) handleUserAction(chip.dataset.op, chip.dataset.prompt);
   });
 
-  const form = document.getElementById('copilot-form');
   const input = document.getElementById('copilot-input');
-  form.addEventListener('submit', (e) => {
+  document.getElementById('copilot-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const prompt = input.value.trim();
     if (!prompt) return;
@@ -75,115 +76,59 @@ export function initCopilotDrawer() {
 
 export function openCopilot(prompt = '', operation = null) {
   if (!drawerElement) initCopilotDrawer();
+  drawerElement.inert = false;
   drawerElement.classList.add('open');
-  drawerElement.setAttribute('aria-hidden', 'false');
-  document.getElementById('copilot-backdrop').classList.add('open');
+  backdropElement.classList.add('open');
+  openLayer({ container: drawerElement, roots: [drawerElement, backdropElement], close: closeCopilot, initialFocus: '#copilot-input' });
 
-  if (prompt) {
-    handleUserAction(operation || 'general_advice', prompt);
-  }
+  if (prompt) handleUserAction(operation || 'general_advice', prompt);
 }
 
 export function closeCopilot() {
   if (!drawerElement) return;
   drawerElement.classList.remove('open');
-  drawerElement.setAttribute('aria-hidden', 'true');
-  document.getElementById('copilot-backdrop').classList.remove('open');
+  backdropElement.classList.remove('open');
+  drawerElement.inert = true;
+  closeLayer(drawerElement);
+}
+
+function appendMessage(log, className, html) {
+  const el = document.createElement('div');
+  el.className = `msg ${className}`;
+  el.innerHTML = html;
+  log.appendChild(el);
+  return el;
+}
+
+async function fetchResponse(operation, userText) {
+  const event = store.getActiveEvent();
+  const context = {
+    event: { id: event.id, name: event.name, expected_guests: event.expected_guests },
+    budget: calculateBudgetSummary(event),
+    risks: evaluateEventRisks(event).risks
+  };
+  try {
+    return await askMara(operation, userText, context);
+  } catch (err) {
+    console.error('Mara copilot error:', err);
+    return { response: "I encountered a minor hitch retrieving advice. Here's my quick recommendation: check your critical path milestones." };
+  }
 }
 
 async function handleUserAction(operation, userText) {
-  const messagesContainer = document.getElementById('copilot-messages');
+  const log = document.getElementById('copilot-messages');
+  appendMessage(log, 'user-msg', `<p>${escapeHtml(userText)}</p>`);
+  const thinking = appendMessage(log, 'assistant-msg thinking', '<p><em>Mara is analyzing your event data...</em></p>');
+  thinking.setAttribute('aria-busy', 'true');
+  log.setAttribute('aria-busy', 'true');
+  log.scrollTop = log.scrollHeight;
 
-  // Append user message
-  const userMsgEl = document.createElement('div');
-  userMsgEl.className = 'msg user-msg';
-  userMsgEl.innerHTML = `<p>${escapeHtml(userText)}</p>`;
-  messagesContainer.appendChild(userMsgEl);
+  const response = await fetchResponse(operation, userText);
 
-  // Append thinking bubble
-  const thinkingEl = document.createElement('div');
-  thinkingEl.className = 'msg assistant-msg thinking';
-  thinkingEl.innerHTML = `<p><em>Mara is analyzing your event data...</em></p>`;
-  messagesContainer.appendChild(thinkingEl);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-  // Prepare context
-  const event = store.getActiveEvent();
-  const budget = calculateBudgetSummary(event);
-  const risks = evaluateEventRisks(event);
-  const context = { event: { id: event.id, name: event.name, expected_guests: event.expected_guests }, budget, risks: risks.risks };
-
-  // Call client safely with guaranteed thinking indicator cleanup
-  let response;
-  try {
-    response = await askMara(operation, userText, context);
-  } catch (err) {
-    console.error('Mara copilot error:', err);
-    response = { response: "I encountered a minor hitch retrieving advice. Here's my quick recommendation: check your critical path milestones." };
-  } finally {
-    thinkingEl.remove();
-  }
-
-  const replyEl = document.createElement('div');
-  replyEl.className = 'msg assistant-msg';
-
-  if (response.proposals && response.proposals.length > 0) {
-    let proposalsHtml = `<p><b>${escapeHtml(response.summary || 'I recommend these options:')}</b></p>`;
-    proposalsHtml += `<div class="proposal-stack">`;
-
-    response.proposals.forEach((prop, idx) => {
-      proposalsHtml += `
-        <div class="proposal-card" id="prop-card-${idx}">
-          <div class="prop-badge">Recommendation</div>
-          <h4>${escapeHtml(prop.title)}</h4>
-          <p class="prop-desc">${escapeHtml(prop.description)}</p>
-          <div class="prop-consequence"><b>Impact:</b> ${escapeHtml(prop.consequence || 'Preserves budget buffer.')}</div>
-          <div class="prop-actions">
-            <button class="apply-prop-btn" data-prop='${JSON.stringify(prop).replace(/'/g, "&#39;")}'>Approve & Apply</button>
-            <button class="dismiss-prop-btn">Dismiss</button>
-          </div>
-        </div>
-      `;
-    });
-    proposalsHtml += `</div>`;
-    replyEl.innerHTML = proposalsHtml;
-  } else if (response.headline) {
-    replyEl.innerHTML = `
-      <p><b>${escapeHtml(response.headline)}</b></p>
-      <p>${escapeHtml(response.advice || '')}</p>
-    `;
-  } else if (response.cause) {
-    replyEl.innerHTML = `
-      <p><b>Diagnosis:</b> ${escapeHtml(response.cause)}</p>
-      <p><b>Consequence:</b> ${escapeHtml(response.consequence)}</p>
-      <p><b>Recommended Move:</b> ${escapeHtml(response.suggested_action)}</p>
-    `;
-  } else {
-    replyEl.innerHTML = `<p>${escapeHtml(response.response || response.summary || 'I updated my assessment of your event.')}</p>`;
-  }
-
-  messagesContainer.appendChild(replyEl);
-
-  // Wire up proposal approval buttons
-  replyEl.querySelectorAll('.apply-prop-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      try {
-        const propData = JSON.parse(btn.dataset.prop);
-        const result = store.applyProposal(propData);
-        const card = btn.closest('.proposal-card');
-        card.innerHTML = `<div class="prop-success">✓ <b>Approved & Applied!</b><br><small>${escapeHtml(result.message)}</small></div>`;
-      } catch (err) {
-        alert(`Failed to apply proposal: ${err.message}`);
-      }
-    });
-  });
-
-  replyEl.querySelectorAll('.dismiss-prop-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.closest('.proposal-card').style.opacity = '0.4';
-      btn.closest('.proposal-card').style.pointerEvents = 'none';
-    });
-  });
-
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  thinking.remove();
+  const reply = appendMessage(log, 'assistant-msg', replyHtml(response));
+  wireProposals(reply, response.proposals || []);
+  document.getElementById('copilot-status').textContent = `Ready to advise · ${providerLabel(response.provider)}`;
+  log.removeAttribute('aria-busy');
+  log.scrollTop = log.scrollHeight;
 }

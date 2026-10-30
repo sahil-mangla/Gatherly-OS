@@ -29,22 +29,25 @@ def risk_event():
     }
 
 
-def test_risk_radar_rule_evaluations(risk_event):
-    res = evaluate_event_risks(risk_event, "2025-06-01")
+@pytest.fixture
+def radar(risk_event):
+    return evaluate_event_risks(risk_event, "2025-06-01")
 
-    assert res["critical_count"] >= 1
-    # Check capacity breach
-    cap_risk = next(r for r in res["risks"] if r["type"] == "capacity_breach")
+
+def _risk_of_type(radar, risk_type):
+    return next(r for r in radar["risks"] if r["type"] == risk_type)
+
+
+def test_risk_radar_flags_capacity_breach_as_critical(radar):
+    assert radar["critical_count"] >= 1
+    cap_risk = _risk_of_type(radar, "capacity_breach")
     assert cap_risk["severity"] == "critical"
     assert "exceeds confirmed venue capacity" in cap_risk["evidence"]
 
-    # Check category overrun
-    cat_risk = next(r for r in res["risks"] if r["type"] == "category_overrun")
-    assert cat_risk["severity"] == "warning"
 
-    # Check overdue milestone
-    mile_risk = next(r for r in res["risks"] if r["type"] == "milestone_overdue")
-    assert mile_risk["severity"] == "warning"
+@pytest.mark.parametrize("risk_type", ["category_overrun", "milestone_overdue"])
+def test_risk_radar_flags_warnings(radar, risk_type):
+    assert _risk_of_type(radar, risk_type)["severity"] == "warning"
 
 
 def test_dismissed_risk_filter(risk_event):

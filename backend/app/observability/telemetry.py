@@ -1,10 +1,13 @@
 """OpenTelemetry distributed tracing setup and custom span instrumentation helpers."""
 
+import logging
 from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
 from ..config import settings
+
+_log = logging.getLogger("gatherly.telemetry")
 
 try:
     from opentelemetry import trace
@@ -13,7 +16,7 @@ try:
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
     HAS_OPENTELEMETRY = True
-except ImportError:
+except ImportError:  # pragma: no cover - only when the optional OpenTelemetry SDK is absent
     HAS_OPENTELEMETRY = False
     trace = None
 
@@ -29,12 +32,6 @@ class _NoOpSpan:
 
     def get_span_context(self) -> None:
         return None
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return False
 
 
 class _NoOpTracer:
@@ -71,7 +68,8 @@ def init_telemetry() -> Any:
             provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         trace.set_tracer_provider(provider)
         _tracer = trace.get_tracer(settings.otel_service_name, settings.app_version)
-    except Exception:
+    except (ValueError, TypeError, RuntimeError, AttributeError) as exc:
+        _log.warning("OpenTelemetry init failed (%s); tracing disabled.", type(exc).__name__)
         _tracer = _NoOpTracer()
     return _tracer
 
@@ -96,17 +94,20 @@ def trace_span(name: str, attributes: dict[str, Any] | None = None) -> Generator
         yield span
 
 
+def _hex_or_none(value: int | None, width: int) -> str | None:
+    return format(value, f"0{width}x") if value else None
+
+
 def get_current_trace_context() -> tuple[str | None, str | None]:
     """Retrieve active OpenTelemetry trace_id and span_id as hex strings."""
     if not HAS_OPENTELEMETRY or trace is None:
         return None, None
     try:
         span = trace.get_current_span()
-        if span and span.is_recording():
-            ctx = span.get_span_context()
-            trace_id = format(ctx.trace_id, "032x") if ctx and ctx.trace_id else None
-            span_id = format(ctx.span_id, "016x") if ctx and ctx.span_id else None
-            return trace_id, span_id
-    except Exception:
-        pass
-    return None, None
+        ctx = span.get_span_context() if span and span.is_recording() else None
+    except (AttributeError, TypeError, RuntimeError) as exc:
+        _log.debug("Trace context unavailable: %s", type(exc).__name__)
+        return None, None
+    if not ctx:
+        return None, None
+    return _hex_or_none(ctx.trace_id, 32), _hex_or_none(ctx.span_id, 16)

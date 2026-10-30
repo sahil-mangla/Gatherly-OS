@@ -11,31 +11,26 @@ export const TASK_STATUSES = ['todo', 'in_progress', 'done'];
 
 export { parseDate, evaluateReschedule };
 
+const isBlank = (value) => !value || typeof value !== 'string' || !value.trim();
+
+function enumError(label, value, allowed) {
+  if (!value || allowed.includes(value)) return [];
+  return [`Invalid ${label} '${value}'. Allowed: ${allowed.join(', ')}`];
+}
+
 export function validateTask(task) {
-  const errors = [];
   if (!task || typeof task !== 'object') {
     return { valid: false, errors: ['Task must be an object.'] };
   }
 
-  const title = task.title;
-  if (!title || typeof title !== 'string' || !title.trim()) {
-    errors.push('Task title is required.');
-  }
-
-  const dueDate = task.due_date;
-  if (!dueDate || !parseDate(String(dueDate))) {
-    errors.push('Valid due_date in YYYY-MM-DD format is required.');
-  }
-
-  const prio = task.priority;
-  if (prio && !TASK_PRIORITIES.includes(prio)) {
-    errors.push(`Invalid priority '${prio}'. Allowed: ${TASK_PRIORITIES.join(', ')}`);
-  }
-
-  const status = task.status;
-  if (status && !TASK_STATUSES.includes(status)) {
-    errors.push(`Invalid status '${status}'. Allowed: ${TASK_STATUSES.join(', ')}`);
-  }
+  const errors = [
+    ...(isBlank(task.title) ? ['Task title is required.'] : []),
+    ...(!task.due_date || !parseDate(String(task.due_date))
+      ? ['Valid due_date in YYYY-MM-DD format is required.']
+      : []),
+    ...enumError('priority', task.priority, TASK_PRIORITIES),
+    ...enumError('status', task.status, TASK_STATUSES)
+  ];
 
   return { valid: errors.length === 0, errors };
 }
@@ -82,52 +77,46 @@ export function checkCircularDependencies(tasks) {
   return [false, []];
 }
 
-export function calculateTimelineProgress(tasks = [], refDateStr = null) {
-  const refDate = refDateStr ? parseDate(refDateStr) || new Date() : new Date();
+function resolveRefDate(refDateStr) {
+  const refDate = (refDateStr && parseDate(refDateStr)) || new Date();
   refDate.setHours(0, 0, 0, 0);
+  return refDate;
+}
 
-  const taskList = Array.isArray(tasks) ? tasks : [];
-  const total = taskList.length;
-  let completed = 0;
-  let inProgress = 0;
-  let todo = 0;
-  const overdueTasks = [];
-  const upcomingTasks = [];
-
+/** Counts task statuses and buckets unfinished dated tasks into overdue / upcoming. */
+function tallyTasks(taskList, refDate) {
+  const tally = { completed: 0, inProgress: 0, todo: 0, overdue: [], upcoming: [] };
   for (const t of taskList) {
     if (!t || typeof t !== 'object') continue;
     const status = t.status || 'todo';
     if (status === 'done') {
-      completed++;
-    } else {
-      if (status === 'in_progress') {
-        inProgress++;
-      } else {
-        todo++;
-      }
-
-      const due = parseDate(t.due_date);
-      if (due) {
-        if (due < refDate) {
-          overdueTasks.push(t);
-        } else {
-          upcomingTasks.push(t);
-        }
-      }
+      tally.completed++;
+      continue;
     }
-  }
+    if (status === 'in_progress') tally.inProgress++;
+    else tally.todo++;
 
-  upcomingTasks.sort((a, b) => String(a.due_date || '').localeCompare(String(b.due_date || '')));
-  const percentComplete = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const due = parseDate(t.due_date);
+    if (due) (due < refDate ? tally.overdue : tally.upcoming).push(t);
+  }
+  return tally;
+}
+
+export function calculateTimelineProgress(tasks = [], refDateStr = null) {
+  const taskList = Array.isArray(tasks) ? tasks : [];
+  const total = taskList.length;
+  const tally = tallyTasks(taskList, resolveRefDate(refDateStr));
+
+  tally.upcoming.sort((a, b) => String(a.due_date || '').localeCompare(String(b.due_date || '')));
 
   return {
     total,
-    completed,
-    in_progress: inProgress,
-    todo,
-    percent_complete: percentComplete,
-    overdue_tasks: overdueTasks,
-    next_task: upcomingTasks[0] || null,
-    upcoming_tasks: upcomingTasks
+    completed: tally.completed,
+    in_progress: tally.inProgress,
+    todo: tally.todo,
+    percent_complete: total > 0 ? Math.round((tally.completed / total) * 100) : 0,
+    overdue_tasks: tally.overdue,
+    next_task: tally.upcoming[0] || null,
+    upcoming_tasks: tally.upcoming
   };
 }

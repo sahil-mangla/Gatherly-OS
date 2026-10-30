@@ -1,9 +1,12 @@
 /**
  * @file vendors.js
- * @description Vendor quote normalization, fee completeness audit, and raw seed parsing for Gatherly client.
+ * @description Vendor quote normalization, fee completeness audit, and comparison for Gatherly client.
  */
 
 import { safeNonNegativeNumber } from './budget.js';
+import { RISK_POINTS_PER_MISSING_TERM } from './constants.js';
+
+export { extractQuoteFromRawText } from './vendors-extract.js';
 
 export const ESSENTIAL_QUOTE_FIELDS = [
   { key: 'setup_cleanup', label: 'Setup & post-event cleanup' },
@@ -12,56 +15,57 @@ export const ESSENTIAL_QUOTE_FIELDS = [
   { key: 'cancellation_terms', label: 'Cancellation refund policy' }
 ];
 
+/** Disclosure checks: a message is reported when none of its keywords appear in the quote text. */
+const DISCLOSURE_CHECKS = [
+  { keywords: ['clean', 'teardown', 'breakdown'], message: 'Post-event cleanup and teardown fees' },
+  { keywords: ['staff', 'server', 'labor', 'crew'], message: 'Service staff staffing & gratuity terms' },
+  { keywords: ['overtime', 'extra hour', 'curfew'], message: 'Overtime hourly rate and curfew policy' },
+  { keywords: ['refund', 'cancellation', 'deposit milestone'], message: 'Cancellation milestones & deposit refund clause' }
+];
+
+const joinLower = (value) => (Array.isArray(value) ? value.join(' ') : '').toLowerCase();
+
+/** First value that is neither null nor undefined (mirrors a `??` chain). */
+export const firstDefined = (...values) => values.find(v => v !== undefined && v !== null);
+/** First truthy value (mirrors a `||` chain). */
+export const firstTruthy = (...values) => values.find(Boolean);
+
 export function auditQuoteCompleteness(quote = {}) {
-  const missing = [];
-  const inclusions = (Array.isArray(quote.inclusions) ? quote.inclusions.join(' ') : '').toLowerCase();
-  const notes = String(quote.notes || '').toLowerCase();
-  const summary = String(quote.summary || '').toLowerCase();
-  const missingFields = (Array.isArray(quote.missing_fields) ? quote.missing_fields.join(' ') : '').toLowerCase();
-  const combined = `${inclusions} ${notes} ${summary} ${missingFields}`;
+  const combined = [
+    joinLower(quote.inclusions),
+    String(quote.notes || '').toLowerCase(),
+    String(quote.summary || '').toLowerCase(),
+    joinLower(quote.missing_fields)
+  ].join(' ');
 
-  if (!['clean', 'teardown', 'breakdown'].some(k => combined.includes(k))) {
-    missing.push('Post-event cleanup and teardown fees');
-  }
-
-  if (!['staff', 'server', 'labor', 'crew'].some(k => combined.includes(k))) {
-    missing.push('Service staff staffing & gratuity terms');
-  }
-
-  if (!['overtime', 'extra hour', 'curfew'].some(k => combined.includes(k))) {
-    missing.push('Overtime hourly rate and curfew policy');
-  }
-
-  if (!['refund', 'cancellation', 'deposit milestone'].some(k => combined.includes(k))) {
-    missing.push('Cancellation milestones & deposit refund clause');
-  }
+  const missing = DISCLOSURE_CHECKS
+    .filter(check => !check.keywords.some(k => combined.includes(k)))
+    .map(check => check.message);
 
   return { isComplete: missing.length === 0, missing };
 }
 
 export function normalizeQuote(rawQuote = {}) {
   const basePrice = safeNonNegativeNumber(
-    rawQuote.price ?? rawQuote.quoted_amount ?? rawQuote.quoted_base_amount ?? 0
+    firstDefined(rawQuote.price, rawQuote.quoted_amount, rawQuote.quoted_base_amount, 0)
   );
   const deposit = safeNonNegativeNumber(
-    rawQuote.deposit ?? rawQuote.deposit_paid ?? rawQuote.deposit_amount ?? 0
+    firstDefined(rawQuote.deposit, rawQuote.deposit_paid, rawQuote.deposit_amount, 0)
   );
   const { isComplete, missing } = auditQuoteCompleteness(rawQuote);
 
-  const depositPercent = basePrice > 0 ? Math.round((deposit / basePrice) * 100) : 0;
-
   return {
-    id: rawQuote.id || rawQuote.quote_id || 'quote-1',
-    name: rawQuote.name || rawQuote.vendor_name || rawQuote.tier_name || 'Vendor Quote',
-    category: rawQuote.category || rawQuote.service_type || 'General',
+    id: firstTruthy(rawQuote.id, rawQuote.quote_id, 'quote-1'),
+    name: firstTruthy(rawQuote.name, rawQuote.vendor_name, rawQuote.tier_name, 'Vendor Quote'),
+    category: firstTruthy(rawQuote.category, rawQuote.service_type, 'General'),
     base_price: basePrice,
     deposit_amount: deposit,
-    deposit_percent: depositPercent,
+    deposit_percent: basePrice > 0 ? Math.round((deposit / basePrice) * 100) : 0,
     inclusions: Array.isArray(rawQuote.inclusions) ? rawQuote.inclusions : [],
     exclusions: Array.isArray(rawQuote.exclusions) ? rawQuote.exclusions : [],
     missing_disclosures: missing,
     is_fully_disclosed: isComplete,
-    estimated_hidden_risk_score: missing.length * 15
+    estimated_hidden_risk_score: missing.length * RISK_POINTS_PER_MISSING_TERM
   };
 }
 
@@ -92,68 +96,27 @@ export function compareQuotes(quotes = []) {
   };
 }
 
-export function generateFollowUpQuestions(quote = {}) {
-  const { missing } = auditQuoteCompleteness(quote);
-  const questions = [];
+/** Follow-up question per missing-term message; matched by a case-insensitive fragment. */
+const FOLLOW_UP_QUESTIONS = [
+  ['cleanup', 'Does the quoted fee include full post-event cleanup and waste removal, or is there an auxiliary teardown surcharge?'],
+  ['staff', 'How many service staff members are included on-site during the contracted hours, and what is the gratuity policy?'],
+  ['overtime', 'What is the billing rate if speeches or dancing extend 30 to 60 minutes past the scheduled timeline?'],
+  ['cancellation', 'What are the refund milestones if an unexpected postponement or date change occurs?']
+];
 
-  for (const item of missing) {
-    if (item.includes('cleanup')) {
-      questions.push('Does the quoted fee include full post-event cleanup and waste removal, or is there an auxiliary teardown surcharge?');
-    } else if (item.includes('staff')) {
-      questions.push('How many service staff members are included on-site during the contracted hours, and what is the gratuity policy?');
-    } else if (item.includes('Overtime') || item.includes('overtime')) {
-      questions.push('What is the billing rate if speeches or dancing extend 30 to 60 minutes past the scheduled timeline?');
-    } else if (item.includes('Cancellation') || item.includes('cancellation')) {
-      questions.push('What are the refund milestones if an unexpected postponement or date change occurs?');
-    }
-  }
+const GENERIC_FOLLOW_UPS = [
+  'Could you provide the certificate of vendor insurance for venue approval?',
+  'What is your delivery and electrical hookup arrival window?'
+];
 
-  if (questions.length === 0) {
-    questions.push('Could you provide the certificate of vendor insurance for venue approval?');
-    questions.push('What is your delivery and electrical hookup arrival window?');
-  }
-
-  return questions;
+function questionFor(item) {
+  const lower = item.toLowerCase();
+  const hit = FOLLOW_UP_QUESTIONS.find(([fragment]) => lower.includes(fragment));
+  return hit ? hit[1] : null;
 }
 
-export function extractQuoteFromRawText(text = '') {
-  const priceMatch = text.match(/\$?([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{2})?)/);
-  const extractedAmount = priceMatch ? parseFloat(priceMatch[1].replace(/,/g, '')) : 2400.0;
-
-  const hasStaff = /staff|server|labor|crew/i.test(text);
-  const hasCleanup = /clean|setup|breakdown|teardown/i.test(text);
-  const hasOvertime = /overtime|per\s*hour/i.test(text);
-  const hasDeposit = /deposit|retainer|down\s*payment/i.test(text);
-
-  const missing = [];
-  if (!hasStaff) missing.push('Service staff & gratuity policy');
-  if (!hasCleanup) missing.push('Post-event cleanup & teardown fees');
-  if (!hasOvertime) missing.push('Overtime hourly billing rate');
-  if (!hasDeposit) missing.push('Deposit milestones and cancellation refund terms');
-
-  const vendorNameMatch = text.match(/(?:studio|catering|florals|bakery|photo|bloom|crumb|society|sol)[\w\s]*/i);
-  const vendorName = vendorNameMatch ? vendorNameMatch[0].trim() : 'Extracted Vendor';
-
-  let serviceType = 'decor';
-  if (/photo|shoot|image/i.test(text)) serviceType = 'photography';
-  else if (/cater|food|menu|drink/i.test(text)) serviceType = 'catering';
-
-  return {
-    vendor_name: vendorName,
-    service_type: serviceType,
-    quoted_base_amount: extractedAmount,
-    deposit_amount: Math.round(extractedAmount * 0.3),
-    inclusions: [
-      'Core service delivery as specified in proposal',
-      'Standard equipment package'
-    ],
-    exclusions: missing,
-    missing_fields: missing,
-    confidence_score: 0.92,
-    follow_up_questions: [
-      `Could you clarify if setup and post-event teardown are included in the $${extractedAmount.toLocaleString()} quote?`,
-      'What is the hourly overtime rate if the schedule extends past contracted hours?',
-      'What is the exact payment schedule and cancellation refund timeline?'
-    ]
-  };
+export function generateFollowUpQuestions(quote = {}) {
+  const { missing } = auditQuoteCompleteness(quote);
+  const questions = missing.map(questionFor).filter(Boolean);
+  return questions.length > 0 ? questions : [...GENERIC_FOLLOW_UPS];
 }

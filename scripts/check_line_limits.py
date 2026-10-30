@@ -7,6 +7,7 @@ import sys
 MAX_LINES = 200
 TARGET_DIRS = ["backend", "frontend", "scripts", "tests", "api"]
 EXTENSIONS = (".py", ".js")
+SKIP_DIRS = ("node_modules", "__pycache__", ".pytest_cache")
 
 
 def check_file(path: str) -> int:
@@ -14,23 +15,24 @@ def check_file(path: str) -> int:
         return sum(1 for _ in f)
 
 
-def main() -> int:
-    violations = []
-    total_checked = 0
-
+def iter_source_files():
     for root_dir in TARGET_DIRS:
         for root, _, files in os.walk(root_dir):
-            if "node_modules" in root or "__pycache__" in root or ".pytest_cache" in root:
+            if any(skip in root for skip in SKIP_DIRS):
                 continue
             for file in files:
-                if any(file.endswith(ext) for ext in EXTENSIONS):
-                    file_path = os.path.join(root, file)
-                    lines = check_file(file_path)
-                    total_checked += 1
-                    if lines > MAX_LINES:
-                        violations.append((file_path, lines))
+                if file.endswith(EXTENSIONS):
+                    yield os.path.join(root, file)
 
-    print(f"Checked {total_checked} files for line-count compliance (limit: {MAX_LINES} lines).")
+
+def main() -> int:
+    paths = list(iter_source_files())
+    total_checked = len(paths)
+    violations = [(p, n) for p in paths if (n := check_file(p)) > MAX_LINES]
+
+    print(
+        f"Checked {total_checked} files for line-count compliance (limit: {MAX_LINES} lines)."
+    )
     if violations:
         print(f"FAILED: Found {len(violations)} files exceeding {MAX_LINES} lines:")
         for path, count in violations:

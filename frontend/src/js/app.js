@@ -1,197 +1,132 @@
 /**
  * @file app.js
  * @description Main application controller for Gatherly.
- * Orchestrates reactive view rendering, multi-event switching, and user interactions.
+ * Wires components, navigation and the reactive store; renders only the visible view per event.
  */
 
 import { store } from './store.js';
 import { calculateBudgetSummary } from './domain/budget.js';
-import { initCopilotDrawer, openCopilot, closeCopilot } from './components/copilot-drawer.js';
-import { initRiskTray, toggleRiskTray, closeRiskTray } from './components/risk-tray.js';
-import { initQuoteModal, openQuoteModal, closeQuoteModal } from './components/quote-modal.js';
+import { initCopilotDrawer, openCopilot } from './components/copilot-drawer.js';
+import { initRiskTray } from './components/risk-tray.js';
+import { initQuoteModal, openQuoteModal } from './components/quote-modal.js';
 import {
   initFormModals,
-  closeFormModal,
+  openConfirmDialog,
   openAddExpenseModal,
   openAddMilestoneModal,
   openAddVendorModal,
-  openAddIdeaModal
+  openAddIdeaModal,
+  openNewEventModal,
+  openEditEventModal
 } from './components/forms.js';
-
-import { renderOverview } from './views/overview-view.js';
-import { renderBudget } from './views/budget-view.js';
-import { renderTimeline } from './views/timeline-view.js';
-import { renderVendors } from './views/vendors-view.js';
-import { renderIdeas } from './views/ideas-view.js';
-import { formatDateSub, capitalize, escapeHtml } from './views/helpers.js';
 import { initTenantAuthBadge } from './components/tenant-auth-badge.js';
+import { initToast, showToast } from './components/toast.js';
+import { activeFocusKey, focusByKey, scrollBehavior } from './a11y.js';
+import { setText } from './views/helpers.js';
+import { renderSidebar } from './views/sidebar.js';
+import { showView, refreshCurrentView, updateTitle } from './views/router.js';
 
-// Global Toast helper
-let toastTimer = null;
-export function showToast(title = 'Mara is on it', message = "I'll pull together a few thoughtful options.") {
-  const toast = document.getElementById('app-toast');
-  if (!toast) return;
+export { showToast };
 
-  document.getElementById('toast-title').innerText = title;
-  document.getElementById('toast-sub').innerText = message;
-  toast.classList.add('show');
+const TOASTS = {
+  'proposal:applied': () => ['Proposal Applied', 'Event state updated transactionally.'],
+  'event:created': (payload) => [`Created ${payload.event.name}`, 'Your plan is ready: budget, milestones and risk checks are set up.'],
+  'event:updated': () => ['Event details saved', 'Risk Radar and budget have been recalculated.'],
+  'task:rescheduled': (payload) => ['Milestone Rescheduled', `Updated due date for "${(payload && payload.task && payload.task.title) || 'milestone'}".`]
+};
 
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
+function navigate(viewId) {
+  showView(viewId, { focus: true });
+  window.scrollTo({ top: 0, behavior: scrollBehavior() });
 }
 
-/**
- * Main application bootstrap.
- */
-document.addEventListener('DOMContentLoaded', () => {
-  // Initialize component shells
+function exportBudget() {
+  const event = store.getActiveEvent();
+  const blob = new Blob([JSON.stringify(calculateBudgetSummary(event), null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  Object.assign(document.createElement('a'), { href: url, download: `${event.id}-budget.json` }).click();
+  URL.revokeObjectURL(url);
+  showToast('Export Complete', 'Budget summary downloaded.');
+}
+
+function confirmReset() {
+  openConfirmDialog({
+    title: 'Reset demo state?',
+    message: 'This replaces your current plans with the clean starting templates.',
+    confirmLabel: 'Reset demo',
+    onConfirm: () => {
+      store.resetToDefaults();
+      showToast('Demo State Reset', 'Fresh celebration templates loaded.');
+    }
+  });
+}
+
+const CLICK_ACTIONS = {
+  'copilot-toggle-btn': () => openCopilot(),
+  'open-assistant-arrow': () => openCopilot(),
+  'add-expense-btn': openAddExpenseModal,
+  'add-milestone-btn': openAddMilestoneModal,
+  'add-vendor-btn': openAddVendorModal,
+  'add-idea-btn': openAddIdeaModal,
+  'new-event-btn': openNewEventModal,
+  'edit-event-btn': openEditEventModal,
+  'compare-quotes-header-btn': () => openQuoteModal(),
+  'goto-timeline-btn': () => navigate('timeline'),
+  'edit-vibe-btn': () => navigate('ideas'),
+  'export-budget-btn': exportBudget,
+  'reset-demo-btn': confirmReset
+};
+
+function bindActions() {
+  Object.entries(CLICK_ACTIONS).forEach(([id, action]) => {
+    document.getElementById(id)?.addEventListener('click', () => action());
+  });
+  document.querySelectorAll('.suggestion').forEach(btn => {
+    btn.addEventListener('click', () => openCopilot(btn.dataset.message || btn.textContent.trim(), btn.dataset.op || 'general_advice'));
+  });
+}
+
+function bindNavigation() {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => navigate(item.dataset.view));
+  });
+  document.addEventListener('gatherly:navigate', (e) => navigate(e.detail.view));
+}
+
+/** Re-renders chrome (topbar, nav badge, sidebar) and the visible view, keeping keyboard focus. */
+function renderAll() {
+  const event = store.getActiveEvent();
+  if (!event) return;
+  const key = activeFocusKey();
+  setText('topbar-event-name', event.name);
+  setText('vendor-nav-count', (event.vendors || []).length);
+  renderSidebar();
+  refreshCurrentView();
+  updateTitle();
+  if (key) focusByKey(key);
+}
+
+function onStoreEvent({ type, payload }) {
+  renderAll();
+  const toast = TOASTS[type] && TOASTS[type](payload);
+  if (toast) showToast(...toast);
+}
+
+export function initApp() {
+  initToast();
   initCopilotDrawer();
   initRiskTray();
   initQuoteModal();
   initFormModals();
   initTenantAuthBadge(showToast);
-
-  // Primary navigation switching
-  const navItems = document.querySelectorAll('.nav-item');
-  const views = document.querySelectorAll('.view');
-
-  navItems.forEach(item => {
-    item.addEventListener('click', () => {
-      navItems.forEach(n => n.classList.remove('active'));
-      item.classList.add('active');
-
-      const targetView = item.dataset.view;
-      views.forEach(v => v.classList.toggle('active', v.id === targetView));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-
-      renderCurrentView(targetView);
-    });
-  });
-
-  // Sidebar event switching
-  setupSidebarEvents();
-
-  // Topbar and quick actions
-  const copilotToggle = document.getElementById('copilot-toggle-btn');
-  if (copilotToggle) copilotToggle.addEventListener('click', () => openCopilot());
-
-  document.getElementById('topbar-risk-btn')?.addEventListener('click', () => toggleRiskTray());
-  document.getElementById('reset-demo-btn')?.addEventListener('click', () => {
-    if (confirm('Reset demo state back to clean initial templates?')) {
-      store.resetToDefaults();
-      showToast('Demo State Reset', 'Fresh celebration templates loaded.');
-    }
-  });
-
-  // Assistant card triggers
-  const assistantCard = document.getElementById('assistant-card-main');
-  if (assistantCard) {
-    assistantCard.addEventListener('click', (e) => {
-      if (e.target.closest('.suggestion')) return;
-      openCopilot();
-    });
-  }
-
-  document.querySelectorAll('.suggestion').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const prompt = btn.dataset.message || btn.innerText;
-      const op = btn.dataset.op || 'general_advice';
-      openCopilot(prompt, op);
-    });
-  });
-
-  // Action buttons
-  document.getElementById('add-expense-btn')?.addEventListener('click', openAddExpenseModal);
-  document.getElementById('add-milestone-btn')?.addEventListener('click', openAddMilestoneModal);
-  document.getElementById('add-vendor-btn')?.addEventListener('click', openAddVendorModal);
-  document.getElementById('add-idea-btn')?.addEventListener('click', openAddIdeaModal);
-  document.getElementById('compare-quotes-header-btn')?.addEventListener('click', () => openQuoteModal());
-  document.getElementById('goto-timeline-btn')?.addEventListener('click', () => document.querySelector('.nav-item[data-view="timeline"]')?.click());
-  document.getElementById('edit-vibe-btn')?.addEventListener('click', () => document.querySelector('.nav-item[data-view="ideas"]')?.click());
-
-  document.getElementById('export-budget-btn')?.addEventListener('click', () => {
-    const summary = calculateBudgetSummary(store.getActiveEvent());
-    const blob = new Blob([JSON.stringify(summary, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), { href: url, download: `${store.getActiveEvent().id}-budget.json` });
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('Export Complete', 'Budget summary downloaded.');
-  });
-
-  // Global Escape key listener to close modals/drawers (A11Y requirement)
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 'Esc') {
-      closeCopilot();
-      closeQuoteModal();
-      closeFormModal();
-      closeRiskTray();
-    }
-  });
-
-  // Subscribe to store updates for reactive updates across views
-  store.subscribe(({ type, payload }) => {
-    setupSidebarEvents();
-    renderAllViews();
-    if (type === 'proposal:applied') {
-      showToast('Proposal Applied', 'Event state updated transactionally.');
-    } else if (type === 'task:rescheduled') {
-      showToast('Milestone Rescheduled', `Updated due date for "${payload?.task?.title || 'milestone'}".`);
-    }
-  });
-
-  // Initial render
-  renderAllViews();
-});
-
-function setupSidebarEvents() {
-  const activeEvent = store.getActiveEvent();
-  const allEvents = store.getAllEvents();
-  const listEl = document.getElementById('sidebar-event-list');
-  if (!listEl) return;
-
-  listEl.innerHTML = '';
-  allEvents.forEach(ev => {
-    const isSelected = ev.id === activeEvent.id;
-    const dotColor = ev.color_accent || (ev.type === 'wedding' ? 'coral' : ev.type === 'birthday' ? 'mint' : 'gold');
-
-    const btn = document.createElement('button');
-    btn.className = `event-link ${isSelected ? 'selected' : ''}`;
-    btn.dataset.eventId = ev.id;
-    btn.innerHTML = `
-      <span class="event-dot ${dotColor}"></span>
-      <span><b>${escapeHtml(ev.name)}</b><small>${formatDateSub(ev.date)} · ${capitalize(ev.type)}</small></span>
-      ${isSelected ? '<span class="mini-more">•••</span>' : ''}
-    `;
-
-    btn.addEventListener('click', () => {
-      store.switchEvent(ev.id);
-      showToast('Event Switched', `Viewing ${ev.name}`);
-    });
-
-    listEl.appendChild(btn);
-  });
+  bindNavigation();
+  bindActions();
+  store.subscribe(onStoreEvent);
+  renderAll();
 }
 
-function renderAllViews() {
-  const event = store.getActiveEvent();
-  if (!event) return;
-
-  const topbarName = document.getElementById('topbar-event-name');
-  if (topbarName) topbarName.innerText = event.name;
-
-  const vendorCountBadge = document.getElementById('vendor-nav-count');
-  if (vendorCountBadge) vendorCountBadge.innerText = (event.vendors || []).length;
-
-  renderOverview();
-  renderBudget();
-  renderTimeline();
-  renderVendors();
-  renderIdeas(showToast);
-}
-
-const viewRenderers = { overview: renderOverview, budget: renderBudget, timeline: renderTimeline, vendors: renderVendors, ideas: () => renderIdeas(showToast) };
-function renderCurrentView(viewId) {
-  viewRenderers[viewId]?.();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
 }

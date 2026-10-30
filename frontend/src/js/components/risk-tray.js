@@ -1,64 +1,89 @@
 /**
  * @file risk-tray.js
- * @description Notification alert tray dropdown for the Event Risk Radar.
+ * @description Event Risk Radar dialog opened from the topbar bell (focus-managed, keyboard accessible).
  */
 
 import { store } from '../store.js';
 import { evaluateEventRisks } from '../domain/risks.js';
+import { requestView, safeToken } from '../views/helpers.js';
+import { scrollBehavior } from '../a11y.js';
 import { openCopilot } from './copilot-drawer.js';
 import { openQuoteModal } from './quote-modal.js';
-import { escapeHtml } from '../views/helpers.js';
+import { openLayer, closeLayer } from './dialog-focus.js';
+import { riskCardsHtml } from './risk-cards.js';
 
 let trayElement = null;
+let bellButton = null;
+let currentActions = [];
+
+const TRAY_HTML = `
+  <div class="risk-tray" id="risk-tray" role="dialog" aria-modal="true" aria-labelledby="risk-tray-title" tabindex="-1">
+    <div class="risk-tray-header">
+      <div>
+        <span class="eyebrow">GROUNDED INTELLIGENCE</span>
+        <h2 id="risk-tray-title">Event Risk Radar</h2>
+      </div>
+      <button type="button" class="risk-tray-close" id="risk-tray-close" aria-label="Close risk radar"><span aria-hidden="true">✕</span></button>
+    </div>
+    <div class="risk-tray-list" id="risk-tray-list"></div>
+  </div>
+`;
+
+const ACTIONS = {
+  ask_mara: (act) => openCopilot(act.prompt || ''),
+  open_whatif: () => {
+    requestView('budget');
+    document.getElementById('whatif-simulator-card')?.scrollIntoView({ behavior: scrollBehavior() });
+  },
+  open_timeline: () => requestView('timeline'),
+  open_quotes: (act) => {
+    requestView('vendors');
+    openQuoteModal((act.payload && act.payload.vendor_id) || null);
+  }
+};
+
+function runAction(act) {
+  closeRiskTray();
+  const handler = ACTIONS[safeToken(act.action_type, Object.keys(ACTIONS), '')];
+  if (handler) handler(act);
+}
+
+function onListClick(e) {
+  const dismiss = e.target.closest('.risk-dismiss-btn');
+  const action = e.target.closest('.risk-act-btn');
+  if (dismiss) {
+    store.dismissRisk(dismiss.dataset.riskId);
+    (document.querySelector('#risk-tray-list .risk-dismiss-btn') || document.getElementById('risk-tray-close')).focus();
+  } else if (action) {
+    runAction(currentActions[Number(action.dataset.actIdx)]);
+  }
+}
 
 export function initRiskTray() {
-  const notifBtn = document.querySelector('.icon-btn[aria-label="Notifications"]') || document.querySelector('.icon-btn');
-  if (!notifBtn) return;
+  bellButton = document.getElementById('topbar-risk-btn');
+  if (!bellButton || trayElement) return;
 
-  const html = `
-    <div class="risk-tray" id="risk-tray" aria-label="Event Risk Radar" aria-hidden="true">
-      <div class="risk-tray-header">
-        <div>
-          <span class="eyebrow">GROUNDED INTELLIGENCE</span>
-          <h3>Event Risk Radar</h3>
-        </div>
-        <button class="risk-tray-close" id="risk-tray-close" aria-label="Close alert tray">✕</button>
-      </div>
-      <div class="risk-tray-list" id="risk-tray-list"></div>
-    </div>
-  `;
-
-  document.body.insertAdjacentHTML('beforeend', html);
+  document.body.insertAdjacentHTML('beforeend', TRAY_HTML);
   trayElement = document.getElementById('risk-tray');
 
-  notifBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleRiskTray();
-  });
-
+  bellButton.addEventListener('click', toggleRiskTray);
   document.getElementById('risk-tray-close').addEventListener('click', closeRiskTray);
-
+  document.getElementById('risk-tray-list').addEventListener('click', onListClick);
   document.addEventListener('click', (e) => {
-    if (trayElement && trayElement.classList.contains('open') && !trayElement.contains(e.target) && !notifBtn.contains(e.target)) {
-      closeRiskTray();
-    }
+    const outside = !trayElement.contains(e.target) && !bellButton.contains(e.target);
+    if (outside && trayElement.classList.contains('open')) closeRiskTray();
   });
 
-  // Subscribe to store updates to keep risk count badge live
   store.subscribe(() => {
     updateRiskBadge();
-    if (trayElement && trayElement.classList.contains('open')) {
-      renderRiskList();
-    }
+    if (trayElement.classList.contains('open')) renderRiskList();
   });
-
   updateRiskBadge();
 }
 
 export function toggleRiskTray() {
   if (!trayElement) initRiskTray();
-  const isOpen = trayElement.classList.contains('open');
-  if (isOpen) closeRiskTray();
+  if (trayElement.classList.contains('open')) closeRiskTray();
   else openRiskTray();
 }
 
@@ -66,117 +91,40 @@ export function openRiskTray() {
   if (!trayElement) initRiskTray();
   renderRiskList();
   trayElement.classList.add('open');
-  trayElement.setAttribute('aria-hidden', 'false');
+  bellButton.setAttribute('aria-expanded', 'true');
+  openLayer({ container: trayElement, roots: [trayElement], close: closeRiskTray, initialFocus: '#risk-tray-close' });
 }
 
 export function closeRiskTray() {
   if (!trayElement) return;
   trayElement.classList.remove('open');
-  trayElement.setAttribute('aria-hidden', 'true');
+  bellButton.setAttribute('aria-expanded', 'false');
+  closeLayer(trayElement);
 }
 
 function updateRiskBadge() {
-  const notifBtn = document.querySelector('.icon-btn');
-  if (!notifBtn) return;
+  const { total_count: total, critical_count: critical } = evaluateEventRisks(store.getActiveEvent());
+  bellButton.setAttribute('aria-label', `Event Risk Radar, ${total === 0 ? 'no' : total} active ${total === 1 ? 'risk' : 'risks'}`);
 
-  const event = store.getActiveEvent();
-  const evaluation = evaluateEventRisks(event);
-  let dot = notifBtn.querySelector('.notification-dot');
-
-  if (evaluation.total_count > 0) {
-    if (!dot) {
-      dot = document.createElement('span');
-      dot.className = 'notification-dot';
-      notifBtn.appendChild(dot);
-    }
-    dot.innerText = evaluation.total_count;
-    dot.classList.toggle('critical', evaluation.critical_count > 0);
-  } else if (dot) {
-    dot.remove();
+  let dot = bellButton.querySelector('.notification-dot');
+  if (total === 0) {
+    if (dot) dot.remove();
+    return;
   }
+  if (!dot) {
+    dot = document.createElement('span');
+    dot.className = 'notification-dot';
+    dot.setAttribute('aria-hidden', 'true');
+    bellButton.appendChild(dot);
+  }
+  dot.textContent = total;
+  dot.classList.toggle('critical', critical > 0);
 }
 
 function renderRiskList() {
   const listEl = document.getElementById('risk-tray-list');
-  if (!listEl) return;
-
-  const event = store.getActiveEvent();
-  const evaluation = evaluateEventRisks(event);
-
-  if (evaluation.risks.length === 0) {
-    listEl.innerHTML = `
-      <div class="risk-empty-state">
-        <span class="sparkle-icon">✦</span>
-        <h4>All Clear</h4>
-        <p>No active risks or constraint violations detected in your plan.</p>
-      </div>
-    `;
-    return;
-  }
-
-  let html = '';
-  evaluation.risks.forEach(risk => {
-    const sevClass = risk.severity === 'critical' ? 'badge-critical' : risk.severity === 'warning' ? 'badge-warning' : 'badge-notice';
-    html += `
-      <div class="risk-item-card ${risk.severity}" id="risk-${risk.id}">
-        <div class="risk-item-top">
-          <span class="risk-badge ${sevClass}">${risk.severity.toUpperCase()}</span>
-          <button class="risk-dismiss-btn" data-id="${risk.id}" title="Dismiss alert">✕</button>
-        </div>
-        <h4>${escapeHtml(risk.title)}</h4>
-        <p class="risk-evidence">${escapeHtml(risk.evidence)}</p>
-        <p class="risk-consequence"><b>Why it matters:</b> ${escapeHtml(risk.consequence)}</p>
-        <div class="risk-actions">
-    `;
-
-    (risk.recommended_actions || []).forEach(act => {
-      html += `
-        <button class="risk-act-btn" data-type="${act.action_type}" data-prompt="${escapeHtml(act.prompt || '')}" data-payload='${JSON.stringify(act.payload || {})}'>
-          ${escapeHtml(act.label)} →
-        </button>
-      `;
-    });
-
-    html += `</div></div>`;
-  });
-
-  listEl.innerHTML = html;
-
-  // Wire dismiss buttons
-  listEl.querySelectorAll('.risk-dismiss-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const riskId = btn.dataset.id;
-      store.dismissRisk(riskId);
-    });
-  });
-
-  // Wire action buttons
-  listEl.querySelectorAll('.risk-act-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const type = btn.dataset.type;
-      const prompt = btn.dataset.prompt;
-      let payload = {};
-      try { payload = JSON.parse(btn.dataset.payload || '{}'); } catch (e) {}
-
-      closeRiskTray();
-      if (type === 'ask_mara') {
-        openCopilot(prompt);
-      } else if (type === 'open_whatif') {
-        const budgetNav = document.querySelector('.nav-item[data-view="budget"]');
-        if (budgetNav) budgetNav.click();
-        const whatIfCard = document.getElementById('whatif-simulator-card');
-        if (whatIfCard) whatIfCard.scrollIntoView({ behavior: 'smooth' });
-      } else if (type === 'open_timeline') {
-        const timelineNav = document.querySelector('.nav-item[data-view="timeline"]');
-        if (timelineNav) timelineNav.click();
-      } else if (type === 'open_quotes') {
-        const vendorNav = document.querySelector('.nav-item[data-view="vendors"]');
-        if (vendorNav) vendorNav.click();
-        openQuoteModal(payload.vendor_id || null);
-      }
-    });
-  });
+  const { risks } = evaluateEventRisks(store.getActiveEvent());
+  const rendered = riskCardsHtml(risks);
+  currentActions = rendered.actions;
+  listEl.innerHTML = rendered.html;
 }
-
-

@@ -9,7 +9,6 @@ import assert from 'node:assert';
 import {
   calculateBudgetSummary,
   safeNonNegativeNumber,
-  validateExpenseInput,
   formatMoney,
   simulateRipple
 } from '../src/js/domain/budget.js';
@@ -17,13 +16,11 @@ import {
 import {
   validateTask,
   checkCircularDependencies,
-  calculateTimelineProgress,
   evaluateReschedule
 } from '../src/js/domain/timeline.js';
 
 import {
   auditQuoteCompleteness,
-  normalizeQuote,
   compareQuotes,
   extractQuoteFromRawText
 } from '../src/js/domain/vendors.js';

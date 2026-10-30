@@ -1,13 +1,22 @@
 """Repository layer enforcing strict tenant boundary isolation across database operations."""
 
 import copy
+import uuid
 from datetime import date
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..domain.event_schedule import sync_event_schedule
 from .models import AuditLog, EventModel
+
+DEFAULT_PAGE_SIZE = 100
+MAX_PAGE_SIZE = 500
+
+
+class EventIdConflictError(Exception):
+    """Raised when a client-supplied event id is already taken."""
 
 
 class EventRepository:
@@ -17,17 +26,32 @@ class EventRepository:
         self.db = db
         self.tenant_id = tenant_id
 
-    def list_events(self) -> list[EventModel]:
-        """Fetch all events belonging strictly to the active tenant."""
+    def list_events(self, limit: int = DEFAULT_PAGE_SIZE, offset: int = 0) -> list[EventModel]:
+        """Fetch one page of events belonging strictly to the active tenant (newest first)."""
         return (
             self.db.query(EventModel)
             .filter(EventModel.tenant_id == self.tenant_id)
-            .order_by(EventModel.created_at.desc())
+            .order_by(EventModel.created_at.desc(), EventModel.id)
+            .limit(min(max(limit, 1), MAX_PAGE_SIZE))
+            .offset(max(offset, 0))
             .all()
         )
 
+    def sync_schedules(
+        self, events: list[EventModel], today: date | None = None, user_id: str | None = None
+    ) -> list[EventModel]:
+        """Sync a batch of events and persist every change with a single commit."""
+        synced = [self.sync_schedule(e, today, user_id, commit=False) for e in events]
+        if self.db.new:  # audit rows are only queued when a schedule actually moved
+            self.db.commit()
+        return synced
+
     def sync_schedule(
-        self, event: EventModel, today: date | None = None, user_id: str | None = None
+        self,
+        event: EventModel,
+        today: date | None = None,
+        user_id: str | None = None,
+        commit: bool = True,
     ) -> EventModel:
         """Advance an anchored event's schedule to the current week and persist the change."""
         view = copy.deepcopy(event.state_json or {})
@@ -48,8 +72,8 @@ class EventRepository:
             resource_id=event.id,
             details={"date": event.date, "schedule_anchor": view.get("schedule_anchor")},
         )
-        self.db.commit()
-        self.db.refresh(event)
+        if commit:
+            self.db.commit()
         return event
 
     def get_event(self, event_id: str) -> EventModel | None:
@@ -62,10 +86,7 @@ class EventRepository:
 
     def create_event(self, event_data: dict[str, Any], user_id: str | None = None) -> EventModel:
         """Create new event partitioned under the active tenant."""
-        event_id = (
-            event_data.get("id")
-            or f"event-{event_data.get('type', 'generic')}-{int(self.db.bind.dialect.name == 'sqlite')}"
-        )
+        event_id = event_data.get("id") or f"event-{uuid.uuid4().hex[:16]}"
         model = EventModel(
             id=event_id,
             tenant_id=self.tenant_id,
@@ -86,8 +107,11 @@ class EventRepository:
             resource_id=model.id,
             details={"name": model.name, "budget": model.total_budget},
         )
-        self.db.commit()
-        self.db.refresh(model)
+        try:
+            self.db.commit()
+        except IntegrityError as exc:
+            self.db.rollback()
+            raise EventIdConflictError(event_id) from exc
         return model
 
     def update_event(
@@ -125,7 +149,6 @@ class EventRepository:
             details={"updated_fields": list(updates.keys())},
         )
         self.db.commit()
-        self.db.refresh(event)
         return event
 
     def delete_event(self, event_id: str, user_id: str | None = None) -> bool:

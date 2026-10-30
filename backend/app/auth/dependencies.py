@@ -4,9 +4,8 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy.orm import Session
 
-from ..db.database import get_db
+from ..config import settings
 from .security import decode_access_token
 
 security_bearer = HTTPBearer(auto_error=False)
@@ -26,48 +25,45 @@ class AuthContext:
         return self.role in allowed_roles or self.role == "owner"
 
 
+def _unauthorized(detail: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail=detail,
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def _guest_context() -> AuthContext:
+    return AuthContext(
+        user_id="user-demo-guest",
+        tenant_id="tenant-default",
+        role="owner",
+        email="planner@gatherly.app",
+    )
+
+
 def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Security(security_bearer)],
-    db: Annotated[Session, Depends(get_db)],
 ) -> AuthContext:
-    """Validate JWT bearer token and retrieve authenticated context.
+    """Validate the JWT bearer token and return the authenticated context.
 
-    Falls back to default demo planner if no token is passed (enables friction-free local dev).
+    Missing credentials are rejected (401); the owner-level guest fallback exists only when
+    ``settings.allow_guest`` is true (development / test environments).
     """
     if not credentials:
-        # Demo / Guest mode fallback
-        return AuthContext(
-            user_id="user-demo-guest",
-            tenant_id="tenant-default",
-            role="owner",
-            email="planner@gatherly.app",
-        )
+        if settings.allow_guest:
+            return _guest_context()
+        raise _unauthorized("Authentication required.")
 
-    token = credentials.credentials
     try:
-        payload = decode_access_token(token)
-        user_id = payload.get("sub")
-        tenant_id = payload.get("tenant_id")
-        role = payload.get("role", "planner")
-
-        if not user_id or not tenant_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Malformed token claims.",
-            )
-
-        return AuthContext(
-            user_id=user_id,
-            tenant_id=tenant_id,
-            role=role,
-            email=payload.get("email", ""),
-        )
+        payload = decode_access_token(credentials.credentials)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+        raise _unauthorized("Invalid or expired credentials.") from e
+
+    user_id, tenant_id = payload.get("sub"), payload.get("tenant_id")
+    if not user_id or not tenant_id:
+        raise _unauthorized("Invalid or expired credentials.")
+    return AuthContext(user_id, tenant_id, payload["role"], payload.get("email", ""))
 
 
 def require_role(*allowed_roles: str):
@@ -77,7 +73,7 @@ def require_role(*allowed_roles: str):
         if not auth.has_role(*allowed_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Forbidden: role '{auth.role}' lacks permission for this operation. Required: {allowed_roles}",
+                detail="Forbidden: insufficient permissions for this operation.",
             )
         return auth
 

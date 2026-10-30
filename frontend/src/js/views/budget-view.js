@@ -3,95 +3,93 @@
  * @description Budget view renderer showing category allocations, overruns, and expense records.
  */
 
-import { store } from '../store.js';
-import { calculateBudgetSummary, formatMoney } from '../domain/budget.js';
+import { formatMoney } from '../domain/budget.js';
 import { renderWhatIfPanel } from '../components/whatif-panel.js';
-import { capitalize, escapeHtml } from './helpers.js';
+import { setProgress } from '../a11y.js';
+import { createViewContext } from './context.js';
+import { capitalize, escapeHtml, setHtml, setText } from './helpers.js';
 
-export function renderBudget() {
-  const event = store.getActiveEvent();
-  const summary = calculateBudgetSummary(event);
-  const cur = event.currency || '$';
+const CATEGORY_COLORS = {
+  venue: '#f47b63',
+  catering: '#e3a449',
+  design: '#799f83',
+  photo_music: '#927b9d',
+  contingency: '#ddb04d',
+  other: '#817783'
+};
+const DEFAULT_COLOR = '#f47b63';
+const PAID_STATUSES = ['paid'];
 
-  const bigNum = document.getElementById('budget-big-number');
-  const bigBar = document.getElementById('budget-big-bar');
-  const committedLabel = document.getElementById('budget-committed-label');
-  const availableLabel = document.getElementById('budget-available-label');
+function renderOverviewBar({ budget, cur }) {
+  const pct = budget.percent_committed;
+  setHtml('budget-big-number', `${escapeHtml(formatMoney(budget.total_allocated, cur))} <small>allocated of ${escapeHtml(formatMoney(budget.total_budget, cur))}</small>`);
+  const bar = document.getElementById('budget-big-bar');
+  if (bar) bar.style.width = `${Math.min(100, pct)}%`;
+  setProgress(document.getElementById('budget-big-track'), {
+    now: pct,
+    label: 'Budget committed',
+    valuetext: `${pct}% of the budget is committed`
+  });
+  setText('budget-committed-label', `${pct}% committed`);
 
-  if (bigNum) bigNum.innerHTML = `${formatMoney(summary.total_allocated, cur)} <small>allocated of ${formatMoney(summary.total_budget, cur)}</small>`;
-  if (bigBar) bigBar.style.width = `${Math.min(100, summary.percent_committed)}%`;
-  if (committedLabel) committedLabel.innerText = `${summary.percent_committed}% committed`;
-  if (availableLabel) {
-    if (summary.is_over_budget) {
-      availableLabel.style.color = '#d84534';
-      availableLabel.innerText = `⚠️ Deficit: ${formatMoney(summary.deficit_amount, cur)}`;
-    } else {
-      availableLabel.style.color = '#a9d2a9';
-      availableLabel.innerText = `${formatMoney(summary.remaining_uncommitted, cur)} available`;
-    }
-  }
+  const available = document.getElementById('budget-available-label');
+  if (!available) return;
+  available.className = budget.is_over_budget ? 'is-deficit' : 'is-ok';
+  available.innerHTML = budget.is_over_budget
+    ? `<span aria-hidden="true">⚠</span> Deficit: ${escapeHtml(formatMoney(budget.deficit_amount, cur))}`
+    : `${escapeHtml(formatMoney(budget.remaining_uncommitted, cur))} available`;
+}
 
-  // Category Breakdown Grid
-  const catGrid = document.getElementById('budget-category-grid');
-  if (catGrid) {
-    const catColors = {
-      venue: '#f47b63',
-      catering: '#e3a449',
-      design: '#799f83',
-      photo_music: '#927b9d',
-      contingency: '#ddb04d',
-      other: '#817783'
-    };
+function categoryHtml(key, data, cur) {
+  const color = CATEGORY_COLORS[key] || DEFAULT_COLOR;
+  const width = data.planned > 0 ? Math.min(100, Math.round((data.allocated / data.planned) * 100)) : 0;
+  const note = data.is_overrun
+    ? `<span aria-hidden="true">⚠</span> Overrun by ${escapeHtml(formatMoney(data.variance, cur))}`
+    : `Planned: ${escapeHtml(formatMoney(data.planned, cur))}`;
+  return `
+    <div class="category">
+      <div class="category-head">
+        <span class="category-dot" aria-hidden="true" style="background:${color}"></span>
+        <h3>${escapeHtml(capitalize(key.replace('_', ' ')))}</h3>
+        <small>${data.percent_of_budget}% of total budget</small>
+      </div>
+      <strong>${escapeHtml(formatMoney(data.allocated, cur))}</strong>
+      <div class="tiny-bar" aria-hidden="true"><span style="width:${width}%;background:${color}"></span></div>
+      <small class="category-note ${data.is_overrun ? 'is-overrun' : ''}">${note}</small>
+    </div>`;
+}
 
-    let gridHtml = '';
-    for (const [catKey, catData] of Object.entries(summary.categories)) {
-      if (catData.planned === 0 && catData.allocated === 0) continue;
-      const color = catColors[catKey] || '#f47b63';
-      const pctWidth = catData.planned > 0 ? Math.min(100, Math.round((catData.allocated / catData.planned) * 100)) : 0;
+function renderCategories({ budget, cur }) {
+  const html = Object.entries(budget.categories)
+    .filter(([, data]) => data.planned !== 0 || data.allocated !== 0)
+    .map(([key, data]) => categoryHtml(key, data, cur))
+    .join('');
+  setHtml('budget-category-grid', html);
+}
 
-      gridHtml += `
-        <div class="category">
-          <div>
-            <span class="category-dot" style="background:${color}"></span>
-            <b>${capitalize(catKey.replace('_', ' '))}</b>
-            <small>${catData.percent_of_budget}% of total budget</small>
-          </div>
-          <strong>${formatMoney(catData.allocated, cur)}</strong>
-          <div class="tiny-bar"><span style="width:${pctWidth}%;background:${color}"></span></div>
-          <small style="color:${catData.is_overrun ? '#d84534' : 'var(--muted)'}; font-size:10px; margin-top:6px; display:block;">
-            ${catData.is_overrun ? `⚠️ Overrun by ${formatMoney(catData.variance, cur)}` : `Planned: ${formatMoney(catData.planned, cur)}`}
-          </small>
-        </div>
-      `;
-    }
-    catGrid.innerHTML = gridHtml;
-  }
+function expenseRowHtml(exp, cur) {
+  const status = PAID_STATUSES.includes(exp.status) ? 'paid' : 'pending';
+  const category = capitalize((exp.category || 'other').replace('_', ' '));
+  const amount = (exp.actual_amount || 0) + (exp.committed_amount || 0);
+  return `
+    <tr>
+      <th scope="row"><b>${escapeHtml(exp.description)}</b><small>Planned ${escapeHtml(formatMoney(exp.planned_amount || 0, cur))}</small></th>
+      <td data-label="Category">${escapeHtml(category)}</td>
+      <td data-label="Status"><span class="pill ${status}">${escapeHtml(capitalize(exp.status || 'pending'))}</span></td>
+      <td class="num"><strong>${escapeHtml(formatMoney(amount, cur))}</strong></td>
+    </tr>`;
+}
 
-  // Expense Activity Table
-  const tableRows = document.getElementById('budget-table-rows');
-  if (tableRows) {
-    tableRows.innerHTML = '';
-    const expenses = event.expenses || [];
+function renderExpenses({ event, cur }) {
+  const expenses = event.expenses || [];
+  setHtml('budget-table-rows', expenses.length === 0
+    ? '<tr><td colspan="4" class="table-empty">No expense records added yet.</td></tr>'
+    : expenses.map(exp => expenseRowHtml(exp, cur)).join(''));
+}
 
-    if (expenses.length === 0) {
-      tableRows.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted)">No expense records added yet.</div>';
-    } else {
-      expenses.forEach(exp => {
-        const row = document.createElement('div');
-        row.className = 'expense-row';
-        const pillClass = exp.status === 'paid' ? 'pill paid' : 'pill pending';
-
-        row.innerHTML = `
-          <span><b>${escapeHtml(exp.description)}</b><small>Planned ${formatMoney(exp.planned_amount || 0, cur)}</small></span>
-          <span>${capitalize((exp.category || 'other').replace('_', ' '))}</span>
-          <span class="${pillClass}">${capitalize(exp.status || 'pending')}</span>
-          <strong>${formatMoney((exp.actual_amount || 0) + (exp.committed_amount || 0), cur)}</strong>
-        `;
-        tableRows.appendChild(row);
-      });
-    }
-  }
-
-  // Render What-If Panel
-  renderWhatIfPanel();
+export function renderBudget(ctx = createViewContext()) {
+  renderOverviewBar(ctx);
+  renderCategories(ctx);
+  renderExpenses(ctx);
+  renderWhatIfPanel(ctx);
 }

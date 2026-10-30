@@ -40,9 +40,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String(64), primary_key=True, default=lambda: f"user-{uuid.uuid4().hex[:12]}")
-    tenant_id = Column(
-        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     email = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=False)
@@ -53,7 +51,10 @@ class User(Base):
 
     tenant = relationship("Tenant", back_populates="users")
 
-    __table_args__ = (Index("ix_user_tenant_email", "tenant_id", "email", unique=True),)
+    __table_args__ = (
+        Index("ix_user_tenant_email", "tenant_id", "email", unique=True),
+        Index("ix_users_email", "email"),
+    )
 
 
 class EventModel(Base):
@@ -62,9 +63,8 @@ class EventModel(Base):
     __tablename__ = "events"
 
     id = Column(String(64), primary_key=True)
-    tenant_id = Column(
-        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    # No standalone tenant index: ix_events_tenant_id_type leads with tenant_id.
+    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     type = Column(String(64), default="wedding", nullable=False)
     date = Column(String(32), nullable=True)
@@ -87,12 +87,13 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(String(64), primary_key=True, default=lambda: f"audit-{uuid.uuid4().hex[:12]}")
-    tenant_id = Column(
-        String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(String(64), nullable=True)
     action = Column(String(64), nullable=False)  # create, update, delete, approve_proposal
     resource_type = Column(String(64), nullable=False)
     resource_id = Column(String(64), nullable=False)
     details_json = Column(JSON, default=dict, nullable=False)
-    created_at = Column(DateTime, default=utc_now, nullable=False, index=True)
+    created_at = Column(DateTime, default=utc_now, nullable=False)
+
+    # (tenant_id, created_at) serves per-tenant audit listings and replaces both single indexes.
+    __table_args__ = (Index("ix_audit_logs_tenant_created", "tenant_id", "created_at"),)

@@ -1,0 +1,125 @@
+/**
+ * Gatherly what-if simulation sandbox.
+ */
+
+.whatif-simulator-panel {
+  margin-bottom: 24px;
+  background: #fffaf6;
+  border: 1px solid #ebdcd5;
+}
+.whatif-intro {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 4px 0 20px;
+}
+.whatif-controls-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background: #fff;
+  padding: 18px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+}
+.control-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.control-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.8125rem;
+}
+.slider-val {
+  font:
+    600 0.8125rem "DM Mono",
+    monospace;
+  color: var(--coral-text);
+}
+.control-box input[type="range"] {
+  width: 100%;
+  accent-color: var(--coral-text);
+  cursor: pointer;
+}
+.slider-caption {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.whatif-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 16px;
+}
+.whatif-stat {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 14px;
+  border-radius: 9px;
+  display: grid;
+  gap: 3px;
+}
+.stat-kicker {
+  font: 500 0.75rem "DM Mono";
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.whatif-stat strong {
+  font: 600 1.25rem Fraunces;
+  color: var(--plum);
+}
+.whatif-stat.stat-danger strong {
+  color: #a8281a;
+}
+.whatif-stat.stat-good strong {
+  color: var(--green-text);
+}
+.whatif-narrative-card {
+  margin-top: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 16px;
+}
+.whatif-narrative-card h3 {
+  margin: 0 0 10px;
+  font: 600 0.875rem Fraunces;
+  color: var(--plum);
+}
+.whatif-narrative-card ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: #4a3e49;
+}
+.affected-tasks-bar {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.affected-task-tag {
+  background: #fdf1ed;
+  color: var(--coral-text);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.whatif-action-row {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+output.slider-val {
+  display: inline-block;
+}

@@ -1,5 +1,4 @@
-version: '3.8'
-
+# Requires POSTGRES_PASSWORD and JWT_SECRET (see .env.example); compose refuses to start without them.
 services:
   postgres:
     image: postgres:16-alpine
@@ -7,10 +6,11 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: gatherly
-      POSTGRES_PASSWORD: gatherly_secret_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your environment or .env}
       POSTGRES_DB: gatherly_enterprise
-    ports:
-      - "5432:5432"
+    # No host port is published: only the app container (same compose network) reaches the DB.
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -32,21 +32,19 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
-      - HOST=0.0.0.0
-      - PORT=8080
-      - ENVIRONMENT=production
-      - DATABASE_URL=postgresql://gatherly:gatherly_secret_password@postgres:5432/gatherly_enterprise
-      - LOG_FORMAT=json
-      - OTEL_ENABLED=true
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+      HOST: 0.0.0.0
+      PORT: "8080"
+      ENVIRONMENT: production
+      DATABASE_URL: postgresql://gatherly:${POSTGRES_PASSWORD}@postgres:5432/gatherly_enterprise
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (>= 32 random bytes) for production}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
+      LOG_FORMAT: json
+      OTEL_ENABLED: "true"
+    # The image ships a stdlib-based HEALTHCHECK against /api/health.
 
 volumes:
   pgdata:
     driver: local
-

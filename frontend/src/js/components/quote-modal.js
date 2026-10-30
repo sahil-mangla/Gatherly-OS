@@ -1,191 +1,96 @@
 /**
  * @file quote-modal.js
- * @description Side-by-side vendor quote comparison modal and seed parser dialog.
+ * @description Vendor quote comparison modal shell (ARIA tabs) and seed parser dialog.
  */
 
-import { store } from '../store.js';
-import { compareQuotes, generateFollowUpQuestions } from '../domain/vendors.js';
 import { seedPresets, handleParseQuote } from './quote-seed-parser.js';
-import { escapeHtml } from '../views/helpers.js';
+import { renderComparisonView } from './quote-compare.js';
+import { openLayer, closeLayer } from './dialog-focus.js';
+import { initTabs } from './tabs.js';
 
 let modalElement = null;
+let dialogElement = null;
+let selectTab = null;
 
-export function initQuoteModal() {
-  if (modalElement) return;
+const MODAL_HTML = `
+  <div class="modal-backdrop" id="quote-modal-backdrop">
+    <div class="modal-dialog modal-large" id="quote-modal" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title" aria-describedby="quote-modal-desc" tabindex="-1">
+      <div class="modal-header">
+        <div>
+          <span class="eyebrow">INTELLIGENT VENDOR AUDIT</span>
+          <h2 id="quote-modal-title">Vendor Quote Comparison &amp; Seed Parser</h2>
+        </div>
+        <button type="button" class="modal-close" id="quote-modal-close" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
+      </div>
+      <p class="sr-only" id="quote-modal-desc">Compare vendor quotes side by side, or paste a raw quote for Mara to extract and audit.</p>
 
-  const html = `
-    <div class="modal-backdrop" id="quote-modal-backdrop">
-      <div class="modal-dialog modal-large" id="quote-modal" role="dialog" aria-modal="true" aria-label="Vendor Quote Comparison and Seed Parser">
-        <div class="modal-header">
-          <div>
-            <span class="eyebrow">INTELLIGENT VENDOR AUDIT</span>
-            <h2>Vendor Quote Comparison & Seed Parser</h2>
-          </div>
-          <button class="modal-close" id="quote-modal-close" aria-label="Close modal">✕</button>
+      <div class="modal-tabs" role="tablist" aria-label="Quote tools">
+        <button type="button" class="tab-btn active" role="tab" id="tab-compare" data-tab="compare-tab" aria-controls="compare-tab" aria-selected="true">Side-by-Side Comparison</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-seed" data-tab="seed-tab" aria-controls="seed-tab" aria-selected="false" tabindex="-1">Paste Raw Quote (AI Seed Ingestion)</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="tab-pane" role="tabpanel" id="compare-tab" aria-labelledby="tab-compare">
+          <div id="quote-comparison-content"></div>
         </div>
 
-        <div class="modal-tabs">
-          <button class="tab-btn active" data-tab="compare-tab">Side-by-Side Comparison</button>
-          <button class="tab-btn" data-tab="seed-tab">Paste Raw Quote (AI Seed Ingestion)</button>
-        </div>
+        <div class="tab-pane" role="tabpanel" id="seed-tab" aria-labelledby="tab-seed" hidden>
+          <div class="seed-parser-shell">
+            <p class="seed-intro" id="seed-intro">Paste an unstructured quote, proposal PDF text, or email from any vendor. Mara will extract normalized fees and flag hidden omissions.</p>
 
-        <div class="modal-body">
-          <div class="tab-pane active" id="compare-tab">
-            <div id="quote-comparison-content"></div>
-          </div>
-
-          <div class="tab-pane" id="seed-tab">
-            <div class="seed-parser-shell">
-              <p class="seed-intro">Paste an unstructured quote, proposal PDF text, or email from any vendor. Mara will extract normalized fees and flag hidden omissions.</p>
-              
-              <div class="preset-row">
-                <span>Quick demo seeds:</span>
-                <button class="seed-chip" data-preset="photo">📷 Photo Proposal</button>
-                <button class="seed-chip" data-preset="cater">🍽️ Catering Estimate</button>
-              </div>
-
-              <textarea id="raw-quote-text" rows="5" placeholder="Paste vendor email or quote text here..."></textarea>
-              <button class="primary-btn" id="parse-quote-btn">✦ Extract & Audit Quote with Mara</button>
-
-              <div id="parsed-quote-result" style="display:none; margin-top:20px;"></div>
+            <div class="preset-row" role="group" aria-label="Quick demo seeds">
+              <span aria-hidden="true">Quick demo seeds:</span>
+              <button type="button" class="seed-chip" data-preset="photo"><span aria-hidden="true">📷</span> Photo Proposal</button>
+              <button type="button" class="seed-chip" data-preset="cater"><span aria-hidden="true">🍽️</span> Catering Estimate</button>
             </div>
+
+            <label for="raw-quote-text">Vendor quote text</label>
+            <textarea id="raw-quote-text" name="raw_quote" rows="5" autocomplete="off" placeholder="Paste vendor email or quote text here..." aria-describedby="seed-intro raw-quote-error"></textarea>
+            <p class="field-error" id="raw-quote-error" role="alert"></p>
+            <button type="button" class="primary-btn" id="parse-quote-btn"><span aria-hidden="true">✦</span> Extract &amp; Audit Quote with Mara</button>
+
+            <div id="parsed-quote-result" aria-live="polite" hidden></div>
           </div>
         </div>
       </div>
     </div>
-  `;
+  </div>
+`;
 
-  document.body.insertAdjacentHTML('beforeend', html);
+export function initQuoteModal() {
+  if (modalElement) return;
+
+  document.body.insertAdjacentHTML('beforeend', MODAL_HTML);
   modalElement = document.getElementById('quote-modal-backdrop');
+  dialogElement = document.getElementById('quote-modal');
 
   document.getElementById('quote-modal-close').addEventListener('click', closeQuoteModal);
   modalElement.addEventListener('click', (e) => {
     if (e.target === modalElement) closeQuoteModal();
   });
 
-  // Tab switching
-  modalElement.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      modalElement.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      modalElement.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-    });
-  });
+  selectTab = initTabs(modalElement.querySelector('[role="tablist"]'));
+  selectTab(document.getElementById('tab-compare'));
 
-  // Seed Presets
   modalElement.querySelectorAll('.seed-chip').forEach(chip => {
     chip.addEventListener('click', () => {
-      const p = chip.dataset.preset;
-      document.getElementById('raw-quote-text').value = seedPresets[p] || '';
+      document.getElementById('raw-quote-text').value = seedPresets[chip.dataset.preset] || '';
     });
   });
 
-  // Parse button handler
-  document.getElementById('parse-quote-btn').addEventListener('click', () => {
-    handleParseQuote(closeQuoteModal);
-  });
+  document.getElementById('parse-quote-btn').addEventListener('click', () => handleParseQuote(closeQuoteModal));
 }
 
 export function openQuoteModal(vendorId = null) {
   if (!modalElement) initQuoteModal();
   renderComparisonView(vendorId);
+  selectTab(document.getElementById('tab-compare'));
   modalElement.classList.add('open');
+  openLayer({ container: dialogElement, roots: [modalElement], close: closeQuoteModal, initialFocus: '#tab-compare' });
 }
 
 export function closeQuoteModal() {
   if (!modalElement) return;
   modalElement.classList.remove('open');
-}
-
-function renderComparisonView(vendorId) {
-  const container = document.getElementById('quote-comparison-content');
-  if (!container) return;
-
-  const event = store.getActiveEvent();
-  const vendors = event.vendors || [];
-
-  const solStudio = vendors.find(v => v.id === 'ven-sol-studio') || vendors[1] || vendors[0];
-  const quotesToCompare = solStudio?.quotes || [
-    { name: 'Sol Studio (Main)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
-    { name: 'Lumina Collective (Alt)', price: 2150, deposit: 500, inclusions: ['7 hrs coverage', 'Second shooter'], missing_fields: ['Raw clip policy', 'Cancellation refund clause'] }
-  ];
-
-  const compResult = compareQuotes(quotesToCompare);
-
-  let html = `
-    <div class="comparison-banner">
-      <div class="banner-summary">
-        <strong>Intelligent Audit Result</strong>
-        <p>${escapeHtml(compResult.comparison_summary)}</p>
-      </div>
-    </div>
-
-    <div class="comparison-matrix">
-  `;
-
-  compResult.normalized.forEach(q => {
-    const isCheapest = q.id === compResult.cheapest_id;
-    const isLowestRisk = q.id === compResult.lowest_risk_id;
-    const incList = q.inclusions.map(i => `<li>✓ ${escapeHtml(i)}</li>`).join('');
-    const misList = q.missing_disclosures.length > 0 
-      ? q.missing_disclosures.map(m => `<li class="missing-li">? ${escapeHtml(m)}</li>`).join('')
-      : '<li class="clean-li">✓ Fully disclosed terms</li>';
-
-    html += `
-      <div class="matrix-card ${isCheapest ? 'highlight-card' : ''}">
-        <div class="matrix-badges">
-          ${isCheapest ? '<span class="badge-cheapest">Lowest Base Fee</span>' : ''}
-          ${isLowestRisk ? '<span class="badge-risk-low">Most Disclosed Terms</span>' : ''}
-        </div>
-        <h3>${escapeHtml(q.name)}</h3>
-        <div class="matrix-price">
-          <span class="price-val">$${q.base_price.toLocaleString()}</span>
-          <small>Deposit: $${q.deposit_amount.toLocaleString()} (${q.deposit_percent}%)</small>
-        </div>
-        <div class="matrix-section"><b>Included:</b><ul>${incList}</ul></div>
-        <div class="matrix-section risk-section"><b>⚠️ Undisclosed Terms:</b><ul>${misList}</ul></div>
-        <button class="select-quote-btn" data-quote-id="${q.id}">Draft Clarification Questions</button>
-      </div>`;
-  });
-  html += `</div><div id="followup-questions-box" style="display:none; margin-top:24px;"></div>`;
-  container.innerHTML = html;
-
-  container.querySelectorAll('.select-quote-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const qId = btn.dataset.quoteId;
-      const quote = quotesToCompare.find(q => (q.quote_id || q.id) === qId) || quotesToCompare[0];
-      const questions = generateFollowUpQuestions(quote);
-
-      const box = document.getElementById('followup-questions-box');
-      box.style.display = 'block';
-      box.innerHTML = `
-        <div class="draft-email-card">
-          <h4>Generated Clarification Draft for Vendor:</h4>
-          <pre class="email-preview">Hi ${escapeHtml(quote.tier_name || quote.name)},
-
-Thank you so much for sending over your detailed proposal! Before we finalize our agreement and deposit, could you clarify these items:
-
-${questions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}
-
-Looking forward to hearing from you.
-Warmly,
-Maya</pre>
-          <button class="text-btn" id="copy-email-btn">Copy message to clipboard ↗</button>
-        </div>
-      `;
-
-      document.getElementById('copy-email-btn').addEventListener('click', () => {
-        const text = box.querySelector('.email-preview').innerText;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text)
-            .then(() => alert('Copied follow-up email to clipboard!'))
-            .catch(() => alert('Please select and copy the text manually.'));
-        } else {
-          alert('Copied follow-up email draft.');
-        }
-      });
-      box.scrollIntoView({ behavior: 'smooth' });
-    });
-  });
+  closeLayer(dialogElement);
 }

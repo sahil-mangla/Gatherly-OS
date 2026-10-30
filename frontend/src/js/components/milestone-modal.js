@@ -5,63 +5,71 @@
 
 import { store } from '../store.js';
 import { TASK_PRIORITIES } from '../domain/timeline.js';
-import { openFormModal, closeFormModal } from './form-dialog.js';
+import { validateNewTask } from '../domain/dependencies.js';
+import { openFormModal, bindFormSubmit } from './form-dialog.js';
+import { dependencyFieldsetHtml, selectedDependencies, dependencyInputId } from './dependency-picker.js';
+
+const value = (id) => document.getElementById(id).value;
+
+function readDraft() {
+  return {
+    title: value('mile-title'),
+    category: value('mile-cat'),
+    due_date: value('mile-due'),
+    priority: value('mile-prio'),
+    is_fixed_deadline: document.getElementById('mile-fixed').checked,
+    depends_on: selectedDependencies()
+  };
+}
+
+/** Rejects a draft whose dependencies are cyclic or due later than it, pointing at the offending checkbox. */
+function submitMilestone(tasks) {
+  const draft = readDraft();
+  const check = validateNewTask(tasks, draft);
+  if (!check.valid) throw Object.assign(new Error(check.errors[0]), { fieldId: dependencyInputId(check.offender) });
+  store.addTask(draft);
+}
 
 export function openAddMilestoneModal() {
+  const tasks = store.getActiveEvent().tasks || [];
   const prioOptions = TASK_PRIORITIES.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');
 
-  const bodyHtml = `
+  openFormModal('Schedule Milestone', `
     <form id="add-milestone-form" class="modal-form">
       <div class="form-group">
-        <label for="mile-title">Milestone Title *</label>
-        <input type="text" id="mile-title" required placeholder="e.g. Confirm final guest headcount" />
+        <label for="mile-title">Milestone Title <span class="req" aria-hidden="true">*</span></label>
+        <input type="text" id="mile-title" name="title" autocomplete="off" required placeholder="e.g. Confirm final guest headcount" />
       </div>
 
       <div class="form-row-2">
         <div class="form-group">
-          <label for="mile-cat">Category *</label>
-          <input type="text" id="mile-cat" required value="Planning" />
+          <label for="mile-cat">Category <span class="req" aria-hidden="true">*</span></label>
+          <input type="text" id="mile-cat" name="category" autocomplete="off" required value="Planning" />
         </div>
         <div class="form-group">
-          <label for="mile-due">Due Date *</label>
-          <input type="date" id="mile-due" required />
+          <label for="mile-due">Due Date <span class="req" aria-hidden="true">*</span></label>
+          <input type="date" id="mile-due" name="due_date" autocomplete="off" required />
         </div>
       </div>
 
       <div class="form-row-2">
         <div class="form-group">
           <label for="mile-prio">Priority</label>
-          <select id="mile-prio">${prioOptions}</select>
+          <select id="mile-prio" name="priority">${prioOptions}</select>
         </div>
-        <div class="form-group checkbox-group" style="padding-top:28px;">
-          <label><input type="checkbox" id="mile-fixed" /> Fixed Non-negotiable Deadline</label>
+        <div class="form-group checkbox-group">
+          <label><input type="checkbox" id="mile-fixed" name="is_fixed_deadline" /> Fixed Non-negotiable Deadline</label>
         </div>
       </div>
+
+      ${dependencyFieldsetHtml(tasks)}
 
       <div class="form-actions">
         <button type="button" class="text-btn cancel-btn">Cancel</button>
         <button type="submit" class="primary-btn">Add Milestone</button>
       </div>
     </form>
-  `;
+  `);
 
-  openFormModal('Schedule Milestone', bodyHtml);
-
-  document.getElementById('add-milestone-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    try {
-      store.addTask({
-        title: document.getElementById('mile-title').value,
-        category: document.getElementById('mile-cat').value,
-        due_date: document.getElementById('mile-due').value,
-        priority: document.getElementById('mile-prio').value,
-        is_fixed_deadline: document.getElementById('mile-fixed').checked
-      });
-      closeFormModal();
-    } catch (err) {
-      alert(err.message);
-    }
-  });
-
-  document.querySelector('.cancel-btn').addEventListener('click', closeFormModal);
+  bindFormSubmit('add-milestone-form', () => submitMilestone(tasks));
 }

@@ -1,39 +1,24 @@
 """Multi-tenant event persistence and lifecycle endpoints."""
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..auth.dependencies import AuthContext, get_current_user, require_role
 from ..db.database import get_db
-from ..db.repository import EventRepository
+from ..db.repository import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    EventIdConflictError,
+    EventRepository,
+)
+from .event_schemas import EventCreateRequest, EventUpdateRequest
 
 router = APIRouter(prefix="/api/events", tags=["Multi-Tenant Events"])
 
-
-class EventCreateRequest(BaseModel):
-    id: str | None = None
-    name: str = Field(..., min_length=1, max_length=200)
-    type: str = "wedding"
-    date: str | None = None
-    total_budget: float = 0.0
-    expected_guests: int = 0
-    venue_capacity: int = 0
-    theme: str | None = ""
-    state_json: dict[str, Any] = Field(default_factory=dict)
-
-
-class EventUpdateRequest(BaseModel):
-    name: str | None = None
-    type: str | None = None
-    date: str | None = None
-    total_budget: float | None = None
-    expected_guests: int | None = None
-    venue_capacity: int | None = None
-    theme: str | None = None
-    state_json: dict[str, Any] | None = None
+NOT_FOUND = "Event not found."
+NULLABLE_FIELDS = ("date", "theme")
 
 
 def _format_event_response(event) -> dict[str, Any]:
@@ -53,42 +38,53 @@ def _format_event_response(event) -> dict[str, Any]:
     }
 
 
+def _clean_updates(req: EventUpdateRequest) -> dict[str, Any]:
+    """Explicit nulls are only meaningful for nullable columns; drop them elsewhere."""
+    sent = req.model_dump(exclude_unset=True)
+    return {k: v for k, v in sent.items() if v is not None or k in NULLABLE_FIELDS}
+
+
 @router.get("")
 def list_events(
-    auth: AuthContext = Depends(get_current_user), db: Session = Depends(get_db)
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[dict[str, Any]]:
-    """List all events scoped to the authenticated tenant."""
+    """List events scoped to the authenticated tenant (paged; optional limit/offset)."""
     repo = EventRepository(db, auth.tenant_id)
-    events = [repo.sync_schedule(e, user_id=auth.user_id) for e in repo.list_events()]
+    events = repo.sync_schedules(repo.list_events(limit, offset), user_id=auth.user_id)
     return [_format_event_response(e) for e in events]
 
 
 @router.get("/{event_id}")
 def get_event(
     event_id: str,
-    auth: AuthContext = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    auth: Annotated[AuthContext, Depends(get_current_user)],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Retrieve event details enforcing tenant boundary."""
     repo = EventRepository(db, auth.tenant_id)
     event = repo.get_event(event_id)
     if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event '{event_id}' not found for tenant '{auth.tenant_id}'.",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND)
     return _format_event_response(repo.sync_schedule(event, user_id=auth.user_id))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_event(
     req: EventCreateRequest,
-    auth: AuthContext = Depends(require_role("owner", "planner")),
-    db: Session = Depends(get_db),
+    auth: Annotated[AuthContext, Depends(require_role("owner", "planner"))],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
-    """Create a new event within the authenticated tenant."""
+    """Create a new event within the authenticated tenant (409 if a supplied id is taken)."""
     repo = EventRepository(db, auth.tenant_id)
-    created = repo.create_event(req.model_dump(), user_id=auth.user_id)
+    try:
+        created = repo.create_event(req.model_dump(), user_id=auth.user_id)
+    except EventIdConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Event id is already in use."
+        ) from exc
     return _format_event_response(repo.sync_schedule(created, user_id=auth.user_id))
 
 
@@ -96,33 +92,26 @@ def create_event(
 def update_event(
     event_id: str,
     req: EventUpdateRequest,
-    auth: AuthContext = Depends(require_role("owner", "planner", "collaborator")),
-    db: Session = Depends(get_db),
+    auth: Annotated[AuthContext, Depends(require_role("owner", "planner", "collaborator"))],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Update event data within the tenant boundary."""
     repo = EventRepository(db, auth.tenant_id)
-    updates = req.model_dump(exclude_unset=True)
+    updates = _clean_updates(req)
     updated = repo.update_event(event_id, updates, user_id=auth.user_id)
     if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event '{event_id}' not found for tenant '{auth.tenant_id}'.",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND)
     return _format_event_response(repo.sync_schedule(updated, user_id=auth.user_id))
 
 
 @router.delete("/{event_id}")
 def delete_event(
     event_id: str,
-    auth: AuthContext = Depends(require_role("owner")),
-    db: Session = Depends(get_db),
+    auth: Annotated[AuthContext, Depends(require_role("owner"))],
+    db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Delete an event (requires administrative 'owner' RBAC role)."""
     repo = EventRepository(db, auth.tenant_id)
-    success = repo.delete_event(event_id, user_id=auth.user_id)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Event '{event_id}' not found for tenant '{auth.tenant_id}'.",
-        )
+    if not repo.delete_event(event_id, user_id=auth.user_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND)
     return {"success": True, "deleted_id": event_id}

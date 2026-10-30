@@ -1,14 +1,6 @@
 """Automated tests for multi-tenant data partitioning, isolation, and audit logging."""
 
-import pytest
-from backend.app.auth.security import create_access_token
-from backend.app.main import app
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
+from app.auth.security import create_access_token
 
 
 def test_tenant_boundary_data_isolation(client):

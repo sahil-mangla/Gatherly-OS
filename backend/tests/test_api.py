@@ -1,13 +1,7 @@
 """Integration tests for FastAPI endpoints."""
 
-from fastapi.testclient import TestClient
 
-from app.main import app
-
-client = TestClient(app)
-
-
-def test_health_check_endpoint():
+def test_health_check_endpoint(client):
     resp = client.get("/api/health")
     assert resp.status_code == 200
     data = resp.json()
@@ -15,7 +9,7 @@ def test_health_check_endpoint():
     assert data["service"] == "gatherly-backend"
 
 
-def test_mara_cost_saving_endpoint():
+def test_mara_cost_saving_endpoint(client):
     resp = client.post(
         "/api/mara",
         json={
@@ -34,7 +28,7 @@ def test_mara_cost_saving_endpoint():
     assert data["proposals"][0]["action"] in ["reallocate", "update_expense", "custom"]
 
 
-def test_simulate_endpoint():
+def test_simulate_endpoint(client):
     resp = client.post(
         "/api/simulate",
         json={
@@ -55,7 +49,7 @@ def test_simulate_endpoint():
     assert data["projected"]["capacity_breach"] is True
 
 
-def test_vendor_parse_seed_endpoint():
+def test_vendor_parse_seed_endpoint(client):
     resp = client.post(
         "/api/vendors/parse-seed",
         json={"text": "Photography package $2,500 with $750 deposit. 8 hours coverage."},

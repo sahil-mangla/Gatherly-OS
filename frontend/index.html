@@ -3,189 +3,221 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gatherly — Celebration planning, made human</title>
+  <meta name="description" content="Gatherly is a celebration planner for weddings, birthdays and community events. Track budgets, timelines and vendor quotes, and catch overruns, hidden fees and date collisions before they cost you." />
+  <title>Overview · Gatherly — Celebration planning, made human</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./src/css/main.css" />
-  <link rel="stylesheet" href="./src/css/components.css" />
+  <link rel="stylesheet" href="./src/css/views.css" />
+  <link rel="stylesheet" href="./src/css/drawer.css" />
+  <link rel="stylesheet" href="./src/css/modals.css" />
+  <link rel="stylesheet" href="./src/css/whatif.css" />
+  <link rel="stylesheet" href="./src/css/responsive.css" />
+  <link rel="modulepreload" href="./src/js/app.js" />
+  <link rel="modulepreload" href="./src/js/store.js" />
+  <link rel="modulepreload" href="./src/js/a11y.js" />
+  <link rel="modulepreload" href="./src/js/components/toast.js" />
+  <link rel="modulepreload" href="./src/js/components/copilot-drawer.js" />
+  <link rel="modulepreload" href="./src/js/components/risk-tray.js" />
+  <link rel="modulepreload" href="./src/js/components/quote-modal.js" />
+  <link rel="modulepreload" href="./src/js/components/forms.js" />
+  <link rel="modulepreload" href="./src/js/components/tenant-auth-badge.js" />
+  <link rel="modulepreload" href="./src/js/views/overview-view.js" />
+  <link rel="modulepreload" href="./src/js/views/budget-view.js" />
+  <link rel="modulepreload" href="./src/js/views/timeline-view.js" />
+  <link rel="modulepreload" href="./src/js/views/vendors-view.js" />
+  <link rel="modulepreload" href="./src/js/views/ideas-view.js" />
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to main content</a>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand"><span class="brand-mark">✳</span><span>gatherly</span></div>
-      <div class="workspace-switcher"><span class="workspace-avatar">M</span><span><small>Workspace</small><strong id="workspace-label">Maya’s celebrations</strong></span><span class="chevron">⌄</span></div>
+    <aside class="sidebar" aria-label="Workspace sidebar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>gatherly</span></div>
+      <div class="workspace-switcher"><span class="workspace-avatar" aria-hidden="true">M</span><span><small>Workspace</small><strong id="workspace-label">Maya’s celebrations</strong></span></div>
       <nav class="primary-nav" aria-label="Main navigation">
-        <button class="nav-item active" data-view="overview" data-tab="overview"><span class="nav-icon">◒</span>Overview</button>
-        <button class="nav-item" data-view="budget" data-tab="budget"><span class="nav-icon">◈</span>Budget</button>
-        <button class="nav-item" data-view="timeline" data-tab="timeline"><span class="nav-icon">◷</span>Timeline</button>
-        <button class="nav-item" data-view="vendors" data-tab="vendors"><span class="nav-icon">⌁</span>Vendors <span class="nav-count" id="vendor-nav-count">3</span></button>
-        <button class="nav-item" data-view="ideas" data-tab="ideas"><span class="nav-icon">✦</span>Idea board</button>
+        <button type="button" class="nav-item active" data-view="overview" data-tab="overview" aria-current="page"><span class="nav-icon" aria-hidden="true">◒</span><span class="nav-text">Overview</span></button>
+        <button type="button" class="nav-item" data-view="budget" data-tab="budget"><span class="nav-icon" aria-hidden="true">◈</span><span class="nav-text">Budget</span></button>
+        <button type="button" class="nav-item" data-view="timeline" data-tab="timeline"><span class="nav-icon" aria-hidden="true">◷</span><span class="nav-text">Timeline</span></button>
+        <button type="button" class="nav-item" data-view="vendors" data-tab="vendors"><span class="nav-icon" aria-hidden="true">⌁</span><span class="nav-text">Vendors</span> <span class="nav-count" id="vendor-nav-count">0</span></button>
+        <button type="button" class="nav-item" data-view="ideas" data-tab="ideas"><span class="nav-icon" aria-hidden="true">✦</span><span class="nav-text">Idea board</span></button>
       </nav>
-      <div class="sidebar-divider"></div>
-      <div class="side-label">Your events <button class="plus-btn" id="add-event-btn" aria-label="Add event">+</button></div>
-      <div class="event-list" id="sidebar-event-list">
-        <button class="event-link selected" data-event-id="wedding-leila-noor"><span class="event-dot coral"></span><span><b>Leila & Noor</b><small>September 14, 2025 · Wedding</small></span><span class="mini-more">•••</span></button>
-        <button class="event-link" data-event-id="birthday-dads-60th"><span class="event-dot mint"></span><span><b>Dad’s 60th</b><small>November 02, 2025 · Birthday</small></span></button>
-        <button class="event-link" data-event-id="community-block-party"><span class="event-dot gold"></span><span><b>Block party</b><small>Draft · Summer 2026 · Community</small></span></button>
-      </div>
+      <div class="sidebar-divider" aria-hidden="true"></div>
+      <p class="side-label" id="events-label">Your events</p>
+      <div class="event-list" id="sidebar-event-list" role="group" aria-labelledby="events-label"></div>
+      <button type="button" class="new-event-btn" id="new-event-btn"><span aria-hidden="true">+</span> New event</button>
       <div class="sidebar-bottom">
-        <button class="help-link" id="reset-demo-btn"><span>↺</span> Reset demo state</button>
-        <button class="user-link"><span class="user-avatar">MK</span><span><b>Maya Khan</b><small>Personal plan</small></span><span>⌄</span></button>
+        <button type="button" class="help-link" id="reset-demo-btn"><span aria-hidden="true">↺</span> Reset demo state</button>
+        <div class="user-link"><span class="user-avatar" aria-hidden="true">MK</span><span><b>Maya Khan</b><small>Personal plan</small></span></div>
       </div>
     </aside>
 
-    <main class="main-content">
+    <div class="main-content">
       <header class="topbar">
-        <div class="breadcrumbs">
-          <span>Events</span><i>/</i><strong id="topbar-event-name">Leila & Noor</strong>
-          <span class="enterprise-badge" id="enterprise-auth-badge" title="Multi-Tenant Enterprise RBAC (Click to switch role)" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; background:#f4eee8; border:1px solid #e5dad2; border-radius:12px; padding:3px 8px; cursor:pointer; margin-left:12px; user-select:none;">
-            <span style="width:6px; height:6px; border-radius:50%; background:#2e7d32; display:inline-block;"></span>
-            <b id="enterprise-tenant-label">Gatherly Studio</b> · <span id="enterprise-role-label">OWNER</span> ↻
-          </span>
+        <div class="topbar-left">
+          <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <span>Events</span><i aria-hidden="true">/</i><strong id="topbar-event-name" aria-current="page">Your event</strong>
+          </nav>
+          <button type="button" class="enterprise-badge" id="enterprise-auth-badge" title="Switch the demo role (multi-tenant RBAC)">
+            <span class="badge-dot" aria-hidden="true"></span>
+            <span class="sr-only">Switch demo role. Workspace:</span>
+            <b id="enterprise-tenant-label">Gatherly Studio</b>
+            <span aria-hidden="true">·</span><span class="sr-only">role:</span>
+            <span id="enterprise-role-label">OWNER</span>
+            <span aria-hidden="true">↻</span>
+          </button>
         </div>
         <div class="top-actions">
-          <button class="icon-btn" id="topbar-risk-btn" aria-label="Notifications" title="Event Risk Radar">♧<span class="notification-dot"></span></button>
-          <button class="share-btn" id="share-plan-btn">↗ Share plan</button>
-          <button class="more-btn" id="copilot-toggle-btn" title="Ask Mara Copilot">✦ Ask Mara</button>
+          <button type="button" class="icon-btn" id="topbar-risk-btn" aria-label="Event Risk Radar" aria-haspopup="dialog" aria-expanded="false" aria-controls="risk-tray"><span aria-hidden="true">♧</span></button>
+          <button type="button" class="more-btn" id="copilot-toggle-btn" aria-haspopup="dialog"><span aria-hidden="true">✦</span> Ask Mara</button>
         </div>
       </header>
 
-      <section class="page-content view active" id="overview">
-        <div class="hero-row">
-          <div>
-            <div class="eyebrow" id="overview-eyebrow"><span class="live-dot"></span> Sunday · 18 weeks to go</div>
-            <h1 id="overview-heading">Make room for<br /><em>the good stuff.</em></h1>
-            <p class="hero-sub" id="overview-sub">Your wedding weekend is coming together beautifully, Maya.</p>
-          </div>
-          <div class="date-card" id="overview-date-card">
-            <span>THE BIG DAY</span>
-            <strong id="card-day">14</strong>
-            <b id="card-month">SEP</b>
-            <small id="card-year">2025 · Sunday</small>
-            <div class="date-sparkle">✦</div>
-          </div>
-        </div>
-
-        <div class="assistant-card" id="assistant-card-main">
-          <div class="assistant-orb">✦</div>
-          <div class="assistant-copy">
-            <span class="assistant-label">Mara <i>your planning copilot</i></span>
-            <p id="mara-overview-quote">“I noticed catering quotes are coming in higher than planned. Want me to find three brilliant ways to save without losing the magic?”</p>
-            <div class="suggestion-row">
-              <button class="suggestion" data-message="Show me smart ways to save on catering" data-op="cost_saving_proposals">Show me smart ways to save <span>↗</span></button>
-              <button class="suggestion" data-message="What should I do this week?" data-op="prioritize_tasks">What should I do this week? <span>↗</span></button>
+      <main id="main" tabindex="-1">
+        <section class="page-content view active" id="overview" aria-labelledby="overview-heading">
+          <div class="hero-row">
+            <div class="hero-copy">
+              <div class="eyebrow" id="overview-eyebrow"><span class="live-dot" aria-hidden="true"></span> Loading your plan…</div>
+              <h1 id="overview-heading" tabindex="-1">Make room for<br /><em>the good stuff.</em></h1>
+              <p class="hero-sub" id="overview-sub">Your celebration is coming together.</p>
+              <p class="hero-value" id="overview-value-prop">Catch overruns, hidden fees and date collisions before they cost you.</p>
+              <button type="button" class="outline-btn" id="edit-event-btn" aria-haspopup="dialog">Edit event details</button>
+            </div>
+            <div class="date-card" id="overview-date-card" role="group" aria-label="Event date">
+              <span>THE BIG DAY</span>
+              <strong id="card-day">–</strong>
+              <b id="card-month">–</b>
+              <small id="card-year">–</small>
+              <div class="date-sparkle" aria-hidden="true">✦</div>
             </div>
           </div>
-          <button class="assistant-arrow" id="open-assistant-arrow" aria-label="Open assistant">→</button>
-        </div>
 
-        <div class="section-heading">
-          <div><span class="eyebrow">THE HEART OF IT</span><h2>At a glance</h2></div>
-          <button class="text-btn" id="overview-refresh-btn">Live sync <span>↻</span></button>
-        </div>
-
-        <div class="stats-grid">
-          <article class="stat-card budget-card" id="stat-card-budget">
-            <div class="stat-top"><span class="stat-icon">◈</span><span class="card-kicker">Budget</span><button class="card-dots">•••</button></div>
-            <div class="stat-value" id="overview-budget-val">$18,460 <span>/ $24,000</span></div>
-            <div class="progress-track"><div class="progress-fill" id="overview-budget-progress" style="width:77%"></div></div>
-            <div class="stat-footer"><span id="overview-budget-pct">77% committed</span><span class="good" id="overview-budget-left">$5,540 left</span></div>
-          </article>
-
-          <article class="stat-card timeline-card" id="stat-card-timeline">
-            <div class="stat-top"><span class="stat-icon">◷</span><span class="card-kicker">Timeline</span><button class="card-dots">•••</button></div>
-            <div class="stat-value" id="overview-timeline-val">6 <span>of 24 milestones</span></div>
-            <div class="milestone-line" id="overview-milestone-pills"></div>
-            <div class="stat-footer"><span id="overview-timeline-status">On track</span><span class="good" id="overview-timeline-next">Next: tasting</span></div>
-          </article>
-
-          <article class="stat-card vendor-card" id="stat-card-vendors">
-            <div class="stat-top"><span class="stat-icon">⌁</span><span class="card-kicker">Vendors</span><button class="card-dots">•••</button></div>
-            <div class="stat-value" id="overview-vendors-val">8 <span>booked</span></div>
-            <div class="avatar-stack" id="overview-vendor-avatars"></div>
-            <div class="stat-footer"><span id="overview-vendor-alerts">2 need your reply</span><span class="warn" id="overview-review-now">Review now →</span></div>
-          </article>
-        </div>
-
-        <div class="lower-grid">
-          <section class="panel checklist-panel">
-            <div class="panel-heading"><div><span class="eyebrow">KEEP MOVING</span><h2>Next up</h2></div><button class="text-btn" id="goto-timeline-btn">View timeline <span>→</span></button></div>
-            <div class="task-list" id="overview-task-list"></div>
-          </section>
-
-          <section class="panel mood-panel">
-            <div class="panel-heading"><div><span class="eyebrow">THE VIBE</span><h2>Feeling like...</h2></div><button class="text-btn" id="edit-vibe-btn">Explore ideas <span>↗</span></button></div>
-            <div class="mood-collage">
-              <div class="mood-tile tile-rose"><span>✺</span><b>Sun-washed<br />garden</b></div>
-              <div class="mood-tile tile-orange"><span>☼</span><b>Long-table<br />dinner</b></div>
-              <div class="mood-tile tile-pink"><span>◌</span><b>Little<br />surprises</b></div>
+          <section class="assistant-card" id="assistant-card-main" aria-labelledby="assistant-label">
+            <div class="assistant-orb" aria-hidden="true">✦</div>
+            <div class="assistant-copy">
+              <span class="assistant-label" id="assistant-label">Mara <i>your planning copilot</i></span>
+              <p id="mara-overview-quote">Mara is reviewing your plan…</p>
+              <div class="suggestion-row">
+                <button type="button" class="suggestion" data-message="Show me smart ways to save on catering" data-op="cost_saving_proposals">Show me smart ways to save <span aria-hidden="true">↗</span></button>
+                <button type="button" class="suggestion" data-message="What should I do this week?" data-op="prioritize_tasks">What should I do this week? <span aria-hidden="true">↗</span></button>
+              </div>
             </div>
-            <p class="mood-caption" id="overview-mood-caption">“Effortless, intimate, a little bit unexpected.”</p>
+            <button type="button" class="assistant-arrow" id="open-assistant-arrow" aria-label="Open Mara assistant" aria-haspopup="dialog"><span aria-hidden="true">→</span></button>
           </section>
-        </div>
-      </section>
 
-      <section class="page-content view" id="budget">
-        <div class="view-header">
-          <div><span class="eyebrow">THE NUMBERS</span><h1>Your budget, <em>with breathing room.</em></h1><p>Keep the big picture clear while the little things add up.</p></div>
-          <button class="primary-btn" id="add-expense-btn">+ Add expense</button>
-        </div>
-
-        <div class="budget-overview">
-          <div class="big-number" id="budget-big-number">$18,460 <small>spent of $24,000</small></div>
-          <div class="big-progress"><div id="budget-big-bar" style="width:77%"></div></div>
-          <div class="budget-meta"><span id="budget-committed-label">77% committed</span><span id="budget-available-label">$5,540 available</span></div>
-        </div>
-
-        <div class="category-grid" id="budget-category-grid"></div>
-
-        <div class="panel budget-table">
-          <div class="panel-heading"><div><span class="eyebrow">RECENT ACTIVITY</span><h2>Every dollar has a story</h2></div><button class="text-btn" id="export-budget-btn">Export summary <span>↓</span></button></div>
-          <div class="expense-row header"><span>ITEM</span><span>CATEGORY</span><span>STATUS</span><span>AMOUNT</span></div>
-          <div id="budget-table-rows"></div>
-        </div>
-      </section>
-
-      <section class="page-content view" id="timeline">
-        <div class="view-header">
-          <div><span class="eyebrow">THE RUN OF SHOW</span><h1>A gentle path to <em>the big day.</em></h1><p>Milestones paced so future-you stays grateful.</p></div>
-          <button class="primary-btn" id="add-milestone-btn">+ Add milestone</button>
-        </div>
-
-        <div class="timeline-shell">
-          <div class="timeline-progress">
-            <div class="progress-ring" id="timeline-progress-ring">25<small>%</small></div>
-            <div><b id="timeline-status-headline">You’re right on time.</b><span id="timeline-status-sub">6 of 24 milestones complete</span></div>
+          <div class="section-heading">
+            <div><span class="eyebrow">THE HEART OF IT</span><h2>At a glance</h2></div>
           </div>
-          <div class="timeline" id="timeline-events-container"></div>
-        </div>
-      </section>
 
-      <section class="page-content view" id="vendors">
-        <div class="view-header">
-          <div><span class="eyebrow">THE DREAM TEAM</span><h1>People who make it <em>happen.</em></h1><p>Keep every conversation, contract, and little detail in one place.</p></div>
-          <div style="display:flex; gap:10px;">
-            <button class="share-btn" id="compare-quotes-header-btn">Compare Quotes ↗</button>
-            <button class="primary-btn" id="add-vendor-btn">+ Add vendor</button>
+          <div class="stats-grid">
+            <article class="stat-card budget-card" id="stat-card-budget">
+              <div class="stat-top"><span class="stat-icon" aria-hidden="true">◈</span><h3 class="card-kicker">Budget</h3></div>
+              <div class="stat-value" id="overview-budget-val">$– <span>/ $–</span></div>
+              <div class="progress-track" id="overview-budget-track"><div class="progress-fill" id="overview-budget-progress" style="width:0"></div></div>
+              <div class="stat-footer"><span id="overview-budget-pct">Calculating…</span><span class="good" id="overview-budget-left"></span></div>
+            </article>
+
+            <article class="stat-card timeline-card" id="stat-card-timeline">
+              <div class="stat-top"><span class="stat-icon" aria-hidden="true">◷</span><h3 class="card-kicker">Timeline</h3></div>
+              <div class="stat-value" id="overview-timeline-val">– <span>milestones</span></div>
+              <div class="milestone-line" id="overview-milestone-pills"></div>
+              <div class="stat-footer"><span id="overview-timeline-status">Checking…</span><span class="good" id="overview-timeline-next"></span></div>
+            </article>
+
+            <article class="stat-card vendor-card" id="stat-card-vendors">
+              <div class="stat-top"><span class="stat-icon" aria-hidden="true">⌁</span><h3 class="card-kicker">Vendors</h3></div>
+              <div class="stat-value" id="overview-vendors-val">– <span>booked</span></div>
+              <div class="avatar-stack" id="overview-vendor-avatars" aria-hidden="true"></div>
+              <div class="stat-footer"><span id="overview-vendor-alerts">Checking…</span><button type="button" class="text-btn warn" id="overview-review-now" aria-label="Review now: vendor quotes">Review now <span aria-hidden="true">→</span></button></div>
+            </article>
           </div>
-        </div>
 
-        <div class="vendor-summary" id="vendor-summary-cards"></div>
-        <div class="vendor-grid" id="vendor-cards-grid"></div>
-      </section>
+          <div class="lower-grid">
+            <section class="panel checklist-panel" aria-labelledby="next-up-heading">
+              <div class="panel-heading"><div><span class="eyebrow">KEEP MOVING</span><h2 id="next-up-heading">Next up</h2></div><button type="button" class="text-btn" id="goto-timeline-btn">View timeline <span aria-hidden="true">→</span></button></div>
+              <ol class="task-list" id="overview-task-list"></ol>
+            </section>
 
-      <section class="page-content view" id="ideas">
-        <div class="view-header">
-          <div><span class="eyebrow">THE SPARK</span><h1>Little details, <em>big feeling.</em></h1><p>A living board for all the things that make this celebration yours.</p></div>
-          <button class="primary-btn" id="add-idea-btn">+ Add idea</button>
-        </div>
-        <div class="idea-board" id="idea-board-grid"></div>
-      </section>
-    </main>
+            <section class="panel mood-panel" aria-labelledby="vibe-heading">
+              <div class="panel-heading"><div><span class="eyebrow">THE VIBE</span><h2 id="vibe-heading">Feeling like...</h2></div><button type="button" class="text-btn" id="edit-vibe-btn">Explore ideas <span aria-hidden="true">↗</span></button></div>
+              <div class="mood-collage">
+                <div class="mood-tile tile-rose"><span aria-hidden="true">✺</span><b>Sun-washed<br />garden</b></div>
+                <div class="mood-tile tile-orange"><span aria-hidden="true">☼</span><b>Long-table<br />dinner</b></div>
+                <div class="mood-tile tile-pink"><span aria-hidden="true">◌</span><b>Little<br />surprises</b></div>
+              </div>
+              <p class="mood-caption" id="overview-mood-caption">“Effortless, intimate, a little bit unexpected.”</p>
+            </section>
+          </div>
+        </section>
+
+        <section class="page-content view" id="budget" aria-labelledby="budget-heading">
+          <div class="view-header">
+            <div><span class="eyebrow">THE NUMBERS</span><h1 id="budget-heading" tabindex="-1">Your budget, <em>with breathing room.</em></h1><p>Keep the big picture clear while the little things add up.</p></div>
+            <button type="button" class="primary-btn" id="add-expense-btn">+ Add expense</button>
+          </div>
+
+          <div class="budget-overview">
+            <div class="big-number" id="budget-big-number">$– <small>allocated of $–</small></div>
+            <div class="big-progress" id="budget-big-track"><div id="budget-big-bar" style="width:0"></div></div>
+            <div class="budget-meta"><span id="budget-committed-label">Calculating…</span><span id="budget-available-label"></span></div>
+          </div>
+
+          <h2 class="sr-only">Budget by category</h2>
+          <div class="category-grid" id="budget-category-grid"></div>
+
+          <div class="panel budget-table">
+            <div class="panel-heading"><div><span class="eyebrow">RECENT ACTIVITY</span><h2>Every dollar has a story</h2></div><button type="button" class="text-btn" id="export-budget-btn">Export summary <span aria-hidden="true">↓</span></button></div>
+            <table class="expense-table">
+              <caption class="sr-only">Expenses with category, payment status and amount</caption>
+              <thead><tr><th scope="col">Item</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col" class="num">Amount</th></tr></thead>
+              <tbody id="budget-table-rows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="page-content view" id="timeline" aria-labelledby="timeline-heading">
+          <div class="view-header">
+            <div><span class="eyebrow">THE RUN OF SHOW</span><h1 id="timeline-heading" tabindex="-1">A gentle path to <em>the big day.</em></h1><p>Milestones paced so future-you stays grateful.</p></div>
+            <button type="button" class="primary-btn" id="add-milestone-btn">+ Add milestone</button>
+          </div>
+
+          <div class="timeline-shell">
+            <div class="timeline-progress">
+              <div class="progress-ring" id="timeline-progress-ring" role="img" aria-label="Milestone progress">–<small>%</small></div>
+              <div><b id="timeline-status-headline">Checking your schedule…</b><span id="timeline-status-sub"></span></div>
+            </div>
+            <div class="timeline" id="timeline-events-container"></div>
+          </div>
+        </section>
+
+        <section class="page-content view" id="vendors" aria-labelledby="vendors-heading">
+          <div class="view-header">
+            <div><span class="eyebrow">THE DREAM TEAM</span><h1 id="vendors-heading" tabindex="-1">People who make it <em>happen.</em></h1><p>Keep every conversation, contract, and little detail in one place.</p></div>
+            <div class="header-actions">
+              <button type="button" class="share-btn" id="compare-quotes-header-btn" aria-haspopup="dialog">Compare Quotes <span aria-hidden="true">↗</span></button>
+              <button type="button" class="primary-btn" id="add-vendor-btn">+ Add vendor</button>
+            </div>
+          </div>
+
+          <h2 class="sr-only">Vendor summary</h2>
+          <div class="vendor-summary" id="vendor-summary-cards"></div>
+          <h2 class="sr-only">Your vendors</h2>
+          <div class="vendor-grid" id="vendor-cards-grid"></div>
+        </section>
+
+        <section class="page-content view" id="ideas" aria-labelledby="ideas-heading">
+          <div class="view-header">
+            <div><span class="eyebrow">THE SPARK</span><h1 id="ideas-heading" tabindex="-1">Little details, <em>big feeling.</em></h1><p>A living board for all the things that make this celebration yours.</p></div>
+            <button type="button" class="primary-btn" id="add-idea-btn">+ Add idea</button>
+          </div>
+          <h2 class="sr-only">Idea board</h2>
+          <div class="idea-board" id="idea-board-grid"></div>
+        </section>
+      </main>
+    </div>
   </div>
 
-  <div class="toast" role="status" aria-live="polite" id="app-toast"><span>✦</span><div><b id="toast-title">Mara is on it</b><small id="toast-sub">I'll pull together a few thoughtful options.</small></div></div>
+  <div class="toast" role="status" aria-live="polite" aria-atomic="true" id="app-toast"><span aria-hidden="true">✦</span><div><b id="toast-title">Mara is on it</b><small id="toast-sub"></small></div><button type="button" class="toast-dismiss" id="toast-dismiss" aria-label="Dismiss notification" disabled><span aria-hidden="true">✕</span></button></div>
   <script type="module" src="./src/js/app.js"></script>
 </body>
 </html>

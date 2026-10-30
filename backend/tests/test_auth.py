@@ -1,19 +1,11 @@
 """Automated tests for JWT authentication, cryptographic hashing, and RBAC authorization."""
 
-import pytest
-from backend.app.auth.security import (
+from app.auth.security import (
     create_access_token,
     decode_access_token,
     hash_password,
     verify_password,
 )
-from backend.app.main import app
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
 
 
 def test_password_hashing_and_verification():

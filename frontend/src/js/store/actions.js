@@ -4,75 +4,71 @@
  */
 
 import { validateExpenseInput } from '../domain/budget.js';
-import { validateTask } from '../domain/timeline.js';
+import { validateNewTask } from '../domain/dependencies.js';
+import { IDEA_TASK_LEAD_DAYS } from '../domain/constants.js';
+import { makeId, toAmount, orElse, asArray, pushTo } from './helpers.js';
+
+export { applyProposalAction } from './proposals.js';
+
+const IDEA_COLORS = ['idea-yellow', 'idea-coral', 'idea-green', 'idea-pink'];
+
+function failIfInvalid(label, validation) {
+  if (!validation.valid) {
+    throw new Error(`${label} validation failed: ${validation.errors.join(', ')}`);
+  }
+}
+
+function defaultExpenseStatus(rawExpense) {
+  return rawExpense.actual_amount > 0 ? 'paid' : 'pending';
+}
 
 export function addExpenseAction(event, rawExpense) {
-  const validation = validateExpenseInput(rawExpense);
-  if (!validation.valid) {
-    throw new Error(`Expense validation failed: ${validation.errors.join(', ')}`);
-  }
+  failIfInvalid('Expense', validateExpenseInput(rawExpense));
 
-  const newExpense = {
-    id: `exp-${Date.now()}`,
-    category: rawExpense.category || 'other',
+  return pushTo(event, 'expenses', {
+    id: makeId('exp'),
+    category: orElse(rawExpense.category, 'other'),
     description: rawExpense.description.trim(),
-    planned_amount: Number(rawExpense.planned_amount || 0),
-    actual_amount: Number(rawExpense.actual_amount || 0),
-    committed_amount: Number(rawExpense.committed_amount || 0),
-    status: rawExpense.status || (rawExpense.actual_amount > 0 ? 'paid' : 'pending'),
-    cost_per_guest: Number(rawExpense.cost_per_guest || 0),
-    vendor_id: rawExpense.vendor_id || null
-  };
-
-  event.expenses = event.expenses || [];
-  event.expenses.push(newExpense);
-  return newExpense;
+    planned_amount: toAmount(rawExpense.planned_amount),
+    actual_amount: toAmount(rawExpense.actual_amount),
+    committed_amount: toAmount(rawExpense.committed_amount),
+    status: orElse(rawExpense.status, defaultExpenseStatus(rawExpense)),
+    cost_per_guest: toAmount(rawExpense.cost_per_guest),
+    vendor_id: orElse(rawExpense.vendor_id, null)
+  });
 }
 
 export function addTaskAction(event, rawTask) {
-  const validation = validateTask(rawTask);
-  if (!validation.valid) {
-    throw new Error(`Task validation failed: ${validation.errors.join(', ')}`);
-  }
+  failIfInvalid('Task', validateNewTask(event.tasks || [], rawTask));
 
-  const newTask = {
-    id: `task-${Date.now()}`,
+  return pushTo(event, 'tasks', {
+    id: makeId('task'),
     title: rawTask.title.trim(),
-    category: rawTask.category || 'General',
+    category: orElse(rawTask.category, 'General'),
     due_date: rawTask.due_date,
-    status: rawTask.status || 'todo',
-    priority: rawTask.priority || 'medium',
-    depends_on: Array.isArray(rawTask.depends_on) ? rawTask.depends_on : [],
+    status: orElse(rawTask.status, 'todo'),
+    priority: orElse(rawTask.priority, 'medium'),
+    depends_on: asArray(rawTask.depends_on),
     is_fixed_deadline: Boolean(rawTask.is_fixed_deadline)
-  };
-
-  event.tasks = event.tasks || [];
-  event.tasks.push(newTask);
-  return newTask;
+  });
 }
 
 export function addVendorAction(event, rawVendor) {
-  if (!rawVendor.name) {
-    throw new Error('Vendor name is required.');
-  }
+  if (!rawVendor.name) throw new Error('Vendor name is required.');
 
-  const newVendor = {
-    id: `ven-${Date.now()}`,
+  return pushTo(event, 'vendors', {
+    id: makeId('ven'),
     name: rawVendor.name.trim(),
-    category: rawVendor.category || 'General',
-    status: rawVendor.status || 'shortlist',
-    quoted_amount: Number(rawVendor.quoted_amount || 0),
-    deposit_paid: Number(rawVendor.deposit_paid || 0),
-    avatar_emoji: rawVendor.avatar_emoji || '🤝',
-    summary: rawVendor.summary || '',
-    inclusions: Array.isArray(rawVendor.inclusions) ? rawVendor.inclusions : [],
-    exclusions: Array.isArray(rawVendor.exclusions) ? rawVendor.exclusions : [],
-    notes: rawVendor.notes || ''
-  };
-
-  event.vendors = event.vendors || [];
-  event.vendors.push(newVendor);
-  return newVendor;
+    category: orElse(rawVendor.category, 'General'),
+    status: orElse(rawVendor.status, 'shortlist'),
+    quoted_amount: toAmount(rawVendor.quoted_amount),
+    deposit_paid: toAmount(rawVendor.deposit_paid),
+    avatar_emoji: orElse(rawVendor.avatar_emoji, '🤝'),
+    summary: orElse(rawVendor.summary, ''),
+    inclusions: asArray(rawVendor.inclusions),
+    exclusions: asArray(rawVendor.exclusions),
+    notes: orElse(rawVendor.notes, '')
+  });
 }
 
 export function addIdeaAction(event, rawIdea) {
@@ -80,19 +76,16 @@ export function addIdeaAction(event, rawIdea) {
     throw new Error('Idea title and description are required.');
   }
 
-  const colors = ['idea-yellow', 'idea-coral', 'idea-green', 'idea-pink'];
-  const chosenColor = colors[Math.floor(Math.random() * colors.length)];
-
   const newIdea = {
-    id: `idea-${Date.now()}`,
+    id: makeId('idea'),
     title: rawIdea.title.trim(),
     description: rawIdea.description.trim(),
-    author: rawIdea.author || 'You',
+    author: orElse(rawIdea.author, 'You'),
     date_added: 'Just now',
-    bg_color: chosenColor,
-    estimated_cost: Number(rawIdea.estimated_cost || 0),
+    bg_color: IDEA_COLORS[Math.floor(Math.random() * IDEA_COLORS.length)],
+    estimated_cost: toAmount(rawIdea.estimated_cost),
     converted_task_id: null,
-    requirements: rawIdea.requirements || ''
+    requirements: orElse(rawIdea.requirements, '')
   };
 
   event.ideas = event.ideas || [];
@@ -104,16 +97,14 @@ export function convertIdeaToTaskAction(event, ideaId) {
   const idea = (event.ideas || []).find(i => i.id === ideaId);
   if (!idea) throw new Error('Idea not found.');
 
-  if (idea.converted_task_id) {
-    const existing = (event.tasks || []).find(t => t.id === idea.converted_task_id);
-    if (existing) return { idea, task: existing };
-  }
+  const existing = (event.tasks || []).find(t => t.id === idea.converted_task_id);
+  if (idea.converted_task_id && existing) return { idea, task: existing };
 
   const due = new Date();
-  due.setDate(due.getDate() + 14);
+  due.setDate(due.getDate() + IDEA_TASK_LEAD_DAYS);
 
-  const newTask = {
-    id: `task-from-idea-${Date.now()}`,
+  const newTask = pushTo(event, 'tasks', {
+    id: makeId('task-from-idea'),
     title: `Implement Idea: ${idea.title}`,
     category: 'Creative Spark',
     due_date: due.toISOString().split('T')[0],
@@ -121,73 +112,7 @@ export function convertIdeaToTaskAction(event, ideaId) {
     priority: 'medium',
     depends_on: [],
     is_fixed_deadline: false
-  };
-
+  });
   idea.converted_task_id = newTask.id;
-  event.tasks = event.tasks || [];
-  event.tasks.push(newTask);
   return { idea, task: newTask };
-}
-
-export function applyProposalAction(event, proposal) {
-  if (!proposal || typeof proposal !== 'object') throw new Error('Invalid proposal payload.');
-
-  const action = proposal.action || proposal.action_type || 'custom';
-
-  if (action === 'reallocate' || action === 'rebalance_budget') {
-    const fromCat = proposal.from_category;
-    const toCat = proposal.to_category || proposal.category;
-    const amount = Math.abs(Number(proposal.amount || proposal.delta_amount || 0));
-
-    if (amount <= 0) throw new Error('Reallocation requires a positive amount.');
-
-    const fromExp = (event.expenses || []).find(e => e.category === fromCat);
-    const toExp = (event.expenses || []).find(e => e.category === toCat);
-
-    if (fromExp) fromExp.planned_amount = Math.max(0, fromExp.planned_amount - amount);
-    if (toExp) {
-      toExp.planned_amount += amount;
-    } else if (toCat) {
-      event.expenses = event.expenses || [];
-      event.expenses.push({
-        id: `exp-${Date.now()}`,
-        category: toCat,
-        description: `Allocation: ${toCat}`,
-        planned_amount: amount,
-        actual_amount: 0,
-        committed_amount: 0,
-        status: 'planned'
-      });
-    }
-    return { success: true, message: `Reallocated $${amount.toLocaleString()} ${fromCat ? `from ${fromCat} ` : ''}to ${toCat || 'budget'}.` };
-  }
-
-  if (action === 'update_expense' || action === 'adjust_expense') {
-    const cat = proposal.category;
-    const savings = Math.abs(Number(proposal.savings || proposal.delta_amount || 0));
-    const targetExp = (event.expenses || []).find(e => e.category === cat);
-    if (targetExp && savings > 0) {
-      targetExp.planned_amount = Math.max(0, targetExp.planned_amount - savings);
-      return { success: true, message: `Saved $${savings.toLocaleString()} on ${cat}.` };
-    }
-    return { success: true, message: `Applied savings of $${savings.toLocaleString()} to ${cat || 'event'}.` };
-  }
-
-  if (['custom', 'create_task', 'audit_vendors', 'review_risks'].includes(action)) {
-    const newTask = {
-      id: `task-${Date.now()}`,
-      title: proposal.title || 'Implement Mara recommendation',
-      category: 'Action',
-      due_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      status: 'todo',
-      priority: 'high',
-      depends_on: [],
-      is_fixed_deadline: false
-    };
-    event.tasks = event.tasks || [];
-    event.tasks.push(newTask);
-    return { success: true, message: `Created task: "${newTask.title}".`, task: newTask };
-  }
-
-  throw new Error(`Unsupported proposal action: "${action}"`);
 }

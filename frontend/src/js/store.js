@@ -4,6 +4,7 @@
  */
 
 import { INITIAL_TEMPLATES } from './templates.js';
+import { readStorage, writeStorage, removeStorage, parseEventsMap } from './store/storage.js';
 import { normalizeAllEventDates } from './domain/event-dates.js';
 import {
   addExpenseAction,
@@ -13,6 +14,7 @@ import {
   convertIdeaToTaskAction,
   applyProposalAction
 } from './store/actions.js';
+import { createEventAction, updateEventBasicsAction } from './store/event-actions.js';
 
 const STORAGE_KEY = 'gatherly_events_v4';
 const ACTIVE_EVENT_KEY = 'gatherly_active_event_v4';
@@ -21,34 +23,19 @@ export class EventStore {
   constructor() {
     this.events = this.load();
     if (normalizeAllEventDates(this.events, new Date(), INITIAL_TEMPLATES)) this.save();
-    const savedActiveId = localStorage.getItem(ACTIVE_EVENT_KEY);
-    this.activeEventId = (savedActiveId && this.events[savedActiveId])
+    const savedActiveId = readStorage(ACTIVE_EVENT_KEY);
+    this.activeEventId = (savedActiveId && Object.hasOwn(this.events, savedActiveId))
       ? savedActiveId
       : (Object.keys(this.events)[0] || 'wedding-leila-noor');
     this.subscribers = new Set();
   }
 
   load() {
-    try {
-      const serialized = localStorage.getItem(STORAGE_KEY);
-      if (serialized) {
-        const parsed = JSON.parse(serialized);
-        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.warn('Could not read from localStorage, using initial templates:', e);
-    }
-    return JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
+    return parseEventsMap(readStorage(STORAGE_KEY)) || JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
   }
 
   save() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.events));
-    } catch (e) {
-      console.error('Failed to save event store state to localStorage:', e);
-    }
+    writeStorage(STORAGE_KEY, JSON.stringify(this.events));
   }
 
   subscribe(callback) {
@@ -75,22 +62,37 @@ export class EventStore {
   }
 
   switchEvent(eventId) {
-    if (this.events[eventId]) {
+    if (Object.hasOwn(this.events, eventId)) {
       this.activeEventId = eventId;
-      try {
-        localStorage.setItem(ACTIVE_EVENT_KEY, eventId);
-      } catch (e) {}
+      writeStorage(ACTIVE_EVENT_KEY, eventId);
       this.emit('event:switched', { eventId });
     }
+  }
+
+  /** Validates, builds and saves a new event from a template, makes it active and emits `event:created`. */
+  createEvent(payload) {
+    const event = createEventAction(this.events, payload, INITIAL_TEMPLATES);
+    this.activeEventId = event.id;
+    writeStorage(ACTIVE_EVENT_KEY, event.id);
+    this.save();
+    this.emit('event:created', { event });
+    return event;
+  }
+
+  /** Edits the active event's name, date, guests, venue capacity and total budget. */
+  updateEventBasics(payload) {
+    const event = this.getActiveEvent();
+    updateEventBasicsAction(event, payload);
+    this.save();
+    this.emit('event:updated', { event });
+    return event;
   }
 
   resetToDefaults() {
     this.events = JSON.parse(JSON.stringify(INITIAL_TEMPLATES));
     normalizeAllEventDates(this.events, new Date(), INITIAL_TEMPLATES);
     this.activeEventId = Object.keys(this.events)[0];
-    try {
-      localStorage.removeItem(ACTIVE_EVENT_KEY);
-    } catch (e) {}
+    removeStorage(ACTIVE_EVENT_KEY);
     this.save();
     this.emit('store:reset', { events: this.events });
   }

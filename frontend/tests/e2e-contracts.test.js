@@ -55,7 +55,9 @@ describe('Full User Journey E2E Contracts', () => {
     const rawQuote = 'Catering quote: Full reception dinner for $6,500 with a deposit. Excludes cleanup & staff.';
     const extracted = extractQuoteFromRawText(rawQuote);
     assert.equal(extracted.quoted_base_amount, 6500);
-    assert.equal(extracted.deposit_amount, 1950);
+    // A deposit is mentioned but no figure is given: never fabricate a 30% deposit.
+    assert.equal(extracted.deposit_amount, 0);
+    assert.equal(extracted.deposit_stated, false);
 
     const audit = auditQuoteCompleteness({ inclusions: [] });
     assert.equal(audit.isComplete, false);

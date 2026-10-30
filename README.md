@@ -1,267 +1,111 @@
 # Gatherly — Celebration Planning, Made Human
 
-> **Prompt Wars Week 5 (Challenge 5): Celebration & Event Planner**  
-> *An enterprise multi-tenant celebration planning SaaS powered by deterministic financial safety, DAG timeline orchestration, MiroFish-inspired multi-factor ripple simulations, OpenTelemetry distributed tracing, role-based access control, Playwright E2E testing, and sub-150ms performance SLA gating.*
+> **Prompt Wars Week 5 (Challenge 5): Celebration & Event Planner**
+> Catch overruns, hidden fees and date collisions before they cost you.
 
----
+Planning a wedding, a birthday or a block party goes wrong in three predictable ways: the guest list outgrows the venue, a vendor quote hides fees, and one slipped deadline knocks over everything that depends on it. Gatherly checks all three for you, with deterministic math (never LLM guesswork), and explains what it found in plain language.
 
-## 🌟 Overview
+## What you can do
 
-Planning major life milestones—from 150-guest weddings to community block parties—is emotionally charged, fragmented, and vulnerable to surprise surcharges, capacity breaches, and domino-effect schedule collisions.
-
-**Gatherly** bridges warm editorial design with rigorous enterprise systems engineering:
-- **No Hallucinated Math:** Financial allocations, remaining buffers, and capacity limits are computed deterministically in code—never left to LLM guesswork.
-- **MiroFish Ripple Simulation Sandbox:** Sliders allow planners to ask *"What if guest attendance grows by 25?"* or *"What if catering runs 15% higher?"*, visualizing immediate impacts on budget, venue fire-code capacity, and downstream milestone dates.
-- **Intelligent Vendor Quote Audit & Raw Seed Ingestion:** Paste raw, unstructured quotes or email proposals from photographers or caterers. Gatherly extracts structured line items and flags undisclosed hidden fees (cleanup/teardown, service staff gratuity, overtime rates).
-- **Event Risk Radar:** A grounded, proactive warning system that watches for capacity limits, overdue critical-path milestones, and category overruns.
-- **Transactional Mara Copilot:** An AI advisor that produces structured recommendations with actionable "Approve & Apply" state mutations.
-- **Multi-Tenant Persistence:** Relational storage backed by PostgreSQL via SQLAlchemy with tenant isolation and audit logging.
-- **Role-Based Access Control (RBAC):** JWT bearer tokens with granular roles (`owner`, `planner`, `collaborator`, `vendor`).
-- **Distributed Observability:** OpenTelemetry distributed tracing and structured JSON log formatting for Datadog / CloudWatch / ELK.
-- **High-Throughput Performance SLA:** Native asynchronous load harness enforcing sub-150ms p95 latency at 2,000+ req/sec.
-
----
-
-## 🏗️ Architecture
-
-Gatherly follows strict separation of concerns benchmarked against **[MiroFish](https://github.com/666ghj/MiroFish)** and modern enterprise 12-factor cloud-native practices:
-
-```
-prompt-war-week5/
-├── vercel.json                    # Vercel serverless & static asset routing
-├── api/
-│   └── index.py                   # Vercel serverless FastAPI entrypoint
-├── docker-compose.yml             # Local multi-service orchestration (PostgreSQL 16 + Gatherly)
-├── Dockerfile                     # Multi-stage production container
-├── playwright.config.js           # Playwright E2E configuration
-├── scripts/
-│   ├── load_test.py               # High-throughput async load generator & SLA gate (<200 LOC)
-│   └── check_line_limits.py       # Strict <200 LOC per file architectural enforcer
-│
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── routes.py          # Mara copilot, simulation, vendor & risk endpoints
-│   │   │   ├── event_routes.py    # Multi-tenant REST CRUD endpoints (/api/events)
-│   │   │   └── schemas.py         # Pydantic v2 validation contracts
-│   │   ├── auth/
-│   │   │   ├── security.py        # PBKDF2-SHA256 hashing & JWT issuance/validation
-│   │   │   ├── dependencies.py    # AuthContext, get_current_user & require_role
-│   │   │   └── routes.py          # /api/auth/register, /login, /me, /demo-token
-│   │   ├── db/
-│   │   │   ├── database.py        # SQLAlchemy engine, connection pooling & session maker
-│   │   │   ├── models.py          # Tenant, User, EventModel, AuditLog declarative models
-│   │   │   └── repository.py      # Multi-tenant EventRepository with tenant partitioning
-│   │   ├── domain/
-│   │   │   ├── budget.py          # Financial totals, variances, non-negative guards
-│   │   │   ├── timeline.py        # DAG task scheduling & cycle checks
-│   │   │   ├── simulation.py      # Multi-factor ripple simulation engine
-│   │   │   ├── vendors.py         # Quote normalization, omission audit, seed parsing
-│   │   │   └── risks.py           # Deterministic Event Risk Radar
-│   │   ├── observability/
-│   │   │   ├── logging.py         # JSON log formatting with Datadog/CloudWatch attributes
-│   │   │   ├── telemetry.py       # OpenTelemetry tracer & span instrumentation
-│   │   │   └── middleware.py      # Correlation ID & distributed tracing HTTP middleware
-│   │   ├── services/
-│   │   │   └── mara_service.py    # Copilot service (Live Gemini + schema fallback)
-│   │   ├── config.py              # Environment configuration & 12-factor settings
-│   │   └── main.py                # FastAPI app initialization, middleware & routes
-│   └── tests/                     # 29 backend test suites (auth, DB, DAG, risks, OTEL)
-│
-├── frontend/
-│   ├── index.html                 # Semantic, accessible layout with enterprise badges
-│   ├── src/
-│   │   ├── css/                   # Design tokens, typography, component styles
-│   │   └── js/
-│   │       ├── components/        # Modals, drawer, risk tray, tenant-auth-badge
-│   │       ├── domain/            # Client algorithmic mirrors (budget, DAG, vendors, risks)
-│   │       ├── views/             # Overview, budget, timeline, vendor comparison views
-│   │       ├── api.js             # HTTP API client with JWT & trace headers
-│   │       ├── app.js             # View controller & reactive store wiring
-│   │       ├── store.js           # Transactional EventStore with local & remote sync
-│   │       └── templates.js       # Archetype seeds (Weddings, Birthdays, Community)
-│   └── tests/                     # 22 frontend tests (domain math, actions, E2E contracts)
-│
-└── tests/
-    └── e2e/                       # Playwright browser end-to-end user journey tests
-```
-
----
-
-## ⚙️ Environment Configuration
-
-Copy the example environment file and customize your settings:
-
-```bash
-cp .env.example .env
-```
-
-| Variable | Default | Description |
+| Feature | What it does | Where |
 |---|---|---|
-| `PORT` | `8080` | Port for the FastAPI server and static asset server |
-| `HOST` | `0.0.0.0` | Bind host address |
-| `ENVIRONMENT` | `development` | Runtime environment (`development`, `production`, `test`) |
-| `DATABASE_URL` | `sqlite:///./gatherly.db` | PostgreSQL connection string (`postgresql://postgres:postgres@localhost:5432/gatherly`) |
-| `JWT_SECRET` | *(random 32-char)* | Secret key for signing and verifying HMAC-SHA256 JWT tokens |
-| `JWT_EXPIRE_MINUTES` | `1440` | JWT expiration duration in minutes (24 hours) |
-| `LOG_FORMAT` | `json` | Structured logging format (`json` for Datadog/CloudWatch, `text` for local dev) |
-| `OTEL_ENABLED` | `true` | OpenTelemetry distributed tracing enabled flag |
-| `GEMINI_API_KEY` | *(empty)* | Optional Gemini API key for live Mara Copilot insights |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model identifier |
-| `CORS_ORIGINS` | `*` | Allowed CORS origins (comma-separated for production) |
+| **Start your own event** | Pick wedding, birthday or community; set date, guests, venue capacity and budget. The template's budget is scaled to your total to the cent, and dates are shifted to your event date. | sidebar "New event" |
+| **Edit the basics** | Change guests, capacity, budget or date; risks, budget and what-if all recompute. | Overview "Edit event details" |
+| **Budget by category** | Planned vs. spent, non-negative guards, over-budget flags. | Budget |
+| **Timeline with dependencies** | Milestones can depend on each other; cycles and "due before its dependency" are rejected; the timeline shows "Blocked by" and "Unblocks N". | Timeline |
+| **Reschedule with collision preview** | Move a milestone and see which dependents collide before saving. | Timeline |
+| **Event Risk Radar** | Capacity breaches, overdue critical-path tasks, category overruns, undisclosed vendor terms. | bell in the top bar |
+| **What-if sandbox** | "+25 guests", "catering 15% higher": budget, capacity and affected milestones update live. | Budget |
+| **Vendor quote audit** | Paste a raw quote. Gatherly pulls out the price, deposit and hidden fees (gratuity %, overtime per hour, cleanup) with dollar amounts, and says plainly when it could not find a price. | Vendors |
+| **Mara copilot** | Structured suggestions with "Approve & Apply". Uses Gemini when `GEMINI_API_KEY` is set, otherwise a deterministic offline planner (the drawer shows which one answered). | "Ask Mara" |
 
----
+### 60-second demo
 
-## 🚢 Deployment & Containerization
+1. Open the app: the seeded wedding already shows **150 guests vs. 140 seats** on the Overview.
+2. Open the Risk Radar (bell) to see the capacity breach and what it affects.
+3. Budget → drag the **What-if** sliders and watch the ripple.
+4. Vendors → paste a quote and read the hidden-fee audit.
+5. Ask Mara for savings and **Approve & Apply** a proposal.
+6. Timeline → reschedule a milestone and read the collision preview.
+7. **New event** → create your own with a real guest count and budget.
 
-### Option A: 1-Click Vercel Serverless Deployment (`vercel.json`)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsahil-mangla%2FGatherly-OS)
+## How it is built
 
-Gatherly is configured for native Vercel deployment via [`vercel.json`](vercel.json) and [`api/index.py`](api/index.py):
-1. Import `sahil-mangla/Gatherly-OS` at [vercel.com/new](https://vercel.com/new).
-2. Configure Environment Variables: `GEMINI_API_KEY`, `GEMINI_MODEL=gemini-3.5-flash`, `JWT_SECRET`.
-3. Click **Deploy** — Vercel provisions the serverless FastAPI backend and serves static frontend assets.
-
-### Option B: Full Multi-Tenant Stack via Docker Compose (PostgreSQL + App)
-```bash
-# Starts Gatherly and PostgreSQL 16 with health checks & persistent storage
-docker compose up -d --build
-
-# Verify running services
-docker compose ps
 ```
-The application will be accessible at `http://localhost:8080`.
-
-### Option C: Local Bare-Metal (SQLite / Zero-Friction)
-```bash
-# 1. Install dependencies
-pip install -e backend/ || pip install fastapi uvicorn pydantic sqlalchemy pyjwt psycopg2-binary opentelemetry-api opentelemetry-sdk httpx
-
-# 2. Run all tests
-npm test
-
-# 3. Start development server
-npm start
-# Server listens at http://localhost:8080
+frontend/   vanilla ES modules, no build step; localStorage-first store
+  src/js/domain/      pure logic: budget, risks, timeline, vendors, event factory
+  src/js/store/       transactional actions (Approve & Apply, new event, ...)
+  src/js/views|components/   accessible UI (dialogs, tabs, live regions)
+backend/    FastAPI + SQLAlchemy
+  app/domain/         the same logic in Python (parity-tested against the JS)
+  app/api, app/auth   REST API, JWT auth, RBAC, rate limits
+  app/services/       Mara copilot (Gemini + deterministic fallback)
+scripts/    load test, complexity gate, line-limit gate
+tests/e2e/  Playwright user journeys
 ```
 
----
+**Scope, plainly.** The UI keeps your events in the browser (localStorage) and works offline: when the API is unreachable it falls back to the same logic locally. The backend serves the stateless endpoints (`/api/simulate`, `/api/risks`, `/api/vendors/*`, `/api/mara`) and a multi-tenant events API (`/api/events`, with audit log) that the UI does not call yet. RBAC roles are enforced by the API; the UI's role badge only switches the demo token.
 
-## ⚡ High-Throughput Load Testing & Performance SLA Gating
-
-Gatherly ships with an asynchronous load harness ([`scripts/load_test.py`](scripts/load_test.py)) simulating 50–250 concurrent virtual users across health, JWT token issuance, multi-factor ripple simulation, and vendor quote seed audits:
+## Run it
 
 ```bash
-npm run test:load
-# or: python scripts/load_test.py --requests 200 --concurrency 30 --max-p95 150
+pip install -r requirements.txt
+npm install                 # lint + UI tests only; the app itself has no build step
+npm start                   # http://localhost:8080
 ```
 
-### Benchmark Results
-- **Throughput:** ~2,200 requests / second
-- **Latency p50:** 12.1 ms
-- **Latency p95:** 17.8 ms (SLA Limit: <= 150.0 ms)
-- **Error Rate:** 0.00% (200 / 200 successful)
-- **Automated CI Gating:** Exits with code 1 if p95 latency exceeds 150ms or any request fails.
+Docker (PostgreSQL + app): set `POSTGRES_PASSWORD` and `JWT_SECRET`, then `docker compose up -d --build`.
+Vercel: import the repo, set `JWT_SECRET` (and optionally `GEMINI_API_KEY`). Note SQLite lives in `/tmp` on Vercel and resets; use `DATABASE_URL` for persistence.
 
----
-
-## 🎭 Playwright End-to-End User Journey Suite
-
-Gatherly provides Playwright browser tests ([`tests/e2e/full-journey.spec.js`](tests/e2e/full-journey.spec.js)) and companion headless contracts ([`frontend/tests/e2e-contracts.test.js`](frontend/tests/e2e-contracts.test.js)) verifying:
-1. **Initial Page Load & Editorial Layout:** Verifies title, typography, and authoritative budget metrics.
-2. **RBAC Role Switcher:** Tests live token rotation between `Owner`, `Planner`, and `Vendor`.
-3. **What-If Ripple Simulation:** Drags guest attendance slider, verifying live capacity breach flags and financial delta recalculations.
-4. **Vendor Quote Seed Ingestion:** Pastes unstructured text proposal, verifying regex line item extraction and missing fee omission audit.
-5. **Mara Copilot State Mutation:** Triggers AI recommendation and verifies atomic "Approve & Apply" store mutation.
-6. **Timeline DAG Reschedule:** Tests milestone rescheduling, dependency precedence collision detection, and keyboard accessibility.
-
-```bash
-# Run headless contract tests (sub-second)
-npm test
-
-# Run full browser Playwright suite
-npm run test:e2e
-```
-
----
-
-## 🔐 Multi-Tenant Enterprise Authentication & RBAC
-
-| Role | Permissions | Typical User |
+| Variable | Default | Purpose |
 |---|---|---|
-| **`owner`** | Full administrative rights, organization billing, delete event, manage members | Lead Event Agency Founder |
-| **`planner`** | Create & update events, allocate budgets, approve vendor quotes, edit tasks | Senior Wedding / Event Planner |
-| **`collaborator`** | View events, update assigned tasks, post comments, suggest quotes | Couple, Host, Co-Organizer |
-| **`vendor`** | Submit quotes, read-only assigned milestone schedules | Florist, Caterer, Photographer |
+| `ENVIRONMENT` | `development` (`production` on Vercel) | `production` turns on HSTS, hides `/docs`, and refuses guests |
+| `JWT_SECRET` | random per process in dev | **Required in production** (32+ chars). Without it production refuses to start; on Vercel a random per-instance secret is used with a warning |
+| `JWT_EXPIRATION_MINUTES` | `60` | Token lifetime |
+| `DATABASE_URL` | `sqlite:///./gatherly.db` | SQLite or PostgreSQL |
+| `CORS_ORIGINS` | none (same-origin) | Comma-separated allowed origins |
+| `DEMO_MODE` | `true` | Enables `/api/auth/demo-token` (sandbox tenant only) |
+| `SEED_ADMIN_PASSWORD` | unset | In production, seeds `planner@gatherly.app` with this password; unset means no seeded login |
+| `RATE_LIMIT_ENABLED` / `TRUST_PROXY` | `true` / `false` | Per-IP limits; honour `X-Forwarded-For` behind a proxy |
+| `PBKDF2_ITERATIONS` | `600000` | Password hashing cost (lower only in tests) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | unset, `gemini-2.5-flash` | Optional live Mara |
+| `HOST`, `PORT`, `WEB_CONCURRENCY` | `127.0.0.1`, `8080`, `1` | Server binding |
+| `LOG_FORMAT`, `OTEL_ENABLED` | `json`, `true` | Structured logs; optional OpenTelemetry spans |
 
-In development, click the topbar **Enterprise Role Badge** to toggle between roles and test live JWT token rotation.
+## Quality gates (all run in CI)
 
----
+| Gate | Command | Current result |
+|---|---|---|
+| Backend tests + coverage (>= 85%) | `pytest backend/tests --cov=backend/app` | 696 pass, 100% line coverage |
+| Frontend tests | `node --test frontend/tests/*.test.js` | 238 pass (31 DOM/axe tests need `jsdom`, installed by `npm install`) |
+| Browser journeys | `npm run test:e2e` | 8 Playwright journeys (run in CI) |
+| Complexity < 10 per function (Python) | `ruff --select C901` + `scripts/check_complexity.py` | max 9 |
+| Complexity < 10 per function (JS) | `npm run lint:js` (ESLint `complexity: 9`) | zero violations |
+| File length < 200 lines | `python scripts/check_line_limits.py` | all `.py`/`.js` files comply (CSS and HTML are exempt) |
+| Lint / format | `ruff check`, `ruff format --check` | clean |
+| Security scan | `bandit -r backend -ll`, `pip-audit` (advisory) | no medium/high findings |
+| Load smoke test | `npm run test:load` | in-process ASGI, 200 requests: ~1,800 req/s, p95 ~20 ms, 0 errors |
 
-## 🔭 Distributed Observability (Datadog & CloudWatch Ready)
+The load test runs in-process (no network), so it checks handler overhead rather than production capacity.
 
-Every incoming HTTP request and backend domain operation is instrumented:
-- **Trace Context Propagation:** Injects and propagates `X-Correlation-ID` and W3C `traceparent` (`X-Trace-ID`).
-- **Structured JSON Logging:** Automatically outputs single-line JSON log events tagged with:
-  ```json
-  {
-    "timestamp": "2026-10-21T12:08:29.563040+00:00",
-    "level": "INFO",
-    "service": "gatherly-backend",
-    "logger": "gatherly",
-    "message": "POST /api/simulate 200 (7.64ms)",
-    "trace_id": "5e4d4b935679126305d5f9e5eb3eedab",
-    "span_id": "a3098152b3b3dbf0",
-    "correlation_id": "corr-f1775ce9a2d6",
-    "http_method": "POST",
-    "path": "/api/simulate",
-    "status_code": 200,
-    "duration_ms": 7.64
-  }
-  ```
+## Security
 
----
+- **Authentication:** JWT (HS256 only; `exp`, `iat`, `sub`, issuer and role required). Requests without a valid token get 401 in production; the anonymous fallback exists only in development/test.
+- **Passwords:** PBKDF2-SHA256, 600,000 iterations, per-user salt, constant-time compare, and a dummy hash for unknown emails so login timing and messages do not reveal accounts. Older hashes still verify.
+- **Authorization:** roles `owner`, `planner`, `collaborator`, `vendor`; every event query is filtered by the token's tenant (cross-tenant access returns a generic 404).
+- **Input limits:** field length/range limits, 1 MB request cap (413), per-IP rate limits (429 with `Retry-After`), validation errors never echo submitted values.
+- **Browser:** strict CSP (no inline scripts), `nosniff`, frame denial, referrer and permissions policies, HSTS in production, escaped output everywhere.
+- **LLM output:** Mara's model output is whitelisted and range-checked server-side before it can become an "Approve & Apply" proposal; the API key is sent in a header, never a URL or log.
+- **Known limits:** the sandbox demo tenant is shared by everyone holding a demo token (set `DEMO_MODE=false` to close it); tokens cannot be revoked before they expire; the container image was not built in the verification environment (CI builds it).
 
-## 🔄 CI/CD Pipeline
+## Accessibility
 
-The project includes an enterprise-grade GitHub Actions pipeline at [`.github/workflows/ci.yml`](.github/workflows/ci.yml) that triggers on every push and pull request to `main`:
+Targets WCAG 2.2 AA: skip link, labelled landmarks, focus-trapped dialogs that restore focus, visible focus rings, roving-tabindex tabs, live regions for Mara and the what-if results, `prefers-reduced-motion`, and no colour-only status. A script checked 126 text/background pairs (lowest text ratio 4.66:1), axe-core runs in the test suite (colour contrast is covered by that script, since jsdom cannot compute it), and 320px reflow was checked in Chromium. Screen-reader announcement behaviour has not been tested with real assistive technology.
 
-1. **Linting & Code Quality:** Runs `ruff check backend` (zero warnings allowed).
-2. **Deterministic Test Suite:** Executes all 51 automated tests (29 backend pytest + 22 Node.js client-side test suites).
-3. **Strict Code Quality Standard (<200 LOC):** Runs `scripts/check_line_limits.py` to ensure no Python or JavaScript file exceeds 200 lines.
-4. **Asynchronous Load & SLA Gate:** Executes `scripts/load_test.py` enforcing sub-150ms p95 latency.
-5. **Playwright End-to-End Suite:** Executes headless browser verification.
-6. **Production Container Build:** Validates that the multi-stage Docker container builds cleanly without cache drift.
+## Observability
 
----
+Every request gets an `X-Correlation-ID` (client values are sanitised), structured JSON access logs carry it with `trace_id`/`span_id`, and unhandled errors return a JSON 500 with the same ID. OpenTelemetry spans are optional (`OTEL_ENABLED`); there is no OTLP exporter configured out of the box.
 
-## 📏 Code Quality Standard (< 200 LOC Limit)
+## License
 
-To maintain absolute modularity, readable domain logic, and zero monolithic sprawl, Gatherly enforces an automated architectural constraint:
-
-> **Invariant:** No single Python (`.py`) or JavaScript (`.js`) file shall exceed **200 lines of code**.
-
-- **Enforcement:** Run `npm run check:lines` locally or in CI (`python scripts/check_line_limits.py`).
-- **Result:** 100% compliant across **all 77 source files**.
-
----
-
-## 📊 Production Readiness Audit (10/10 Enterprise SaaS)
-
-| Dimension | Rating | Status & Assessment |
-|---|:---:|---|
-| **Domain Logic & Invariants** | **10/10** | DAG cycle detection, non-negative budget guards, deterministic math. |
-| **Persistence Layer** | **10/10** | PostgreSQL via SQLAlchemy with connection pooling, multi-tenant partitioning, SQLite fallback. |
-| **Authentication & RBAC** | **10/10** | Signed JWT bearer tokens, PBKDF2-SHA256 password hashing, roles (`owner`, `planner`, `collaborator`, `vendor`). |
-| **Distributed Observability** | **10/10** | OpenTelemetry spans + structured JSON logs with `trace_id` and `correlation_id` for Datadog/CloudWatch. |
-| **Performance & Load SLA** | **10/10** | Automated async load test enforcing sub-150ms p95 latency at 2,000+ RPS. |
-| **End-to-End Testing** | **10/10** | Playwright E2E browser tests and headless full-journey contract suite. |
-| **Code Modularity (<200 LOC)** | **10/10** | 100% compliant across all 77 source files with automated CI gate. |
-| **Automated Testing** | **10/10** | 51 comprehensive tests (29 backend pytest + 22 frontend Node test). |
-| **Containerization & CI/CD** | **10/10** | Multi-stage Docker, PostgreSQL compose stack, Vercel Serverless, GitHub Actions workflow. |
-| **Overall Production Readiness**| **10/10** | **Enterprise Multi-Tenant SaaS Ready** |
-
----
-
-## 📄 License
 MIT © 2026 Gatherly Team

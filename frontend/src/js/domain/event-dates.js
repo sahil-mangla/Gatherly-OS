@@ -4,8 +4,11 @@
  */
 
 import { parseDate } from './timeline-dates.js';
+import { MS_PER_DAY, DAYS_PER_WEEK } from './constants.js';
 
 const DEFAULT_LEAD_WEEKS = 18;
+const COUNTDOWN_WEEKS_THRESHOLD_DAYS = 2 * DAYS_PER_WEEK;
+const SATURDAY_ROUNDING_CUTOFF = 3;
 const SATURDAY = 6;
 
 export function startOfDay(d) {
@@ -26,17 +29,18 @@ export function toIsoDate(d) {
 export function daysBetween(a, b) {
   const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
   const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
-  return Math.round((utcB - utcA) / 86400000);
+  return Math.round((utcB - utcA) / MS_PER_DAY);
 }
 
 /** The Saturday closest to `leadWeeks` weeks after today. */
 export function defaultEventDate(today, leadWeeks = DEFAULT_LEAD_WEEKS) {
-  const base = addDays(startOfDay(today), leadWeeks * 7);
-  const diff = (SATURDAY - base.getDay() + 7) % 7;
-  return addDays(base, diff > 3 ? diff - 7 : diff);
+  const base = addDays(startOfDay(today), leadWeeks * DAYS_PER_WEEK);
+  const diff = (SATURDAY - base.getDay() + DAYS_PER_WEEK) % DAYS_PER_WEEK;
+  return addDays(base, diff > SATURDAY_ROUNDING_CUTOFF ? diff - DAYS_PER_WEEK : diff);
 }
 
-function shiftIso(value, days) {
+/** Shifts an ISO date string by whole calendar days; unparseable values pass through unchanged. */
+export function shiftIso(value, days) {
   const d = parseDate(value);
   return d ? toIsoDate(addDays(d, days)) : value;
 }
@@ -63,29 +67,32 @@ function restoreTemplateIdeaDates(event, tmpl) {
   }
 }
 
+/** Infers a missing anchor from the event's template, or null for real fixed-date events. */
+function inferAnchor(event, templates) {
+  const tmpl = templates[event.id] || {};
+  const tmplDate = parseDate(tmpl.date);
+  const tmplAnchor = parseDate(tmpl.schedule_anchor);
+  const current = parseDate(event.date);
+  if (!(tmplDate && tmplAnchor && current)) return null;
+  restoreTemplateIdeaDates(event, tmpl);
+  return addDays(current, daysBetween(tmplDate, tmplAnchor));
+}
+
 /**
  * Keeps an event's whole schedule in step with the real calendar. `schedule_anchor` is the date
  * that "today" corresponds to within the event's authored timeline. Whenever real time moves a
  * full week past the anchor, every date shifts forward by whole weeks (weekdays are preserved)
  * and the anchor advances. Events saved before anchors existed get one inferred from their
- * template. Events with no anchor and no template are real, fixed-date events and are never
- * touched. Returns true if changed.
+ * template. Events with no anchor and no template, or flagged `fixed_date` (the user picked the
+ * date themselves), are real, fixed-date events and are never touched. Returns true if changed.
  */
 export function syncEventSchedule(event, today = new Date(), templates = {}) {
-  if (!event || typeof event !== 'object') return false;
-  let anchor = parseDate(event.schedule_anchor);
-  if (!anchor) {
-    const tmpl = templates[event.id] || {};
-    const tmplDate = parseDate(tmpl.date);
-    const tmplAnchor = parseDate(tmpl.schedule_anchor);
-    const current = parseDate(event.date);
-    if (!(tmplDate && tmplAnchor && current)) return false;
-    anchor = addDays(current, daysBetween(tmplDate, tmplAnchor));
-    restoreTemplateIdeaDates(event, tmpl);
-  }
+  if (!event || typeof event !== 'object' || event.fixed_date) return false;
+  const anchor = parseDate(event.schedule_anchor) || inferAnchor(event, templates);
+  if (!anchor) return false;
 
-  const weeks = Math.floor(daysBetween(anchor, startOfDay(today)) / 7);
-  const days = Math.max(0, weeks) * 7;
+  const weeks = Math.floor(daysBetween(anchor, startOfDay(today)) / DAYS_PER_WEEK);
+  const days = Math.max(0, weeks) * DAYS_PER_WEEK;
   if (days) shiftEventDates(event, days);
   const next = toIsoDate(addDays(anchor, days));
   if (!days && event.schedule_anchor === next) return false;
@@ -107,6 +114,6 @@ export function describeCountdown(eventDate, today = new Date()) {
   if (diff < 0) return ' · Event date passed';
   if (diff === 0) return ' · Today!';
   if (diff === 1) return ' · Tomorrow';
-  if (diff < 14) return ` · ${diff} days to go`;
-  return ` · ${Math.floor(diff / 7)} weeks to go`;
+  if (diff < COUNTDOWN_WEEKS_THRESHOLD_DAYS) return ` · ${diff} days to go`;
+  return ` · ${Math.floor(diff / DAYS_PER_WEEK)} weeks to go`;
 }
