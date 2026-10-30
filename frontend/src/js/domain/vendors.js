@@ -23,6 +23,41 @@ const DISCLOSURE_CHECKS = [
   { keywords: ['refund', 'cancellation', 'deposit milestone'], message: 'Cancellation milestones & deposit refund clause' }
 ];
 
+/** Extractor labels (prefix of a stored quote's missing_disclosures) -> audit keywords that the quote states the term. */
+const STATED_TERM_NOTES = [
+  ['Service staff', 'staff and gratuity policy stated'],
+  ['Post-event cleanup', 'cleanup and teardown covered'],
+  ['Overtime', 'overtime rate stated'],
+  ['Deposit milestones', 'refund and cancellation terms stated']
+];
+
+/** Extracted fee types -> audit keywords for the term the fee itself states. */
+const FEE_TYPE_NOTES = {
+  gratuity: 'staff and gratuity policy stated',
+  service_charge: 'staff and gratuity policy stated',
+  overtime: 'overtime rate stated',
+  cleanup: 'cleanup and teardown covered'
+};
+
+/** Audit keywords for every essential term one extracted quote states, by its text or by an extracted fee. */
+export function statedTermsNote(stored = {}) {
+  const missing = Array.isArray(stored.missing_disclosures) ? stored.missing_disclosures : null;
+  const fees = Array.isArray(stored.hidden_fees) ? stored.hidden_fees : [];
+  const fromText = missing
+    ? STATED_TERM_NOTES.filter(([label]) => !missing.some(m => String(m).startsWith(label))).map(([, note]) => note)
+    : [];
+  const fromFees = fees
+    .filter(fee => fee && Object.hasOwn(FEE_TYPE_NOTES, fee.type))
+    .map(fee => FEE_TYPE_NOTES[fee.type]);
+  return [...fromText, ...fromFees].join('; ');
+}
+
+const storedQuotesText = (quote) => (Array.isArray(quote.quotes) ? quote.quotes : [])
+  .filter(q => q && typeof q === 'object')
+  .map(statedTermsNote)
+  .join(' ')
+  .toLowerCase();
+
 const joinLower = (value) => (Array.isArray(value) ? value.join(' ') : '').toLowerCase();
 
 /** First value that is neither null nor undefined (mirrors a `??` chain). */
@@ -35,7 +70,8 @@ export function auditQuoteCompleteness(quote = {}) {
     joinLower(quote.inclusions),
     String(quote.notes || '').toLowerCase(),
     String(quote.summary || '').toLowerCase(),
-    joinLower(quote.missing_fields)
+    joinLower(quote.missing_fields),
+    storedQuotesText(quote)
   ].join(' ');
 
   const missing = DISCLOSURE_CHECKS
@@ -63,6 +99,7 @@ export function normalizeQuote(rawQuote = {}) {
     deposit_percent: basePrice > 0 ? Math.round((deposit / basePrice) * 100) : 0,
     inclusions: Array.isArray(rawQuote.inclusions) ? rawQuote.inclusions : [],
     exclusions: Array.isArray(rawQuote.exclusions) ? rawQuote.exclusions : [],
+    hidden_fees: Array.isArray(rawQuote.hidden_fees) ? rawQuote.hidden_fees.filter(f => f && typeof f === 'object') : [],
     missing_disclosures: missing,
     is_fully_disclosed: isComplete,
     estimated_hidden_risk_score: missing.length * RISK_POINTS_PER_MISSING_TERM

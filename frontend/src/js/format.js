@@ -29,3 +29,9 @@ export function prettyLabel(token, fallback = '') {
   const spaced = raw.replace(/[_-]+/g, ' ');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
+
+/** `$150 per hour`, `$400` or `18% (about $432)` for one extracted fee. */
+export function formatFee(fee) {
+  if (fee.unit === 'percent') return `${fee.rate}% (about ${formatDollars(fee.amount)})`;
+  return `${formatDollars(fee.amount)}${fee.unit === 'per_hour' ? ' per hour' : ''}`;
+}

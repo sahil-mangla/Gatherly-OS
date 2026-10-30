@@ -28,13 +28,57 @@ AUDIT_CHECKS = (
 )
 
 
+# Extractor labels (as a prefix of a stored quote's missing_disclosures) -> audit keywords that the
+# quote states the term when the label is absent
+STATED_TERM_NOTES = (
+    ("Service staff", "staff and gratuity policy stated"),
+    ("Post-event cleanup", "cleanup and teardown covered"),
+    ("Overtime", "overtime rate stated"),
+    ("Deposit milestones", "refund and cancellation terms stated"),
+)
+# Extracted fee types -> audit keywords for the term the fee itself states
+FEE_TYPE_NOTES = {
+    "gratuity": "staff and gratuity policy stated",
+    "service_charge": "staff and gratuity policy stated",
+    "overtime": "overtime rate stated",
+    "cleanup": "cleanup and teardown covered",
+}
+
+
+def stated_terms_note(stored: dict[str, Any]) -> str:
+    """Audit keywords for every essential term one extracted quote states (by text or by fee)."""
+    notes: list[str] = []
+    missing = stored.get("missing_disclosures")
+    if isinstance(missing, list):
+        notes += [
+            note
+            for label, note in STATED_TERM_NOTES
+            if not any(str(m).startswith(label) for m in missing)
+        ]
+    fees = stored.get("hidden_fees")
+    if isinstance(fees, list):
+        notes += [
+            FEE_TYPE_NOTES[fee["type"]]
+            for fee in fees
+            if isinstance(fee, dict) and fee.get("type") in FEE_TYPE_NOTES
+        ]
+    return "; ".join(notes)
+
+
+def _stored_quotes_text(quote: dict[str, Any]) -> str:
+    stored = quote.get("quotes")
+    if not isinstance(stored, list):
+        return ""
+    return " ".join(stated_terms_note(q) for q in stored if isinstance(q, dict)).lower()
+
+
 def audit_quote_completeness(quote: dict[str, Any]) -> tuple[bool, list[str]]:
-    """Audit quote text and inclusions to identify undisclosed or missing fees."""
+    """Audit quote text, inclusions and saved extracted quotes to identify undisclosed fees."""
     inclusions = " ".join(quote.get("inclusions", [])).lower()
     notes = str(quote.get("notes", "")).lower()
     summary = str(quote.get("summary", "")).lower()
     missing_fields = " ".join(quote.get("missing_fields", [])).lower()
-    combined = f"{inclusions} {notes} {summary} {missing_fields}"
+    combined = f"{inclusions} {notes} {summary} {missing_fields} {_stored_quotes_text(quote)}"
 
     missing = [
         label for keywords, label in AUDIT_CHECKS if not any(k in combined for k in keywords)
@@ -45,6 +89,10 @@ def audit_quote_completeness(quote: dict[str, Any]) -> tuple[bool, list[str]]:
 def _first_truthy(raw: dict[str, Any], keys: tuple[str, ...], default: Any) -> Any:
     """First truthy value among ``keys`` in ``raw``, else ``default``."""
     return next((raw[k] for k in keys if raw.get(k)), default)
+
+
+def _fee_list(value: Any) -> list[dict[str, Any]]:
+    return [fee for fee in value if isinstance(fee, dict)] if isinstance(value, list) else []
 
 
 def normalize_quote(raw_quote: dict[str, Any]) -> dict[str, Any]:
@@ -62,6 +110,7 @@ def normalize_quote(raw_quote: dict[str, Any]) -> dict[str, Any]:
         "deposit_percent": round((deposit / base_price) * 100) if base_price > 0 else 0,
         "inclusions": raw_quote.get("inclusions", []),
         "exclusions": raw_quote.get("exclusions", []),
+        "hidden_fees": _fee_list(raw_quote.get("hidden_fees")),
         "missing_disclosures": missing,
         "is_fully_disclosed": is_complete,
         "estimated_hidden_risk_score": len(missing) * HIDDEN_RISK_PER_MISSING,

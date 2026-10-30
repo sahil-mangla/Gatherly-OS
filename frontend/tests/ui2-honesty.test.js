@@ -137,6 +137,22 @@ describe('vendor comparison uses the event\'s own quotes', () => {
     assert.ok(!names.some(n => /Sol Studio/.test(n)));
   });
 
+  it('the compare table lists each quote\'s fee amounts', async (t) => {
+    if (!needsDom(t)) return;
+    newEvent();
+    await saveQuote('Keystone Catering here: package $5,000. 18% gratuity and overtime $150 per hour. Includes plated dinner.');
+    $('tab-seed').click();
+    await saveQuote('Plain Photo: package $2,000 with a $400 deposit. Includes 6 hours.');
+    await openQuotes();
+    const cards = [...env.document.querySelectorAll('.matrix-card')];
+    assert.equal(cards.length, 2);
+    const feeText = (name) => cards.find(c => c.querySelector('h3').textContent === name).textContent;
+    assert.match(feeText('Keystone Catering'), /Fees:[\s\S]*Overtime rate: \$150 per hour/);
+    assert.match(feeText('Keystone Catering'), /Gratuity 18%: 18% \(about \$900\)/);
+    assert.match(feeText('Plain Photo'), /No additional fees found in the quote text/);
+    env.document.dispatchEvent(env.key('Escape'));
+  });
+
   it('checkboxes change the matrix, announce it, enforce 2-4 and block quotes without a price', async (t) => {
     if (!needsDom(t)) return;
     await saveQuote('No numbers here, just a friendly hello from Plain Vendor Events.');
