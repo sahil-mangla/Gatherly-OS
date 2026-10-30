@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Enforce strict < 200 LOC per file across Python and JavaScript code."""
 
 import os

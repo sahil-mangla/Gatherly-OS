@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Fail when any function/method has cyclomatic complexity above the allowed maximum (radon)."""
 
 import argparse
