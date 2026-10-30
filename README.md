@@ -1,7 +1,7 @@
 # Gatherly — Celebration Planning, Made Human
 
 > **Prompt Wars Week 5 (Challenge 5): Celebration & Event Planner**
-> Catch overruns, hidden fees and date collisions before they cost you.
+> Catch overruns, hidden fees and date collisions before they cost you!
 
 Planning a wedding, a birthday or a block party goes wrong in three predictable ways: the guest list outgrows the venue, a vendor quote hides fees, and one slipped deadline knocks over everything that depends on it. Gatherly checks all three for you, with deterministic math (never LLM guesswork), and explains what it found in plain language.
 
