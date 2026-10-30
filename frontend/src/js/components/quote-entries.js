@@ -4,6 +4,8 @@
  * and the labelled example quotes shown only when fewer than two real quotes exist.
  */
 
+import { statedTermsNote } from '../domain/vendors.js';
+
 export const MAX_COMPARED = 4;
 export const MIN_COMPARED = 2;
 export const EXAMPLE_NOTE = 'Example quotes — paste your own quotes to compare real vendors';
@@ -11,29 +13,14 @@ export const NO_PRICE_REASON = 'Price not found in the pasted text, so this quot
 
 /** Example quotes (clearly labelled in the UI) used until the event has two comparable quotes of its own. */
 export const SAMPLE_QUOTES = [
-  { id: 'sample-sol', name: 'Sol Studio (example)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
-  { id: 'sample-lumina', name: 'Lumina Collective (example)', price: 2150, deposit: 500, inclusions: ['7 hrs coverage', 'Second shooter'], missing_fields: ['Raw clip policy', 'Cancellation refund clause'] }
-];
-
-/** Essential terms the extractor reports as missing -> keywords that make the compare audit treat the rest as disclosed. */
-const DISCLOSED_NOTES = [
-  ['Service staff', 'staff and gratuity policy stated'],
-  ['Post-event cleanup', 'cleanup and teardown covered'],
-  ['Overtime', 'overtime rate stated'],
-  ['Deposit milestones', 'refund and cancellation terms stated']
+  { id: 'sample-sol', name: 'Sol Studio (example)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 120, amount: 120 }], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
+  { id: 'sample-lumina', name: 'Lumina Collective (example)', price: 2150, deposit: 500, inclusions: ['7 hrs coverage', 'Second shooter'], hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 90, amount: 90 }], missing_fields: ['Raw clip policy', 'Cancellation refund clause'] }
 ];
 
 const priceOf = (quote) => Number(quote.base_amount ?? quote.price ?? quote.quoted_amount ?? 0) || 0;
 
 export function isComparable(quote) {
   return priceOf(quote) > 0 && !(quote.flags || []).includes('no_amount_found');
-}
-
-function disclosedNotes(missing = []) {
-  return DISCLOSED_NOTES
-    .filter(([label]) => !missing.some(m => String(m).startsWith(label)))
-    .map(([, note]) => note)
-    .join('; ');
 }
 
 /** Input for the domain `compareQuotes`: stored quotes are mapped to its field names, legacy ones pass through. */
@@ -48,7 +35,8 @@ export function forCompare(entry) {
     price: priceOf(q),
     deposit: q.deposit_amount,
     inclusions: q.inclusions || [],
-    notes: disclosedNotes(q.missing_disclosures)
+    hidden_fees: q.hidden_fees || [],
+    notes: statedTermsNote(q)
   };
 }
 

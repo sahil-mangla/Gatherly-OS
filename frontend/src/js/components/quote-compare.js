@@ -7,7 +7,7 @@
 import { store } from '../store.js';
 import { compareQuotes, generateFollowUpQuestions } from '../domain/vendors.js';
 import { escapeHtml } from '../views/helpers.js';
-import { formatDollars } from '../format.js';
+import { formatDollars, formatFee } from '../format.js';
 import { scrollBehavior } from '../a11y.js';
 import { showToast } from './toast.js';
 import {
@@ -25,6 +25,9 @@ function matrixCardHtml(q, summary) {
   const missing = q.missing_disclosures.length > 0
     ? q.missing_disclosures.map(m => `<li class="missing-li"><span aria-hidden="true">?</span> ${escapeHtml(m)}</li>`).join('')
     : '<li class="clean-li"><span aria-hidden="true">✓</span> Fully disclosed terms</li>';
+  const fees = q.hidden_fees.length > 0
+    ? q.hidden_fees.map(f => `<li>${escapeHtml(f.label)}: ${escapeHtml(formatFee(f))}</li>`).join('')
+    : '<li>No additional fees found in the quote text.</li>';
   const badges = `${q.id === summary.cheapest_id ? '<span class="badge-cheapest">Lowest Base Fee</span>' : ''}${q.id === summary.lowest_risk_id ? '<span class="badge-risk-low">Most Disclosed Terms</span>' : ''}`;
   return `
     <div class="matrix-card ${q.id === summary.cheapest_id ? 'highlight-card' : ''}">
@@ -35,6 +38,7 @@ function matrixCardHtml(q, summary) {
         <small>Deposit: ${escapeHtml(formatDollars(q.deposit_amount))} (${Number(q.deposit_percent)}%)</small>
       </div>
       <div class="matrix-section"><b>Included:</b><ul>${inclusions}</ul></div>
+      <div class="matrix-section"><b>Fees:</b><ul>${fees}</ul></div>
       <div class="matrix-section risk-section"><b><span aria-hidden="true">⚠</span> Undisclosed Terms:</b><ul>${missing}</ul></div>
       <button type="button" class="select-quote-btn" data-quote-id="${escapeHtml(q.id)}" aria-label="Draft clarification questions for ${name}">Draft Clarification Questions</button>
     </div>`;

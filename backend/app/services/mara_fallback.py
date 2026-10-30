@@ -47,10 +47,12 @@ def _custom_proposal() -> dict[str, Any]:
 
 
 def _realloc_proposal(rows: list[tuple[str, float, float]]) -> dict[str, Any] | None:
-    """Move headroom from the roomiest category to the most over-allocated one."""
+    """Move headroom from the roomiest category to the category furthest over its plan."""
     if len(rows) < 2:
         return None
     needy = max(rows, key=lambda r: r[2] - r[1])
+    if needy[2] <= needy[1]:
+        return None
     donor = max((r for r in rows if r[0] != needy[0]), key=lambda r: r[1] - r[2])
     amount = min(MAX_REALLOCATION, round((donor[1] - donor[2]) * 0.5))
     if amount <= 0:
@@ -92,8 +94,9 @@ def _cost_saving(ctx: dict[str, Any], _prompt: str) -> dict[str, Any]:
     rows = _category_rows(budget)
     found = [_realloc_proposal(rows), _trim_proposal(rows)]
     proposals = [p for p in found if p] + [_custom_proposal()]
+    noun = "adjustment" if len(proposals) == 1 else "adjustments"
     return {
-        "summary": f"Identified {len(proposals)} balanced adjustments based on your "
+        "summary": f"Identified {len(proposals)} balanced {noun} based on your "
         f"{len(rows)} budget categories while preserving guest experience.",
         "proposals": proposals,
     }

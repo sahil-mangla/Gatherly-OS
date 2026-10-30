@@ -10,6 +10,7 @@ import {
   compareQuotes,
   generateFollowUpQuestions,
   auditQuoteCompleteness,
+  statedTermsNote,
   firstDefined,
   firstTruthy,
   extractQuoteFromRawText
@@ -139,5 +140,42 @@ describe('extractQuoteFromRawText (mirrors backend quote_parser)', () => {
     const started = Date.now();
     assert.equal(extractQuoteFromRawText(big).quoted_base_amount, 1000);
     assert.ok(Date.now() - started < 3000);
+  });
+});
+
+describe('saved extracted quotes feed the completeness audit', () => {
+  const stored = (text) => {
+    const found = extractQuoteFromRawText(text);
+    return { missing_disclosures: found.missing_fields, hidden_fees: found.hidden_fees };
+  };
+
+  test('terms a saved quote states are not reported as undisclosed', () => {
+    const text = 'Package $3,000. 18% gratuity, overtime $150 per hour, cleanup fee $200, deposit 25% non-refundable.';
+    assert.deepEqual(auditQuoteCompleteness({ quotes: [stored(text)] }), { isComplete: true, missing: [] });
+  });
+
+  test('terms a saved quote never mentions are still reported', () => {
+    const { isComplete, missing } = auditQuoteCompleteness({ quotes: [stored('Package $3,000. Includes a DJ.')] });
+    assert.equal(isComplete, false);
+    assert.equal(missing.length, 4);
+  });
+
+  test('extracted fee types state their own term', () => {
+    const { missing } = auditQuoteCompleteness({ quotes: [{ hidden_fees: [{ type: 'overtime' }, { type: 'gratuity' }, { type: 'x' }, null] }] });
+    assert.deepEqual(missing, ['Post-event cleanup and teardown fees', 'Cancellation milestones & deposit refund clause']);
+  });
+
+  test('malformed saved quotes are ignored', () => {
+    for (const quotes of [null, 'x', [null, 5, {}], [{ missing_disclosures: 'bad' }]]) {
+      assert.equal(auditQuoteCompleteness({ quotes }).isComplete, false);
+    }
+    assert.equal(statedTermsNote(), '');
+  });
+
+  test('normalizeQuote carries extracted fees for the compare table', () => {
+    const fees = [{ type: 'overtime', label: 'Overtime rate', unit: 'per_hour', amount: 150 }];
+    assert.deepEqual(normalizeQuote({ hidden_fees: [...fees, 'junk', null] }).hidden_fees, fees);
+    assert.deepEqual(normalizeQuote({ hidden_fees: 'x' }).hidden_fees, []);
+    assert.deepEqual(normalizeQuote().hidden_fees, []);
   });
 });

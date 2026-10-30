@@ -6,7 +6,7 @@
 import { store } from '../store.js';
 import { askMara } from '../ai/mara-client.js';
 import { escapeHtml } from '../views/helpers.js';
-import { formatDollars as money } from '../format.js';
+import { formatDollars as money, formatFee } from '../format.js';
 import { makeId } from '../store/helpers.js';
 import { showToast } from './toast.js';
 
@@ -34,17 +34,12 @@ function missingHtml(fields) {
     </div>`;
 }
 
-function feeAmount(fee) {
-  if (fee.unit === 'percent') return `${fee.rate}% (about ${money(fee.amount)})`;
-  return `${money(fee.amount)}${fee.unit === 'per_hour' ? ' per hour' : ''}`;
-}
-
 function feesHtml(fees) {
   if (!fees || fees.length === 0) return '';
   return `
     <div class="parsed-missing">
       <b><span aria-hidden="true">⚠</span> Hidden fees found:</b>
-      <ul class="parsed-fees">${fees.map(f => `<li>${escapeHtml(f.label)}: ${escapeHtml(feeAmount(f))}</li>`).join('')}</ul>
+      <ul class="parsed-fees">${fees.map(f => `<li>${escapeHtml(f.label)}: ${escapeHtml(formatFee(f))}</li>`).join('')}</ul>
     </div>`;
 }
 
