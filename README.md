@@ -17,8 +17,8 @@ Planning a wedding, a birthday or a block party goes wrong in three predictable 
 | **Event Risk Radar** | Capacity breaches, overdue critical-path tasks, dependency collisions, category overruns, undisclosed vendor terms. | bell in the top bar |
 | **What-if sandbox** | "+25 guests", "catering 15% higher": budget, capacity and affected milestones update live. | Budget |
 | **Vendor quote audit** | Paste a raw quote. Gatherly pulls out the price, deposit and hidden fees (gratuity %, overtime per hour, cleanup) with dollar amounts, and says plainly when it could not find a price. Parsing is rule-based (regular expressions), not AI. | Vendors |
-| **Compare your own vendors** | Saved quotes are stored on the vendor; pick two or more to compare price, deposit, hidden fees and missing terms. Example data appears only until you have two comparable quotes, and is labelled as an example. | Vendors → Compare |
-| **Mara copilot** | Structured suggestions with "Approve & Apply". Uses Gemini when `GEMINI_API_KEY` is set; otherwise a deterministic offline planner that works only from your event's numbers and says when it has nothing to propose. The drawer shows which one answered. | "Ask Mara" |
+| **Compare your own vendors** | Saved quotes are stored on the vendor; pick two or more to compare price, deposit, inclusions and undisclosed terms side by side. Extracted fee amounts show when you paste a quote, not in the comparison table. Example data appears only until you have two comparable quotes, and is labelled as an example. | Vendors → Compare |
+| **Mara copilot** | Structured suggestions with "Approve & Apply". Uses Gemini when `GEMINI_API_KEY` is set. Without it (or if Gemini fails) the server's deterministic planner answers, and if the API is unreachable the browser's own planner does. Both fallbacks use only your event's numbers; the browser one also says when it has nothing to propose, while the server one is simpler (see Known issues). The drawer shows which one answered. | "Ask Mara" |
 
 ### 60-second demo
 
@@ -114,6 +114,12 @@ Targets WCAG 2.2 AA: skip link, labelled landmarks, focus-trapped dialogs that r
 ## Observability
 
 Every request gets an `X-Correlation-ID` (client values are sanitised), structured JSON access logs carry it with `trace_id`/`span_id`, and unhandled errors return a JSON 500 with the same ID. OpenTelemetry spans are optional (`OTEL_ENABLED`); there is no OTLP exporter configured out of the box.
+
+## Known issues
+
+- **Risk Radar "Undisclosed Terms" can disagree with the quote parser.** The radar's vendor check is a keyword audit of the vendor's own notes and inclusions. It does not read the structured fees extracted from a pasted quote, so it can flag terms (for example gratuity or overtime) that a saved quote does state. The undisclosed list in the compare view is the more accurate one.
+- **The compare table has no fee amounts.** It shows price, deposit, inclusions and undisclosed terms; fee amounts are shown in the paste-and-extract view.
+- **The server's offline Mara can suggest a reallocation when nothing is over plan.** Its reallocation proposal always moves headroom toward the category furthest over its plan, even if no category is actually over, so a brand-new event with no spending can get a generic "shift budget" suggestion. The in-browser planner does not do this.
 
 ## License
 
