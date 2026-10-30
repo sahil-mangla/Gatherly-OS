@@ -52,3 +52,29 @@ export function activeFocusKey() {
   const active = document.activeElement;
   return active && active.dataset ? active.dataset.focusKey || null : null;
 }
+
+/** Where focus goes when the focused control disappears and no sibling of the same kind remains. */
+const FOCUS_FALLBACKS = { 'task-toggle:': '#next-up-heading', 'task-open:': '#next-up-heading' };
+
+const peersOf = (prefix) => [...document.querySelectorAll('[data-focus-key]')].filter(el => el.dataset.focusKey.startsWith(prefix));
+
+/** Remembers the focused keyed control, its kind (key prefix) and position among controls of that kind. */
+export function captureFocus() {
+  const key = activeFocusKey();
+  if (!key) return null;
+  const prefix = `${key.split(':')[0]}:`;
+  return { key, prefix, index: Math.max(0, peersOf(prefix).indexOf(document.activeElement)) };
+}
+
+/**
+ * Re-focuses after a re-render: the same control, else the control now at its position among peers of
+ * the same kind (e.g. the next task toggle after a task left "Next up"), else the kind's fallback heading.
+ */
+export function restoreFocus(snapshot) {
+  if (!snapshot) return false;
+  if (focusByKey(snapshot.key)) return true;
+  const peers = peersOf(snapshot.prefix);
+  const target = peers[Math.min(snapshot.index, peers.length - 1)] || document.querySelector(FOCUS_FALLBACKS[snapshot.prefix] || '');
+  if (target) target.focus();
+  return Boolean(target);
+}

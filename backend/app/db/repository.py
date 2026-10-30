@@ -1,25 +1,24 @@
 """Repository layer enforcing strict tenant boundary isolation across database operations."""
 
-import copy
 import uuid
-from datetime import date
 from typing import Any
 
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..domain.event_schedule import sync_event_schedule
+from ..config import settings
 from .models import AuditLog, EventModel
+from .schedule_sync import ScheduleSyncMixin
 
-DEFAULT_PAGE_SIZE = 100
+DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 500
 
 
-class EventIdConflictError(Exception):
-    """Raised when a client-supplied event id is already taken."""
+class EventLimitError(Exception):
+    """Raised when a tenant already holds its maximum number of events."""
 
 
-class EventRepository:
+class EventRepository(ScheduleSyncMixin):
     """Multi-tenant event repository."""
 
     def __init__(self, db: Session, tenant_id: str):
@@ -37,45 +36,6 @@ class EventRepository:
             .all()
         )
 
-    def sync_schedules(
-        self, events: list[EventModel], today: date | None = None, user_id: str | None = None
-    ) -> list[EventModel]:
-        """Sync a batch of events and persist every change with a single commit."""
-        synced = [self.sync_schedule(e, today, user_id, commit=False) for e in events]
-        if self.db.new:  # audit rows are only queued when a schedule actually moved
-            self.db.commit()
-        return synced
-
-    def sync_schedule(
-        self,
-        event: EventModel,
-        today: date | None = None,
-        user_id: str | None = None,
-        commit: bool = True,
-    ) -> EventModel:
-        """Advance an anchored event's schedule to the current week and persist the change."""
-        view = copy.deepcopy(event.state_json or {})
-        # The anchor lives in state_json, so the state's own date must move with it. Seed it from
-        # the column when absent, then mirror the result back; shifting the column independently
-        # would double-shift whenever a client resends a stale state over an already-live column.
-        if "date" not in view:
-            view["date"] = event.date
-        if not sync_event_schedule(view, today):
-            return event
-
-        event.date = view["date"]
-        event.state_json = view
-        self.log_audit(
-            user_id=user_id,
-            action="schedule_sync",
-            resource_type="event",
-            resource_id=event.id,
-            details={"date": event.date, "schedule_anchor": view.get("schedule_anchor")},
-        )
-        if commit:
-            self.db.commit()
-        return event
-
     def get_event(self, event_id: str) -> EventModel | None:
         """Fetch single event with strict tenant check."""
         return (
@@ -84,11 +44,24 @@ class EventRepository:
             .first()
         )
 
+    def count_events(self) -> int:
+        """Number of events the active tenant owns."""
+        return (
+            self.db.query(func.count(EventModel.id))
+            .filter(EventModel.tenant_id == self.tenant_id)
+            .scalar()
+        )
+
     def create_event(self, event_data: dict[str, Any], user_id: str | None = None) -> EventModel:
-        """Create new event partitioned under the active tenant."""
-        event_id = event_data.get("id") or f"event-{uuid.uuid4().hex[:16]}"
+        """Create an event under the active tenant with a server-generated id.
+
+        Any ``id`` in ``event_data`` is ignored: client-chosen ids would let one tenant probe
+        for, or squat on, ids that exist elsewhere. Raises ``EventLimitError`` at the quota.
+        """
+        if self.count_events() >= settings.max_events_per_tenant:
+            raise EventLimitError(self.tenant_id)
         model = EventModel(
-            id=event_id,
+            id=f"event-{uuid.uuid4().hex}",
             tenant_id=self.tenant_id,
             name=event_data.get("name", "New Event"),
             type=event_data.get("type", "wedding"),
@@ -107,11 +80,7 @@ class EventRepository:
             resource_id=model.id,
             details={"name": model.name, "budget": model.total_budget},
         )
-        try:
-            self.db.commit()
-        except IntegrityError as exc:
-            self.db.rollback()
-            raise EventIdConflictError(event_id) from exc
+        self.db.commit()
         return model
 
     def update_event(

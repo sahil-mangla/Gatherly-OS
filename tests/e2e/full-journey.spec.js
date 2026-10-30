@@ -16,18 +16,18 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     expect(budgetVal).toContain("$");
   });
 
-  test("2. RBAC Role Switcher & Live Token Rotation", async ({ page }) => {
+  test("2. Demo role switcher & live token rotation", async ({ page }) => {
     const badge = page.locator("#enterprise-auth-badge");
     const roleLabel = page.locator("#enterprise-role-label");
     await expect(badge).toBeVisible();
+    await expect(badge).toHaveAttribute("title", "Demo role for API calls — does not change what you see");
 
-    const initialRole = await roleLabel.innerText();
+    const initialRole = (await roleLabel.innerText()).trim();
     await badge.click();
-    await page.waitForTimeout(400);
 
-    const nextRole = await roleLabel.innerText();
-    expect(nextRole).not.toBe(initialRole);
-    await expect(page.locator("#app-toast")).toBeVisible();
+    await expect(roleLabel).not.toHaveText(initialRole);
+    await expect(page.locator("#app-toast")).toHaveClass(/show/);
+    await expect(page.locator("#toast-title")).toHaveText("Demo role switched");
   });
 
   test("3. What-If Ripple Simulation Sandbox", async ({ page }) => {
@@ -40,9 +40,7 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     await slider.fill("30");
     await slider.dispatchEvent("input");
 
-    await page.waitForTimeout(300);
-    const guestLabel = page.locator("#guest-delta-val");
-    await expect(guestLabel).toContainText("+30");
+    await expect(page.locator("#guest-delta-val")).toContainText("+30");
   });
 
   test("4. Vendor Quote Seed Ingestion & Omission Audit", async ({ page }) => {
@@ -51,42 +49,42 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     await expect(compareBtn).toBeVisible();
     await compareBtn.click();
 
-    const seedTab = page.locator("button[data-tab='seed-tab']");
-    if (await seedTab.isVisible()) {
-      await seedTab.click();
-      const textarea = page.locator("#raw-quote-text");
-      await textarea.fill(
-        "Catering estimate: $65/person for 120 guests. Total $7800. Deposit 25%. Does not include cleanup or teardown fee."
-      );
-      await page.locator("#parse-quote-btn").click();
-      await page.waitForTimeout(500);
+    const seedTab = page.getByRole("tab", { name: "Paste quote text" });
+    await expect(seedTab).toBeVisible();
+    await seedTab.click();
+    await page
+      .locator("#raw-quote-text")
+      .fill("Catering estimate: $65/person for 120 guests. Total $7800. Deposit 25%. Does not include cleanup or teardown fee.");
+    await page.getByRole("button", { name: "Extract details" }).click();
 
-      const preview = page.locator("#parsed-quote-result");
-      await expect(preview).toBeVisible();
-      const text = await preview.innerText();
-      expect(text).toContain("65");
-      expect(text).toContain("Missing Disclosures Detected");
-    }
+    const preview = page.locator("#parsed-quote-result");
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText("$65/person");
+    await expect(preview).toContainText("Missing Disclosures Detected");
+    await expect(preview.locator(".parsed-amount")).toHaveText("$7,800");
+
+    // Saving keeps the parsed quote on the new vendor so it can be compared later.
+    await page.locator("#save-parsed-vendor-btn").click();
+    await expect(page.locator("#toast-title")).toHaveText("Vendor added");
+    await expect(page.locator("#vendor-cards-grid")).toContainText("Imported from pasted quote text");
   });
 
   test("5. Mara Copilot & Proposal State Mutation", async ({ page }) => {
-    const copilotBtn = page.locator("#copilot-toggle-btn");
-    await copilotBtn.click();
+    await page.locator("#copilot-toggle-btn").click();
 
-    const drawer = page.locator("#copilot-drawer");
+    const drawer = page.getByRole("dialog", { name: "Mara" });
     await expect(drawer).toBeVisible();
 
-    const firstSuggestion = page.locator(".suggestion-pill").first();
-    if (await firstSuggestion.isVisible()) {
-      await firstSuggestion.click();
-      await page.waitForTimeout(1000);
+    await drawer.getByRole("button", { name: /Smart ways to save/ }).click();
 
-      const applyBtn = page.locator(".proposal-apply-btn").first();
-      if (await applyBtn.isVisible()) {
-        await applyBtn.click();
-        await expect(page.locator("#app-toast")).toBeVisible();
-      }
-    }
+    const apply = drawer.locator(".proposal-apply-btn").first();
+    await expect(apply).toBeVisible();
+    await apply.click();
+
+    const result = drawer.locator(".proposal-card .prop-result").first();
+    await expect(result).toContainText("Approved and applied");
+    await expect(page.locator("#toast-title")).toHaveText("Proposal Applied");
+    await expect(page.locator("#app-toast")).toHaveClass(/show/);
   });
 
   test("6. Timeline DAG Reschedule & Collision Detection", async ({ page }) => {
@@ -94,20 +92,18 @@ test.describe("Gatherly Full-Journey Enterprise SaaS E2E", () => {
     await expect(page.locator("#timeline-events-container")).toBeVisible();
 
     const rescheduleBtn = page.locator(".reschedule-btn").first();
-    if (await rescheduleBtn.isVisible()) {
-      await rescheduleBtn.click();
-      const modal = page.locator("#generic-form-backdrop");
-      await expect(modal).toBeVisible();
+    await expect(rescheduleBtn).toBeVisible();
+    await rescheduleBtn.click();
 
-      // Close modal
-      const closeBtn = page.locator("#form-modal-close");
-      if (await closeBtn.isVisible()) {
-        await closeBtn.click();
-      } else {
-        await page.keyboard.press("Escape");
-      }
-      await expect(modal).not.toBeVisible();
-    }
+    const modal = page.locator("#generic-form-backdrop");
+    await expect(modal).toBeVisible();
+    await expect(page.getByRole("dialog", { name: /Reschedule/ })).toBeVisible();
+
+    const closeBtn = page.locator("#form-modal-close");
+    await expect(closeBtn).toBeVisible();
+    await closeBtn.click();
+    await expect(modal).not.toBeVisible();
+    await expect(rescheduleBtn).toBeFocused();
   });
 
   test("7. Create your own event, flag a capacity breach, then fix it from Edit event details", async ({ page }) => {

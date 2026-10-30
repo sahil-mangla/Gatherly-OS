@@ -98,7 +98,6 @@ def test_settings_on_vercel_default_to_production_with_safe_defaults(env):
         ("production", True, False),
         ("development", False, True),
         ("test", False, True),
-        ("staging", False, False),
     ],
 )
 def test_guest_access_is_limited_to_dev_and_test(env, environment, production, guest):

@@ -5,11 +5,12 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends
 
 from ..auth.dependencies import AuthContext
+from ..config import settings
 from ..domain.risks import evaluate_event_risks
 from ..domain.simulation import simulate_ripple
 from ..domain.vendors import compare_quotes, extract_quote_from_raw_text
 from ..services.mara_service import query_mara_copilot
-from .rate_limit import limit_by_user
+from .rate_limit import limit_by_user, limit_globally
 from .schemas import (
     EventPayloadRequest,
     MaraRequest,
@@ -22,6 +23,9 @@ from .schemas import (
 router = APIRouter(prefix="/api")
 
 MaraUser = Annotated[AuthContext, Depends(limit_by_user("mara", 30))]
+MaraGlobal = Annotated[
+    None, Depends(limit_globally("mara", lambda: settings.mara_global_per_minute))
+]
 ComputeUser = Annotated[AuthContext, Depends(limit_by_user("compute", 120))]
 
 
@@ -36,8 +40,8 @@ def health_check() -> dict[str, Any]:
 
 
 @router.post("/mara", response_model=MaraResponse)
-def mara_endpoint(req: MaraRequest, _auth: MaraUser) -> Any:
-    """Mara GenAI Copilot endpoint (authenticated, 30 requests/minute)."""
+def mara_endpoint(req: MaraRequest, _auth: MaraUser, _global: MaraGlobal) -> Any:
+    """Mara GenAI Copilot endpoint (authenticated; 30/min per user and a global cap)."""
     return query_mara_copilot(req.operation, req.prompt, req.context)
 
 

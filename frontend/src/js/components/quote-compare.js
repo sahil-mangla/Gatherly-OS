@@ -1,28 +1,21 @@
 /**
  * @file quote-compare.js
- * @description Side-by-side vendor quote matrix and the generated clarification email draft.
+ * @description Side-by-side matrix of the event's own vendor quotes (chosen with checkboxes) and the
+ * generated clarification email draft. Example quotes appear only until two real quotes exist.
  */
 
 import { store } from '../store.js';
 import { compareQuotes, generateFollowUpQuestions } from '../domain/vendors.js';
 import { escapeHtml } from '../views/helpers.js';
+import { formatDollars } from '../format.js';
 import { scrollBehavior } from '../a11y.js';
 import { showToast } from './toast.js';
+import {
+  MAX_COMPARED, MIN_COMPARED, EXAMPLE_NOTE, quotedEntries, defaultSelection, sampleEntries, forCompare
+} from './quote-entries.js';
 
-const SAMPLE_QUOTES = [
-  { name: 'Sol Studio (Main)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
-  { name: 'Lumina Collective (Alt)', price: 2150, deposit: 500, inclusions: ['7 hrs coverage', 'Second shooter'], missing_fields: ['Raw clip policy', 'Cancellation refund clause'] }
-];
-
-const hasQuotes = (vendor) => Boolean(vendor) && Array.isArray(vendor.quotes) && vendor.quotes.length > 0;
-
-/** Quotes to compare: the requested vendor's own quotes, else the default photographer's, else samples. */
-export function pickQuotes(vendors, vendorId) {
-  const requested = vendors.find(v => v.id === vendorId);
-  const fallback = vendors.find(v => v.id === 'ven-sol-studio') || vendors[1] || vendors[0];
-  const source = [requested, fallback].find(hasQuotes);
-  return source ? source.quotes : SAMPLE_QUOTES;
-}
+const byId = (id) => document.getElementById(id);
+const state = { entries: [], selected: new Set(), real: false, savedCount: 0, comparable: 0 };
 
 function matrixCardHtml(q, summary) {
   const name = escapeHtml(q.name);
@@ -38,8 +31,8 @@ function matrixCardHtml(q, summary) {
       <div class="matrix-badges">${badges}</div>
       <h3>${name}</h3>
       <div class="matrix-price">
-        <span class="price-val">$${Number(q.base_price).toLocaleString()}</span>
-        <small>Deposit: $${Number(q.deposit_amount).toLocaleString()} (${Number(q.deposit_percent)}%)</small>
+        <span class="price-val">${escapeHtml(formatDollars(q.base_price))}</span>
+        <small>Deposit: ${escapeHtml(formatDollars(q.deposit_amount))} (${Number(q.deposit_percent)}%)</small>
       </div>
       <div class="matrix-section"><b>Included:</b><ul>${inclusions}</ul></div>
       <div class="matrix-section risk-section"><b><span aria-hidden="true">⚠</span> Undisclosed Terms:</b><ul>${missing}</ul></div>
@@ -52,7 +45,7 @@ function draftHtml(quote) {
   return `
     <div class="draft-email-card">
       <h4 id="followup-heading" tabindex="-1">Generated clarification draft for vendor</h4>
-      <pre class="email-preview">Hi ${escapeHtml(quote.tier_name || quote.name)},
+      <pre class="email-preview">Hi ${escapeHtml(quote.name)},
 
 Thank you so much for sending over your detailed proposal! Before we finalize our agreement and deposit, could you clarify these items:
 
@@ -60,7 +53,7 @@ ${questions}
 
 Looking forward to hearing from you.
 Warmly,
-Maya</pre>
+[Your name]</pre>
       <button type="button" class="text-btn" id="copy-email-btn">Copy message to clipboard <span aria-hidden="true">↗</span></button>
     </div>`;
 }
@@ -76,35 +69,96 @@ async function copyDraft(box) {
 }
 
 function showDraft(quote) {
-  const box = document.getElementById('followup-questions-box');
+  const box = byId('followup-questions-box');
   box.hidden = false;
   box.innerHTML = draftHtml(quote);
-  document.getElementById('copy-email-btn').addEventListener('click', () => copyDraft(box));
+  byId('copy-email-btn').addEventListener('click', () => copyDraft(box));
   box.scrollIntoView({ behavior: scrollBehavior() });
-  document.getElementById('followup-heading').focus({ preventScroll: true });
+  byId('followup-heading').focus({ preventScroll: true });
+}
+
+function pickerHtml(entries) {
+  const boxes = entries.map((e, i) => `
+    <div class="quote-pick">
+      <input type="checkbox" id="quote-pick-${i}" name="quote-pick" value="${escapeHtml(e.key)}"${e.comparable ? '' : ` disabled aria-describedby="quote-pick-${i}-reason"`}${state.selected.has(e.key) ? ' checked' : ''} />
+      <label for="quote-pick-${i}">${escapeHtml(e.label)} <span class="quote-pick-price">${e.comparable ? escapeHtml(formatDollars(e.price)) : 'Price not found'}</span></label>
+      ${e.comparable ? '' : `<small id="quote-pick-${i}-reason" class="quote-pick-reason">${escapeHtml(e.reason)}</small>`}
+    </div>`).join('');
+  return `<fieldset class="quote-picker" id="quote-picker"><legend>Vendors to compare <small>(choose ${MIN_COMPARED} to ${MAX_COMPARED})</small></legend>${boxes}</fieldset>`;
+}
+
+/** At the maximum, unchecked boxes are disabled so a fifth quote cannot be added. */
+function syncPicker() {
+  const full = state.selected.size >= MAX_COMPARED;
+  document.querySelectorAll('#quote-picker input[name="quote-pick"]').forEach(box => {
+    const entry = state.entries.find(e => e.key === box.value);
+    box.disabled = !entry.comparable || (full && !box.checked);
+  });
+}
+
+function renderMatrix() {
+  const picked = state.entries.filter(e => state.selected.has(e.key));
+  const status = byId('quote-compare-status');
+  const matrix = byId('quote-compare-matrix');
+  if (picked.length < MIN_COMPARED) {
+    matrix.innerHTML = '';
+    status.textContent = `Choose at least ${MIN_COMPARED} vendors to compare.`;
+    return;
+  }
+  const result = compareQuotes(picked.map(forCompare));
+  matrix.innerHTML = result.normalized.map(q => matrixCardHtml(q, result)).join('');
+  status.textContent = result.comparison_summary;
+}
+
+function onChange(e) {
+  if (e.target.name !== 'quote-pick') return;
+  if (e.target.checked) state.selected.add(e.target.value);
+  else state.selected.delete(e.target.value);
+  syncPicker();
+  renderMatrix();
+}
+
+function onClick(e) {
+  const btn = e.target.closest('.select-quote-btn');
+  const entry = btn && state.entries.find(en => en.key === btn.dataset.quoteId);
+  if (entry) showDraft(forCompare(entry));
+}
+
+function introHtml() {
+  if (state.real) return '';
+  const saved = state.savedCount;
+  const hint = saved > 0
+    ? `You have ${saved} saved ${saved === 1 ? 'quote' : 'quotes'}; add ${MIN_COMPARED - state.comparable} more with a price to compare your own vendors.`
+    : 'Open “Paste quote text” to add a vendor’s quote.';
+  return `<p class="comparison-example" id="quote-example-note"><b>${EXAMPLE_NOTE}</b><br />${escapeHtml(hint)}</p>`;
 }
 
 export function renderComparisonView(vendorId) {
-  const container = document.getElementById('quote-comparison-content');
+  const container = byId('quote-comparison-content');
   if (!container) return;
 
-  const quotes = pickQuotes(store.getActiveEvent().vendors || [], vendorId);
-  const result = compareQuotes(quotes);
+  const stored = quotedEntries(store.getActiveEvent().vendors || [], vendorId);
+  const comparable = stored.filter(e => e.comparable);
+  state.real = comparable.length >= MIN_COMPARED;
+  state.savedCount = stored.length;
+  state.comparable = comparable.length;
+  state.entries = state.real ? stored : sampleEntries();
+  state.selected = new Set(defaultSelection(state.entries));
 
   container.innerHTML = `
-    <div class="comparison-banner">
-      <div class="banner-summary">
-        <strong>Intelligent Audit Result</strong>
-        <p>${escapeHtml(result.comparison_summary)}</p>
-      </div>
-    </div>
-    <div class="comparison-matrix">${result.normalized.map(q => matrixCardHtml(q, result)).join('')}</div>
+    ${introHtml()}
+    ${state.real ? pickerHtml(state.entries) : ''}
+    <div class="comparison-banner"><div class="banner-summary">
+      <strong>Intelligent Audit Result</strong>
+      <p id="quote-compare-status" role="status" aria-live="polite"></p>
+    </div></div>
+    <div class="comparison-matrix" id="quote-compare-matrix"></div>
     <div id="followup-questions-box" hidden></div>`;
-
-  container.querySelectorAll('.select-quote-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const quote = quotes.find(q => (q.quote_id || q.id) === btn.dataset.quoteId) || quotes[0];
-      showDraft(quote);
-    });
-  });
+  syncPicker();
+  renderMatrix();
+  if (!container.dataset.bound) {
+    container.dataset.bound = 'true';
+    container.addEventListener('change', onChange);
+    container.addEventListener('click', onClick);
+  }
 }

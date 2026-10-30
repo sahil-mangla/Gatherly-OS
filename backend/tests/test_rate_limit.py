@@ -4,7 +4,6 @@ import pytest
 from fastapi import HTTPException
 from starlette.requests import Request
 
-from app.api import rate_limit
 from app.api.rate_limit import FixedWindowLimiter, client_ip, limit_by_ip
 
 LOGIN = {"email": "nobody@example.com", "password": "bad-password"}
@@ -51,13 +50,14 @@ def test_reset_clears_every_counter():
     assert limiter.hit("a", 1, now=5.0) == 0
 
 
-def test_stale_keys_are_purged_when_the_table_is_full(monkeypatch):
-    monkeypatch.setattr(rate_limit, "_MAX_KEYS", 3)
-    limiter = FixedWindowLimiter(window=60)
+def test_oldest_key_is_evicted_when_the_table_is_full():
+    limiter = FixedWindowLimiter(window=60, max_keys=3)
     for key in ("a", "b", "c"):
         limiter.hit(key, 5, now=10.0)
-    limiter.hit("d", 5, now=70.0)
-    assert set(limiter._hits) == {"d"}
+    limiter.hit("a", 5, now=11.0)  # refreshes "a"; "b" is now the oldest
+    limiter.hit("d", 5, now=12.0)
+    assert list(limiter._hits) == ["c", "a", "d"]
+    assert limiter.hit("b", 1, now=13.0) == 0  # evicted, so its counter started over
 
 
 def test_forwarded_header_is_ignored_without_a_trusted_proxy(settings, monkeypatch):

@@ -16,7 +16,7 @@ function proposalCardHtml(prop, idx) {
   return `
     <div class="proposal-card" data-idx="${idx}">
       <div class="prop-badge">Recommendation</div>
-      <h4>${title}</h4>
+      <h3>${title}</h3>
       <p class="prop-desc">${esc(prop.description)}</p>
       <div class="prop-consequence"><b>Impact:</b> ${esc(prop.consequence || 'Preserves budget buffer.')}</div>
       <div class="prop-actions">

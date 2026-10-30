@@ -68,8 +68,13 @@ def create_access_token(
     tenant_id: str,
     role: str = "planner",
     expires_delta: timedelta | None = None,
+    demo: bool = False,
 ) -> str:
-    """Issue a signed JWT access token containing tenant and RBAC claims."""
+    """Issue a signed JWT access token containing tenant and RBAC claims.
+
+    ``demo=True`` marks a shared-sandbox session: it carries a ``demo`` claim that makes the
+    session read-only for event mutations.
+    """
     if role not in VALID_ROLES:
         raise ValueError("Unknown role.")
     now = datetime.now(UTC)
@@ -83,6 +88,8 @@ def create_access_token(
         "exp": expire,
         "iss": JWT_ISSUER,
     }
+    if demo:
+        payload["demo"] = True
 
     return jwt.encode(payload, settings.jwt_secret, algorithm=JWT_ALGORITHMS[0])
 
@@ -100,6 +107,6 @@ def decode_access_token(token: str) -> dict[str, Any]:
     except jwt.PyJWTError as e:
         logger.debug("Rejected JWT: %s", type(e).__name__)
         raise ValueError("Invalid or expired token.") from e
-    if payload.get("role") not in VALID_ROLES:
+    if payload.get("role") not in VALID_ROLES or not isinstance(payload.get("demo", False), bool):
         raise ValueError("Invalid or expired token.")
     return payload

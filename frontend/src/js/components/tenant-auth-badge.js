@@ -1,6 +1,6 @@
 /**
  * @file tenant-auth-badge.js
- * @description Multi-tenant RBAC indicator and role switcher (a real button in the topbar).
+ * @description Demo role indicator and switcher (affects API calls only) (a real button in the topbar).
  */
 
 import { api, setAuthToken } from '../api.js';
@@ -39,7 +39,7 @@ export async function initTenantAuthBadge(showToast) {
       setAuthToken(data.access_token);
       if (roleLabel) roleLabel.textContent = nextRole.toUpperCase();
       if (showToast) {
-        showToast('RBAC Role Switched', `Active context: ${nextRole.toUpperCase()} (Tenant: ${data.tenant_id})`);
+        showToast('Demo role switched', `API calls now use the ${nextRole.toUpperCase()} role. What you see on screen does not change.`);
       }
     } catch (err) {
       console.warn('Could not switch demo token:', err);

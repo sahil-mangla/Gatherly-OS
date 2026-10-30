@@ -1,98 +1,51 @@
 /**
  * @file mara-fallbacks.js
  * @description Deterministic offline Mara responses, selected by a dispatch table (no backend needed).
+ * Every answer is computed from the event context (budget, risks, tasks); nothing is hard-coded to a seeded event.
  */
 
 import { extractQuoteFromRawText } from '../domain/vendors.js';
+import { formatDollars as money } from '../format.js';
+import { dateText } from '../views/helpers.js';
+import { costSavingResponse } from './mara-budget.js';
 
-const costSavingResponse = () => ({
-  operation: 'cost_saving_proposals',
-  summary: "I've analyzed your financial structure and found 3 high-impact adjustments:",
-  proposals: [
-    {
-      id: 'prop-save-cater',
-      action_type: 'adjust_expense',
-      category: 'catering',
-      title: 'Shift from Plated Dinner to Family-Style Service',
-      description: 'Reduces staffing labor requirements by 3 waitstaff while keeping the meal vibrant and generous.',
-      delta_amount: -900,
-      consequence: 'Saves ~$900 without sacrificing food quality or menu courses.'
-    },
-    {
-      id: 'prop-save-decor',
-      action_type: 'adjust_expense',
-      category: 'design',
-      title: 'Repurpose Ceremony Florals to Reception Tables',
-      description: 'Coordinate with floral team to move aisle ground arrangements to the sweetheart table and bar.',
-      delta_amount: -450,
-      consequence: 'Frees $450 in design budget and eliminates floral waste.'
-    },
-    {
-      id: 'prop-save-buffer',
-      action_type: 'rebalance_budget',
-      category: 'contingency',
-      title: 'Reserve $1,200 Contingency Guard',
-      description: 'Lock in unallocated funds to prevent scope creep during final 30 days before event.',
-      delta_amount: 0,
-      consequence: 'Protects against sudden overtime or corkage additions.'
-    }
-  ]
-});
+const plain = (operation, text) => ({ operation, summary: text, response: text });
 
-const prioritizeTasksResponse = () => ({
-  operation: 'prioritize_tasks',
-  summary: 'Here is your critical path roadmap for this week:',
-  proposals: [
-    {
-      id: 'prop-task-caterer',
-      action_type: 'create_task',
-      title: 'Confirm Final Headcount with Caterer',
-      description: 'Submit dietary requirements and table floorplan at least 14 days before celebration.',
-      consequence: 'Locks per-head rates and prevents last-minute rush surcharges.'
-    },
-    {
-      id: 'prop-task-timeline',
-      action_type: 'create_task',
-      title: 'Distribute Master Day-Of Run Sheet to Vendors',
-      description: 'Align photographer arrival, florist load-in, and DJ soundcheck windows.',
-      consequence: 'Prevents load-in congestion at venue loading dock.'
-    }
-  ]
-});
+function prioritizeTasksResponse({ tasks }) {
+  if (tasks.length === 0) return plain('prioritize_tasks', 'You have no open milestones right now. Add one on the Timeline when something new comes up.');
+  const lines = tasks.slice(0, 3).map((t, i) => `${i + 1}. ${t.title} (due ${dateText(t.due_date)}${t.priority ? `, ${t.priority} priority` : ''})`);
+  return plain('prioritize_tasks', `Your next open milestones by due date: ${lines.join('; ')}.`);
+}
 
-const riskExplanationResponse = ({ risks }) => ({
-  operation: 'risk_explanation',
-  summary: `You currently have ${risks.length} active item${risks.length === 1 ? '' : 's'} on the Event Risk Radar.`,
-  proposals: [
-    {
-      id: 'prop-mitigate-risks',
+function riskExplanationResponse({ risks }) {
+  const summary = `You currently have ${risks.length} active item${risks.length === 1 ? '' : 's'} on the Event Risk Radar.`;
+  const top = risks.find(r => r && typeof r === 'object' && r.title);
+  if (!top) return { operation: 'risk_explanation', summary };
+  return {
+    operation: 'risk_explanation',
+    summary: `${summary} The most urgent is “${top.title}”.`,
+    proposals: [{
+      id: 'prop-mitigate-risk',
       action_type: 'review_risks',
-      title: 'Review Undisclosed Quote Fees',
-      description: 'Photographer and rental quotes do not disclose overtime rates or breakdown terms.',
-      consequence: 'Sending clarification questions now prevents unexpected line items on the final invoice.'
-    }
-  ]
-});
+      title: `Resolve: ${top.title}`,
+      description: top.evidence || top.title,
+      consequence: top.consequence || 'Resolving it keeps the plan on track.'
+    }]
+  };
+}
 
-const generalAdviceResponse = () => ({
-  operation: 'general_advice',
-  summary: "I've analyzed your event setup. Your schedule is on track, and your priority is locking down vendor contracts and ensuring all fees are transparent before deposits are released.",
-  proposals: [
-    {
-      id: 'prop-audit-roster',
-      action_type: 'audit_vendors',
-      title: 'Run Quote Completeness Audit',
-      description: 'Check Sol Studio and Lumina Collective quotes side-by-side to review overtime terms.',
-      consequence: 'Ensures full transparency before contractual commitment.'
-    }
-  ]
-});
+function generalAdviceResponse({ budget, risks, event }) {
+  const name = (event && event.name) || 'your event';
+  const committed = budget ? `${money(budget.total_allocated)} of ${money(budget.total_budget)} is committed` : 'no budget figures are available yet';
+  const risk = risks.length > 0 ? `${risks.length} active risk${risks.length === 1 ? '' : 's'} on the Risk Radar` : 'no active risks';
+  return plain('general_advice', `For ${name}: ${committed}, with ${risk}. Ask me about saving money or what to do this week for specifics.`);
+}
 
 function parseQuoteSeedResponse({ prompt }) {
   const extracted = extractQuoteFromRawText(prompt);
   return {
     operation: 'parse_quote_seed',
-    summary: `Extracted quote for ${extracted.vendor_name} ($${extracted.quoted_base_amount.toLocaleString()}).`,
+    summary: `Extracted quote for ${extracted.vendor_name} (${money(extracted.quoted_base_amount)}).`,
     extracted_quote: extracted
   };
 }
@@ -104,13 +57,27 @@ export const LOCAL_RESPONDERS = [
   { operation: 'risk_explanation', keywords: ['risk'], build: riskExplanationResponse }
 ];
 
+const asList = (value) => (Array.isArray(value) ? value : []);
+const asObject = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : null);
+
+/** Normalises whatever context the caller passed (it may be absent or malformed). */
+function requestFrom(prompt, context) {
+  const ctx = asObject(context) || {};
+  return {
+    prompt: String(prompt || ''),
+    risks: asList(ctx.risks),
+    tasks: asList(ctx.tasks),
+    budget: asObject(ctx.budget),
+    event: asObject(ctx.event)
+  };
+}
+
 export function getLocalDeterministicMaraResponse(operation, prompt, context = {}) {
   const op = operation || 'general_advice';
-  const text = String(prompt || '');
-  const request = { prompt: text, risks: (context && context.risks) || [] };
+  const request = requestFrom(prompt, context);
   if (op === 'parse_quote_seed') return parseQuoteSeedResponse(request);
 
-  const lowered = text.toLowerCase();
+  const lowered = request.prompt.toLowerCase();
   const responder = LOCAL_RESPONDERS.find(
     r => r.operation === op || r.keywords.some(k => lowered.includes(k))
   );

@@ -63,7 +63,7 @@ class EventModel(Base):
     __tablename__ = "events"
 
     id = Column(String(64), primary_key=True)
-    # No standalone tenant index: ix_events_tenant_id_type leads with tenant_id.
+    # No standalone tenant index: ix_events_tenant_created leads with tenant_id.
     tenant_id = Column(String(64), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     type = Column(String(64), default="wedding", nullable=False)
@@ -78,7 +78,8 @@ class EventModel(Base):
 
     tenant = relationship("Tenant", back_populates="events")
 
-    __table_args__ = (Index("ix_events_tenant_id_type", "tenant_id", "type"),)
+    # Serves the per-tenant list ORDER BY created_at DESC and the quota count.
+    __table_args__ = (Index("ix_events_tenant_created", "tenant_id", "created_at"),)
 
 
 class AuditLog(Base):

@@ -7,6 +7,7 @@ import { formatMoney } from '../domain/budget.js';
 import { renderWhatIfPanel } from '../components/whatif-panel.js';
 import { setProgress } from '../a11y.js';
 import { createViewContext } from './context.js';
+import { prettyLabel } from '../format.js';
 import { capitalize, escapeHtml, setHtml, setText } from './helpers.js';
 
 const CATEGORY_COLORS = {
@@ -50,7 +51,7 @@ function categoryHtml(key, data, cur) {
     <div class="category">
       <div class="category-head">
         <span class="category-dot" aria-hidden="true" style="background:${color}"></span>
-        <h3>${escapeHtml(capitalize(key.replace('_', ' ')))}</h3>
+        <h3>${escapeHtml(prettyLabel(key))}</h3>
         <small>${data.percent_of_budget}% of total budget</small>
       </div>
       <strong>${escapeHtml(formatMoney(data.allocated, cur))}</strong>
@@ -69,7 +70,7 @@ function renderCategories({ budget, cur }) {
 
 function expenseRowHtml(exp, cur) {
   const status = PAID_STATUSES.includes(exp.status) ? 'paid' : 'pending';
-  const category = capitalize((exp.category || 'other').replace('_', ' '));
+  const category = prettyLabel(exp.category, 'Other');
   const amount = (exp.actual_amount || 0) + (exp.committed_amount || 0);
   return `
     <tr>

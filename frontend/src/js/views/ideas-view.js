@@ -7,6 +7,7 @@ import { store } from '../store.js';
 import { openAddIdeaModal } from '../components/forms.js';
 import { showToast } from '../components/toast.js';
 import { createViewContext } from './context.js';
+import { formatDollars } from '../format.js';
 import { escapeHtml, formatAdded, safeToken, bindOnce } from './helpers.js';
 
 const PINS = ['✦', '✺', '❋', '◌'];
@@ -21,7 +22,7 @@ function actionHtml(idea, title) {
 function ideaCardHtml(idea, index) {
   const title = escapeHtml(idea.title || idea.description);
   const bg = safeToken(idea.bg_color, BG_COLORS, 'idea-yellow');
-  const cost = idea.estimated_cost ? `Est: $${escapeHtml(Number(idea.estimated_cost).toLocaleString())}` : 'Cost: Free';
+  const cost = idea.estimated_cost ? `Est: ${escapeHtml(formatDollars(idea.estimated_cost))}` : 'Cost: Free';
   return `
     <article class="idea-card ${bg}" tabindex="-1" data-focus-key="idea:${escapeHtml(idea.id)}">
       <span class="idea-pin" aria-hidden="true">${PINS[index % PINS.length]}</span>

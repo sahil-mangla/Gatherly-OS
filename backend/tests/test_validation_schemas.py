@@ -4,7 +4,7 @@ import uuid
 
 import pytest
 
-BIG = "a" * (513 * 1024)  # exceeds the 512 KB state cap while staying under the 1 MB body cap
+BIG = "a" * (129 * 1024)  # exceeds the 128 KB state cap while staying under the 1 MB body cap
 BIG_CONTEXT = {"blob": "a" * (257 * 1024)}
 EVENT_OK = {"name": "Valid"}
 REGISTER_OK = {
@@ -167,13 +167,14 @@ def test_event_at_max_lengths_is_accepted(client, auth_headers):
     res = client.post("/api/events", headers=auth_headers(), json=payload)
     assert res.status_code == 201
     assert res.json()["name"] == "n" * 200 and res.json()["total_budget"] == 1e12
+    assert res.json()["id"] != "i" * 64  # the client id is accepted but never used
 
 
 def test_event_defaults_are_applied(client, auth_headers):
     body = client.post("/api/events", headers=auth_headers(), json={"name": "Defaults"}).json()
     assert (body["type"], body["total_budget"], body["expected_guests"]) == ("wedding", 0.0, 0)
     assert (body["theme"], body["state_json"], body["date"]) == ("", {}, None)
-    assert body["id"].startswith("event-") and len(body["id"]) == 22
+    assert body["id"].startswith("event-") and len(body["id"]) == 38
 
 
 def test_event_list_query_bounds(client, auth_headers):

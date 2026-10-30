@@ -59,15 +59,15 @@ def test_events_without_anchor_are_never_touched():
 def test_api_returns_live_schedule_and_persists_it(client):
     token = create_access_token("u-sched", f"tenant-sched-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
-    event_id = f"event-sched-{uuid.uuid4().hex[:8]}"
     body = _event()
     res = client.post(
         "/api/events",
         headers=headers,
-        json={"id": event_id, "name": "Anchored", "date": body["date"], "state_json": body},
+        json={"name": "Anchored", "date": body["date"], "state_json": body},
     )
     assert res.status_code == 201
     created = res.json()
+    event_id = created["id"]
     assert date.fromisoformat(created["date"]) > date.today()
     assert created["state_json"]["schedule_anchor"] != "2025-06-04"
 
@@ -79,13 +79,13 @@ def test_api_returns_live_schedule_and_persists_it(client):
 def test_api_stale_state_put_does_not_double_shift_date(client):
     token = create_access_token("u-stale", f"tenant-stale-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
-    event_id = f"event-stale-{uuid.uuid4().hex[:8]}"
     body = _event()
     created = client.post(
         "/api/events",
         headers=headers,
-        json={"id": event_id, "name": "Stale", "date": body["date"], "state_json": body},
+        json={"name": "Stale", "date": body["date"], "state_json": body},
     ).json()
+    event_id = created["id"]
 
     updated = client.put(
         f"/api/events/{event_id}", headers=headers, json={"state_json": _event()}
@@ -97,12 +97,11 @@ def test_api_stale_state_put_does_not_double_shift_date(client):
 def test_api_anchored_event_without_state_date_stays_consistent(client):
     token = create_access_token("u-col", f"tenant-col-{uuid.uuid4().hex[:6]}", role="owner")
     headers = {"Authorization": f"Bearer {token}"}
-    event_id = f"event-col-{uuid.uuid4().hex[:8]}"
     state = {k: v for k, v in _event().items() if k != "date"}
     created = client.post(
         "/api/events",
         headers=headers,
-        json={"id": event_id, "name": "Col", "date": "2025-09-14", "state_json": state},
+        json={"name": "Col", "date": "2025-09-14", "state_json": state},
     ).json()
     assert created["date"] == created["state_json"]["date"]
     assert date.fromisoformat(created["date"]) > date.today()

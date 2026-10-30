@@ -6,7 +6,7 @@ import secrets
 from pathlib import Path
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Load .env file from workspace root if present
 root_dir = Path(__file__).resolve().parent.parent.parent
@@ -18,30 +18,45 @@ _log = logging.getLogger("gatherly.config")
 # The historical public default; it is never accepted as a real secret.
 _PUBLIC_DEFAULT_SECRET = "gatherly-super-secure-enterprise-secret-32-chars"
 _MIN_SECRET_BYTES = 32
+# Fail closed: only these two named environments get the relaxed (guest / wildcard CORS / seeded
+# credentials) behaviour. Every other value, including typos such as "prod", is production-like.
+LOCAL_ENVIRONMENTS = frozenset({"development", "test"})
 
 
 def _flag(name: str, default: str) -> bool:
     return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
 
 
+def normalise_environment(raw: str) -> str:
+    """Canonical environment name: surrounding whitespace removed, lower-cased."""
+    return raw.strip().lower()
+
+
+def is_local_environment(environment: str) -> bool:
+    """True only for the explicit development / test environments."""
+    return normalise_environment(environment) in LOCAL_ENVIRONMENTS
+
+
 def _default_environment() -> str:
     """Hosted (Vercel) deployments default to production; local runs to development."""
-    return os.getenv("ENVIRONMENT") or ("production" if os.getenv("VERCEL") else "development")
+    raw = normalise_environment(os.getenv("ENVIRONMENT") or "")
+    return raw or ("production" if os.getenv("VERCEL") else "development")
 
 
 def resolve_jwt_secret(environment: str) -> str:
-    """Return a signing secret, refusing weak or public secrets in production."""
+    """Return a signing secret, refusing weak or public secrets outside development / test."""
+    local = is_local_environment(environment)
     secret = os.getenv("JWT_SECRET", "").strip()
     strong = len(secret.encode("utf-8")) >= _MIN_SECRET_BYTES
-    if secret and secret != _PUBLIC_DEFAULT_SECRET and (strong or environment != "production"):
+    if secret and secret != _PUBLIC_DEFAULT_SECRET and (strong or local):
         return secret
-    if environment == "production" and not os.getenv("VERCEL"):
+    if not local and not os.getenv("VERCEL"):
         raise RuntimeError(
-            "JWT_SECRET must be set to a random value of at least 32 bytes when "
-            "ENVIRONMENT=production (generate one with: python -c "
+            "JWT_SECRET must be set to a random value of at least 32 bytes unless "
+            "ENVIRONMENT is development or test (generate one with: python -c "
             "'import secrets; print(secrets.token_urlsafe(48))')."
         )
-    if environment == "production":
+    if not local:
         _log.warning(
             "JWT_SECRET is unset or weak; using a random per-instance secret. Tokens will not "
             "validate across serverless instances - set JWT_SECRET in the project settings."
@@ -55,7 +70,7 @@ def _default_cors_origins() -> list[str]:
     raw = os.getenv("CORS_ORIGINS", "").strip()
     if raw:
         return [o.strip() for o in raw.split(",") if o.strip()]
-    return [] if _default_environment() == "production" else ["*"]
+    return ["*"] if is_local_environment(_default_environment()) else []
 
 
 class Settings(BaseModel):
@@ -99,6 +114,17 @@ class Settings(BaseModel):
     )
     max_body_bytes: int = 1_048_576
 
+    # Abuse brakes and per-tenant quotas
+    mara_global_per_minute: int = Field(
+        default_factory=lambda: int(os.getenv("MARA_GLOBAL_PER_MINUTE", "120"))
+    )
+    max_events_per_tenant: int = Field(
+        default_factory=lambda: int(os.getenv("MAX_EVENTS_PER_TENANT", "100"))
+    )
+    max_state_json_bytes: int = Field(
+        default_factory=lambda: int(os.getenv("MAX_STATE_JSON_BYTES", str(128 * 1024)))
+    )
+
     # Distributed Observability & Logging
     log_format: str = Field(default_factory=lambda: os.getenv("LOG_FORMAT", "json"))
     otel_enabled: bool = Field(default_factory=lambda: _flag("OTEL_ENABLED", "true"))
@@ -106,14 +132,25 @@ class Settings(BaseModel):
         default_factory=lambda: os.getenv("OTEL_SERVICE_NAME", "gatherly-backend")
     )
 
+    @field_validator("environment")
+    @classmethod
+    def _normalise_environment(cls, value: str) -> str:
+        return normalise_environment(value)
+
+    @property
+    def is_local(self) -> bool:
+        """Explicit development / test environment (the only relaxed ones)."""
+        return is_local_environment(self.environment)
+
     @property
     def is_production(self) -> bool:
-        return self.environment == "production"
+        """Anything that is not development / test is treated like production (fail closed)."""
+        return not self.is_local
 
     @property
     def allow_guest(self) -> bool:
         """Unauthenticated guest access is a development/test convenience only."""
-        return self.environment in ("development", "test")
+        return self.is_local
 
     @property
     def cors_allow_credentials(self) -> bool:

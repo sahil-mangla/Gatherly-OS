@@ -4,7 +4,8 @@
  */
 
 import { unfinishedDependencies, dependentsOf } from '../domain/dependencies.js';
-import { escapeHtml, capitalize, timeHtml, upperEscaped } from './helpers.js';
+import { prettyLabel } from '../format.js';
+import { escapeHtml, timeHtml, upperEscaped } from './helpers.js';
 
 /** Groups tasks by `YYYY-MM` of their due date, sorted chronologically inside each group. */
 export function groupTasksByMonth(tasks) {
@@ -45,7 +46,7 @@ export function taskRowHtml(t, tasks = []) {
       <button type="button" class="timeline-dot" aria-pressed="${isDone}" aria-label="Mark complete: ${title}" data-task-id="${id}" data-focus-key="timeline-toggle:${id}"><span aria-hidden="true">${isDone ? '✓' : ''}</span></button>
       <div class="timeline-event-body">
         <b>${title}</b>
-        <small>Due ${timeHtml(t.due_date)} · ${escapeHtml(capitalize(t.status))}${fixed}</small>
+        <small>Due ${timeHtml(t.due_date)} · ${escapeHtml(prettyLabel(t.status, 'To do'))}${fixed}</small>
         ${dependencyNoteHtml(t, tasks)}
       </div>
       <button type="button" class="reschedule-btn" aria-label="Reschedule ${title}" data-task-id="${id}" data-focus-key="reschedule:${id}"><span aria-hidden="true">📅</span> Reschedule <span aria-hidden="true">→</span></button>

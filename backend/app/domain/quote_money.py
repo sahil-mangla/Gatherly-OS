@@ -8,34 +8,28 @@ import re
 from typing import Any
 
 from .budget import PERCENT_SCALE
+from .quote_percent import DEPOSIT_WORDS, classify_percents
 
-MONEY_RE = re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?")
+MONEY_RE = re.compile(r"\$\s?([0-9]{1,3}(?:,[0-9]{3}){1,4}|[0-9]{1,12})(?![0-9])(?:\.[0-9]{1,2})?")
 CLAUSE_SPLIT_RE = re.compile(r"[.;!?\n]|,\s")
 PREFIX_WINDOW = 30
 SUFFIX_WINDOW = 30
 
-DEPOSIT_WORDS = r"deposit|retainer|down\s*payment"
 OVERTIME_WORDS = r"over\s*time|extra\s+hours?|additional\s+hours?"
 CLEANUP_WORDS = r"clean\s*-?up|tear\s*down|break\s*down|set\s*-?up"
 FEE_WORDS = r"travel|delivery|parking|permit|corkage|cake\s+cutting|fees?|surcharge"
 TOTAL_RE = re.compile(r"\btotal\b")
 EXPLICIT_RE = re.compile(r"=|\bpackage\b|\bbase\b|\bflat\b|all-in|comes\s+to|\bquoted?\b|\bprice\b")
 UNIT_RE = re.compile(r"\s*(?:/|per\s+|an?\s+|each\s+)\s*(hr|hour|person|guest|head|pp|plate)")
+BEFORE_UNIT_RE = re.compile(
+    r"\bper\s{1,3}(person|guest|head|plate)\s{0,3}(?:(?:is|of|at)\s{1,3})?[:\-\u2013]?\s{0,3}$"
+)
 HOUR_UNITS = ("hr", "hour")
-GUESTS_RE = re.compile(r"(\d{1,5})\s*(?:guests?|people|attendees|persons|ppl)", re.I)
+GUESTS_RE = re.compile(r"([0-9]{1,5})\s{0,3}(?:guests?|people|attendees|persons|ppl)", re.I)
 AFTER_FILLER = r"(?:(?:/\s*hr|/\s*hour|per\s+hour|an\s+hour|flat|for|the|a|an)\s*){0,3}"
 DEPOSIT_AFTER_RE = re.compile(
     rf"\s*(?:(?:non-refundable|refundable|required|upfront|due|as|is|a|the)\s+){{0,2}}"
     rf"(?:{DEPOSIT_WORDS})"
-)
-DEPOSIT_PCT_RES = (
-    re.compile(rf"(\d+(?:\.\d+)?)\s*%\s*(?:non-refundable\s+)?(?:{DEPOSIT_WORDS})", re.I),
-    re.compile(rf"(?:{DEPOSIT_WORDS})\s*(?:of|is|:)?\s*(\d+(?:\.\d+)?)\s*%", re.I),
-)
-FEE_WORD_GROUP = r"gratuity|tip|service\s+charge|service\s+fee|admin(?:istrative)?\s+fee"
-PERCENT_FEE_RES = (
-    re.compile(rf"\b({FEE_WORD_GROUP})\b\D{{0,12}}?(\d+(?:\.\d+)?)\s*%", re.I),
-    re.compile(rf"(\d+(?:\.\d+)?)\s*%\s*\b({FEE_WORD_GROUP})\b", re.I),
 )
 FEE_LABELS = {
     "overtime": "Overtime rate",
@@ -61,7 +55,7 @@ def _mentions(words: str, before: str, after: str) -> bool:
     return bool(re.search(words, before) or re.match(rf"\s*{AFTER_FILLER}(?:{words})", after))
 
 
-def _classify(before: str, after: str) -> str:
+def _classify(before: str, after: str, taken: bool) -> str:
     """Return deposit | overtime | cleanup | fee | rate | amount for one dollar figure."""
     if re.search(DEPOSIT_WORDS, before) or DEPOSIT_AFTER_RE.match(after):
         return "deposit"
@@ -69,24 +63,40 @@ def _classify(before: str, after: str) -> str:
         for kind, words in KIND_ORDER:
             if _mentions(words, before, after):
                 return kind
-    return "rate" if UNIT_RE.match(after) else "amount"
+    return "rate" if _unit(before, after, taken) else "amount"
+
+
+def _unit(before: str, after: str, taken: bool) -> str | None:
+    """Unit of a rate: ``/hr`` or ``per plate`` after the figure, or ``Per plate`` before it.
+
+    ``taken`` means the previous figure already owns a unit phrase at the start of this gap
+    ("$48 per person: $7,200"), so that phrase is not this figure's unit.
+    """
+    found = UNIT_RE.match(after)
+    if found:
+        return found.group(1)
+    found = BEFORE_UNIT_RE.search(before)
+    if found and not (taken and not before[: found.start()].strip()):
+        return found.group(1)
+    return None
 
 
 def parse_money_items(text: str) -> list[dict[str, Any]]:
     """Every ``$`` figure in ``text`` with its inferred kind, unit and priority tier."""
     matches = list(MONEY_RE.finditer(text))
     items: list[dict[str, Any]] = []
+    taken = False
     for idx, match in enumerate(matches):
         before, after = _clause_context(text, matches, idx)
-        unit = UNIT_RE.match(after)
         items.append(
             {
                 "amount": float(match.group(0).replace("$", "").replace(",", "").strip()),
-                "kind": _classify(before, after),
-                "unit": unit.group(1) if unit else None,
+                "kind": _classify(before, after, taken),
+                "unit": _unit(before, after, taken),
                 "tier": _tier(before),
             }
         )
+        taken = bool(UNIT_RE.match(after))
     return items
 
 
@@ -118,21 +128,21 @@ def find_deposit(text: str, items: list[dict[str, Any]], base: float) -> tuple[f
     for item in items:
         if item["kind"] == "deposit":
             return item["amount"], True
-    for pattern in DEPOSIT_PCT_RES:
-        found = pattern.search(text)
-        if found:
-            return round(base * float(found.group(1)) / PERCENT_SCALE, 2), True
+    percent, _ = classify_percents(text)
+    if percent is not None:
+        return round(base * percent / PERCENT_SCALE, 2), True
     return 0.0, False
 
 
-def _percent_fee(match: re.Match[str], base: float) -> dict[str, Any]:
-    groups = match.groups()
-    label = next(g for g in groups if g and not g[0].isdigit()).lower()
-    rate = float(next(g for g in groups if g and g[0].isdigit()))
-    kind = "gratuity" if label.startswith(("gratuity", "tip")) else "service_charge"
+def _format_rate(rate: float) -> str:
+    return format(rate, "f").rstrip("0").rstrip(".")
+
+
+def _percent_fee(word: str, rate: float, base: float) -> dict[str, Any]:
+    label = " ".join(word.lower().split())
     return {
-        "type": kind,
-        "label": f"{label.title()} {rate:g}%",
+        "type": "gratuity" if label.startswith(("gratuity", "tip")) else "service_charge",
+        "label": f"{label.title()} {_format_rate(rate)}%",
         "unit": "percent",
         "rate": rate,
         "amount": round(base * rate / PERCENT_SCALE, 2),
@@ -152,6 +162,5 @@ def find_hidden_fees(text: str, items: list[dict[str, Any]], base: float) -> lis
         for item in items
         if item["kind"] in FEE_LABELS
     ]
-    for pattern in PERCENT_FEE_RES:
-        fees.extend(_percent_fee(m, base) for m in pattern.finditer(text))
+    fees.extend(_percent_fee(fee.word, fee.rate, base) for fee in classify_percents(text)[1])
     return fees

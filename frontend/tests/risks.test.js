@@ -18,7 +18,7 @@ describe('evaluateEventRisks', () => {
       });
     }
     assert.equal(evaluateEventRisks(calmEvent).total_count, 0);
-    assert.equal(RISK_RULES.length, 5);
+    assert.equal(RISK_RULES.length, 6);
   });
 
   test('capacity rule: reports the excess and a what-if payload', () => {

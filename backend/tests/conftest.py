@@ -64,15 +64,20 @@ def client(asgi_app):
 
 @pytest.fixture(autouse=True)
 def _clean_process_state():
-    """Reset process-wide rate-limit and Mara cache state so tests stay order-independent."""
+    """Reset process-wide rate-limit, Mara cache and seed-flag state (test order independence)."""
     from app.api.rate_limit import limiter
+    from app.db.seed import reset_demo_seed_cache
     from app.services import mara_service
 
-    limiter.reset()
-    mara_service._cache.clear()
+    def reset():
+        limiter.reset()
+        mara_service._cache.clear()
+        mara_service._failures.clear()
+        reset_demo_seed_cache()
+
+    reset()
     yield
-    limiter.reset()
-    mara_service._cache.clear()
+    reset()
 
 
 @pytest.fixture

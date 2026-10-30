@@ -6,39 +6,29 @@
  * base price, deposit and fees are derived.
  */
 
-const MONEY_SOURCE = String.raw`\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?`;
+import { DEPOSIT_WORDS, classifyPercents } from './quote-percent.js';
+
+const MONEY_SOURCE = String.raw`\$\s?([0-9]{1,3}(?:,[0-9]{3}){1,4}|[0-9]{1,12})(?![0-9])(?:\.[0-9]{1,2})?`;
 const CLAUSE_SPLIT_RE = /[.;!?\n]|,\s/;
 const PREFIX_WINDOW = 30;
 const SUFFIX_WINDOW = 30;
 const PERCENT = 100;
-const CENTS = 100;
 
-const DEPOSIT_WORDS = String.raw`deposit|retainer|down\s*payment`;
 const OVERTIME_WORDS = String.raw`over\s*time|extra\s+hours?|additional\s+hours?`;
 const CLEANUP_WORDS = String.raw`clean\s*-?up|tear\s*down|break\s*down|set\s*-?up`;
 const FEE_WORDS = String.raw`travel|delivery|parking|permit|corkage|cake\s+cutting|fees?|surcharge`;
 const AFTER_FILLER = String.raw`(?:(?:/\s*hr|/\s*hour|per\s+hour|an\s+hour|flat|for|the|a|an)\s*){0,3}`;
-const FEE_WORD_GROUP = String.raw`gratuity|tip|service\s+charge|service\s+fee|admin(?:istrative)?\s+fee`;
-const PCT = String.raw`(\d+(?:\.\d+)?)`;
 
 const TOTAL_RE = /\btotal\b/;
 const EXPLICIT_RE = /=|\bpackage\b|\bbase\b|\bflat\b|all-in|comes\s+to|\bquoted?\b|\bprice\b/;
 const UNIT_RE = /^\s*(?:\/|per\s+|an?\s+|each\s+)\s*(hr|hour|person|guest|head|pp|plate)/;
+const BEFORE_UNIT_RE = /\bper\s{1,3}(person|guest|head|plate)\s{0,3}(?:(?:is|of|at)\s{1,3})?[:\-\u2013]?\s{0,3}$/;
 const HOUR_UNITS = ['hr', 'hour'];
-const GUESTS_RE = /(\d{1,5})\s*(?:guests?|people|attendees|persons|ppl)/i;
+const GUESTS_RE = /([0-9]{1,5})\s{0,3}(?:guests?|people|attendees|persons|ppl)/i;
 const DEPOSIT_BEFORE_RE = new RegExp(DEPOSIT_WORDS);
 const DEPOSIT_AFTER_RE = new RegExp(
   String.raw`^\s*(?:(?:non-refundable|refundable|required|upfront|due|as|is|a|the)\s+){0,2}(?:${DEPOSIT_WORDS})`
 );
-const DEPOSIT_PCT_RES = [
-  new RegExp(String.raw`${PCT}\s*%\s*(?:non-refundable\s+)?(?:${DEPOSIT_WORDS})`, 'i'),
-  new RegExp(String.raw`(?:${DEPOSIT_WORDS})\s*(?:of|is|:)?\s*${PCT}\s*%`, 'i')
-];
-const PERCENT_FEE_SOURCES = [
-  String.raw`\b(${FEE_WORD_GROUP})\b\D{0,12}?${PCT}\s*%`,
-  String.raw`${PCT}\s*%\s*\b(${FEE_WORD_GROUP})\b`
-];
-
 export const FEE_LABELS = {
   overtime: 'Overtime rate',
   cleanup: 'Cleanup / setup fee',
@@ -59,8 +49,19 @@ const TIER_TOTAL = 0;
 const TIER_EXPLICIT = 1;
 const TIER_PLAIN = 2;
 
+/**
+ * Python-style round(x, digits): correctly rounded on the exact binary value, ties to even.
+ * (`toFixed` is exact too, but rounds exact ties up.)
+ */
+export function roundHalfEven(value, digits = 2) {
+  const abs = Math.abs(value);
+  const exactTie = new RegExp(String.raw`\.\d{${digits}}50*$`).test(abs.toFixed(60));
+  const result = exactTie ? (2 * Math.round((abs * 10 ** digits) / 2)) / 10 ** digits : Number(abs.toFixed(digits));
+  return Math.sign(value) * result;
+}
+
 /** Python-style round(x, 2) for money. */
-export const roundCents = (value) => Math.round((value + Number.EPSILON) * CENTS) / CENTS;
+export const roundCents = (value) => roundHalfEven(value, 2);
 
 /** Lower-cased text just before and after match `idx`, limited to its own clause. */
 function clauseContext(text, matches, idx) {
@@ -72,14 +73,25 @@ function clauseContext(text, matches, idx) {
   return [before.toLowerCase(), after.toLowerCase()];
 }
 
+/**
+ * Unit of a rate: `/hr` or `per plate` after the figure, or `Per plate` before it. `taken`
+ * means the previous figure already owns a unit phrase at the start of this gap.
+ */
+function unitOf(before, after, taken) {
+  const found = UNIT_RE.exec(after);
+  if (found) return found[1];
+  const lead = BEFORE_UNIT_RE.exec(before);
+  return lead && !(taken && before.slice(0, lead.index).trim() === '') ? lead[1] : null;
+}
+
 /** Returns deposit | overtime | cleanup | fee | rate | amount for one dollar figure. */
-function classify(before, after) {
+function classify(before, after, taken) {
   if (DEPOSIT_BEFORE_RE.test(before) || DEPOSIT_AFTER_RE.test(after)) return 'deposit';
   const feeKind = TOTAL_RE.test(before)
     ? null
     : KIND_PATTERNS.find(p => p.before.test(before) || p.after.test(after));
   if (feeKind) return feeKind.kind;
-  return UNIT_RE.test(after) ? 'rate' : 'amount';
+  return unitOf(before, after, taken) ? 'rate' : 'amount';
 }
 
 function tierOf(before) {
@@ -90,30 +102,34 @@ function tierOf(before) {
 /** Every `$` figure in `text` with its inferred kind, unit and priority tier. */
 export function parseMoneyItems(text) {
   const matches = [...text.matchAll(new RegExp(MONEY_SOURCE, 'g'))];
+  let taken = false;
   return matches.map((match, idx) => {
     const [before, after] = clauseContext(text, matches, idx);
-    const unit = UNIT_RE.exec(after);
-    return {
+    const item = {
       amount: parseFloat(match[0].replace(/[$,\s]/g, '')),
-      kind: classify(before, after),
-      unit: unit ? unit[1] : null,
+      kind: classify(before, after, taken),
+      unit: unitOf(before, after, taken),
       tier: tierOf(before)
     };
+    taken = UNIT_RE.test(after);
+    return item;
   });
 }
+
+const maxOf = (values) => values.reduce((a, b) => Math.max(a, b), -Infinity);
 
 function rateTimesGuests(text, items) {
   const guests = GUESTS_RE.exec(text);
   const rates = items.filter(i => i.kind === 'rate' && !HOUR_UNITS.includes(i.unit)).map(i => i.amount);
-  return guests && rates.length > 0 ? Math.max(...rates) * parseInt(guests[1], 10) : 0;
+  return guests && rates.length > 0 ? maxOf(rates) * parseInt(guests[1], 10) : 0;
 }
 
 /** Base price: explicit totals, then largest amount, then per-person rate x guests. */
 export function pickBaseAmount(text, items) {
   const candidates = items.filter(i => i.kind === 'amount');
   if (candidates.length > 0) {
-    const bestTier = Math.min(...candidates.map(i => i.tier));
-    return [Math.max(...candidates.filter(i => i.tier === bestTier).map(i => i.amount)), null];
+    const bestTier = candidates.reduce((best, i) => Math.min(best, i.tier), TIER_PLAIN);
+    return [maxOf(candidates.filter(i => i.tier === bestTier).map(i => i.amount)), null];
   }
   const estimate = rateTimesGuests(text, items);
   return [estimate, estimate ? RATE_ESTIMATE_NOTE : null];
@@ -123,16 +139,14 @@ export function pickBaseAmount(text, items) {
 export function findDeposit(text, items, base) {
   const stated = items.find(i => i.kind === 'deposit');
   if (stated) return [stated.amount, true];
-  const found = DEPOSIT_PCT_RES.map(re => re.exec(text)).find(Boolean);
-  return found ? [roundCents((base * parseFloat(found[1])) / PERCENT), true] : [0, false];
+  const { deposit } = classifyPercents(text);
+  return deposit === null ? [0, false] : [roundCents((base * deposit) / PERCENT), true];
 }
 
 const titleCase = (s) => s.replace(/\b\w/g, c => c.toUpperCase());
 
-function percentFee(match, base) {
-  const groups = match.slice(1).filter(Boolean);
-  const label = groups.find(g => !/^\d/.test(g)).toLowerCase();
-  const rate = parseFloat(groups.find(g => /^\d/.test(g)));
+function percentFee({ word, rate }, base) {
+  const label = word.toLowerCase().split(/\s+/).join(' ');
   return {
     type: /^(gratuity|tip)/.test(label) ? 'gratuity' : 'service_charge',
     label: `${titleCase(label)} ${rate}%`,
@@ -153,8 +167,5 @@ export function findHiddenFees(text, items, base) {
       rate: item.amount,
       amount: item.amount
     }));
-  const percentFees = PERCENT_FEE_SOURCES.flatMap(
-    source => [...text.matchAll(new RegExp(source, 'gi'))].map(m => percentFee(m, base))
-  );
-  return [...dollarFees, ...percentFees];
+  return [...dollarFees, ...classifyPercents(text).fees.map(fee => percentFee(fee, base))];
 }

@@ -129,7 +129,7 @@ def test_reschedule_survives_cycles_and_reports_each_dependent_once():
 
 
 def test_validate_task_branches():
-    assert validate_task("x") == (False, ["Task must be a dictionary."])
+    assert validate_task("x") == (False, ["Task must be an object."])
     ok, errs = validate_task({"title": "t", "due_date": "2025-01-01", "status": "weird"})
     assert ok is False and errs == ["Invalid status 'weird'. Allowed: todo, in_progress, done"]
     ok, errs = validate_task({"title": 5})

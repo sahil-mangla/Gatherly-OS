@@ -1,0 +1,23 @@
+# Files excluded from the Vercel deployment bundle (keeps the serverless function small).
+# NOT excluded on purpose: api/, backend/app, frontend/ (vercel.json includeFiles) and requirements.txt.
+
+# Tests and test output
+backend/tests
+frontend/tests
+tests
+playwright-report
+test-results
+.coverage
+.ruff_cache
+ci-test.db
+
+# Tooling and CI
+.github
+scripts
+node_modules
+
+# Local data and secrets
+*.db
+*.sqlite*
+.env
+.env.*

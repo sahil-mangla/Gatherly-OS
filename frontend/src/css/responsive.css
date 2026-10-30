@@ -38,6 +38,19 @@
 }
 
 @media (max-width: 680px) {
+  .task-card-title-row {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .task-card-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    flex: 1 1 100%;
+  }
+
   .sidebar {
     position: static;
     width: 100%;

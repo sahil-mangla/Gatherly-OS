@@ -18,7 +18,7 @@ describe('validateExpenseInput', () => {
   test('accepts a minimal valid expense and zero amounts', () => {
     assert.deepEqual(validateExpenseInput(valid), { valid: true, errors: [] });
     assert.equal(validateExpenseInput({ ...valid, planned_amount: 0 }).valid, true);
-    assert.equal(validateExpenseInput({ ...valid, planned_amount: null }).valid, true);
+    assert.equal(validateExpenseInput({ ...valid, planned_amount: null }).valid, false);
   });
 
   test('rejects non-objects with a single error', () => {
@@ -36,7 +36,7 @@ describe('validateExpenseInput', () => {
     assert.match(res.errors[1], /Planned/);
     assert.match(res.errors[2], /Actual/);
     assert.match(res.errors[3], /Committed/);
-    assert.match(res.errors[4], /Invalid category: "bogus"/);
+    assert.match(res.errors[4], /Invalid category 'bogus'/);
   });
 
   test('missing planned amount is invalid but missing actual/committed default to zero', () => {
@@ -123,12 +123,12 @@ describe('simulateRipple', () => {
 
   test('narrative covers overrun and capacity breach wording', () => {
     const r = simulateRipple({ ...base, total_budget: 100 }, { guest_delta: 40 });
-    assert.match(r.narrative[0], /shifts by \+40 \(now 140\)/);
+    assert.match(r.narrative[0], /shifts by \+40 \(projected total: 140\)/);
     assert.match(r.narrative[3], /CRITICAL: Projected 140 guests exceeds venue capacity of 120 by 20/);
     assert.match(r.narrative[4], /Budget overrun of \$/);
     const calm = simulateRipple(base, { guest_delta: -10, catering_variance_pct: -5 });
     assert.match(calm.narrative[0], /shifts by -10/);
-    assert.match(calm.narrative[2], /^Total financial shift: -\$/);
+    assert.match(calm.narrative[2], /^Projected financial shift: -\$/);
     assert.match(calm.narrative[3], /comfortably holds 90 guests \(limit: 120\)/);
   });
 
@@ -144,8 +144,26 @@ describe('simulateRipple', () => {
   });
 
   test('unlimited capacity when venue_capacity is absent', () => {
-    const r = simulateRipple({ ...base, venue_capacity: undefined }, { guest_delta: 1e6 });
+    const r = simulateRipple({ ...base, venue_capacity: undefined }, { guest_delta: 5e5 });
     assert.equal(r.projected.capacity_breach, false);
-    assert.match(r.narrative[3], /limit: Infinity/);
+    assert.match(r.narrative[3], /limit: 999999/);
+  });
+
+  test('capacity boundary is exclusive: guests == capacity holds, one more breaches', () => {
+    const cases = [[19, false, 0], [20, false, 0], [21, true, 1], [22, true, 2]];
+    for (const [delta, breach, excess] of cases) {
+      const r = simulateRipple(base, { guest_delta: delta });
+      assert.equal(r.projected.guests, 100 + delta);
+      assert.equal(r.projected.capacity_breach, breach, `delta ${delta}`);
+      assert.equal(r.projected.excess_guests, excess, `delta ${delta}`);
+    }
+  });
+
+  test('guests exactly at capacity read "comfortably holds", one over reads CRITICAL', () => {
+    const atLimit = simulateRipple(base, { guest_delta: 20 });
+    assert.equal(atLimit.narrative[3], '✓ Venue capacity comfortably holds 120 guests (limit: 120).');
+    assert.ok(!atLimit.narrative.some(line => line.includes('CRITICAL')));
+    const over = simulateRipple(base, { guest_delta: 21 });
+    assert.equal(over.narrative[3], '⚠️ CRITICAL: Projected 121 guests exceeds venue capacity of 120 by 1!');
   });
 });

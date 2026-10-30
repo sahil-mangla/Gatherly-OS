@@ -5,8 +5,7 @@
 
 import { store } from '../store.js';
 import { askMara } from '../ai/mara-client.js';
-import { calculateBudgetSummary } from '../domain/budget.js';
-import { evaluateEventRisks } from '../domain/risks.js';
+import { buildMaraContext } from '../ai/mara-context.js';
 import { escapeHtml } from '../views/helpers.js';
 import { replyHtml, wireProposals, providerLabel } from './copilot-reply.js';
 import { openLayer, closeLayer } from './dialog-focus.js';
@@ -15,7 +14,7 @@ let drawerElement = null;
 let backdropElement = null;
 
 const DRAWER_HTML = `
-  <aside class="copilot-drawer" id="copilot-drawer" role="dialog" aria-modal="true" aria-labelledby="copilot-title" aria-describedby="copilot-desc" tabindex="-1" inert>
+  <div class="copilot-drawer" id="copilot-drawer" role="dialog" aria-modal="true" aria-labelledby="copilot-title" aria-describedby="copilot-desc" tabindex="-1" inert>
     <div class="drawer-header">
       <div class="drawer-title">
         <div class="assistant-orb mini" aria-hidden="true">✦</div>
@@ -36,7 +35,7 @@ const DRAWER_HTML = `
 
     <div class="drawer-messages" id="copilot-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Conversation with Mara" tabindex="0">
       <div class="msg assistant-msg">
-        <p>Hello Maya! I'm observing your event state. What would you like to explore or optimize today?</p>
+        <p>Hello! I'm looking at your event's budget, timeline and vendors. What would you like to explore or optimize today?</p>
       </div>
     </div>
 
@@ -45,7 +44,7 @@ const DRAWER_HTML = `
       <input type="text" id="copilot-input" name="message" placeholder="Ask Mara or propose a change..." autocomplete="off" />
       <button type="submit" id="copilot-submit" aria-label="Send message"><span aria-hidden="true">↑</span></button>
     </form>
-  </aside>
+  </div>
   <div class="drawer-backdrop" id="copilot-backdrop"></div>
 `;
 
@@ -101,14 +100,8 @@ function appendMessage(log, className, html) {
 }
 
 async function fetchResponse(operation, userText) {
-  const event = store.getActiveEvent();
-  const context = {
-    event: { id: event.id, name: event.name, expected_guests: event.expected_guests },
-    budget: calculateBudgetSummary(event),
-    risks: evaluateEventRisks(event).risks
-  };
   try {
-    return await askMara(operation, userText, context);
+    return await askMara(operation, userText, buildMaraContext(store.getActiveEvent()));
   } catch (err) {
     console.error('Mara copilot error:', err);
     return { response: "I encountered a minor hitch retrieving advice. Here's my quick recommendation: check your critical path milestones." };

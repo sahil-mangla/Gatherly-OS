@@ -40,8 +40,8 @@ def test_make_risk_shape():
     assert risk["status"] == "open"
 
 
-def test_rule_list_has_five_rules():
-    assert len(RISK_RULES) == 5
+def test_rule_list_has_six_rules():
+    assert len(RISK_RULES) == 6
 
 
 def test_capacity_rule_branches():

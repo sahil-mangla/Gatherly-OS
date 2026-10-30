@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./src/css/modals.css" />
   <link rel="stylesheet" href="./src/css/whatif.css" />
   <link rel="stylesheet" href="./src/css/responsive.css" />
+  <link rel="stylesheet" href="./src/css/a11y.css" />
   <link rel="modulepreload" href="./src/js/app.js" />
   <link rel="modulepreload" href="./src/js/store.js" />
   <link rel="modulepreload" href="./src/js/a11y.js" />
@@ -34,7 +35,7 @@
   <div class="app-shell">
     <aside class="sidebar" aria-label="Workspace sidebar">
       <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><span>gatherly</span></div>
-      <div class="workspace-switcher"><span class="workspace-avatar" aria-hidden="true">M</span><span><small>Workspace</small><strong id="workspace-label">Maya’s celebrations</strong></span></div>
+      <div class="workspace-switcher"><span class="workspace-avatar" aria-hidden="true">G</span><span><small>Workspace</small><strong id="workspace-label">Your celebrations</strong></span></div>
       <nav class="primary-nav" aria-label="Main navigation">
         <button type="button" class="nav-item active" data-view="overview" data-tab="overview" aria-current="page"><span class="nav-icon" aria-hidden="true">◒</span><span class="nav-text">Overview</span></button>
         <button type="button" class="nav-item" data-view="budget" data-tab="budget"><span class="nav-icon" aria-hidden="true">◈</span><span class="nav-text">Budget</span></button>
@@ -48,7 +49,7 @@
       <button type="button" class="new-event-btn" id="new-event-btn"><span aria-hidden="true">+</span> New event</button>
       <div class="sidebar-bottom">
         <button type="button" class="help-link" id="reset-demo-btn"><span aria-hidden="true">↺</span> Reset demo state</button>
-        <div class="user-link"><span class="user-avatar" aria-hidden="true">MK</span><span><b>Maya Khan</b><small>Personal plan</small></span></div>
+        <div class="user-link"><span class="user-avatar" aria-hidden="true">✦</span><span><b>Your plan</b><small>Saved in this browser</small></span></div>
       </div>
     </aside>
 
@@ -58,9 +59,9 @@
           <nav class="breadcrumbs" aria-label="Breadcrumb">
             <span>Events</span><i aria-hidden="true">/</i><strong id="topbar-event-name" aria-current="page">Your event</strong>
           </nav>
-          <button type="button" class="enterprise-badge" id="enterprise-auth-badge" title="Switch the demo role (multi-tenant RBAC)">
+          <button type="button" class="enterprise-badge" id="enterprise-auth-badge" title="Demo role for API calls — does not change what you see">
             <span class="badge-dot" aria-hidden="true"></span>
-            <span class="sr-only">Switch demo role. Workspace:</span>
+            <span class="sr-only">Switch demo role (affects API calls only, not what you see). Workspace:</span>
             <b id="enterprise-tenant-label">Gatherly Studio</b>
             <span aria-hidden="true">·</span><span class="sr-only">role:</span>
             <span id="enterprise-role-label">OWNER</span>
@@ -81,7 +82,10 @@
               <h1 id="overview-heading" tabindex="-1">Make room for<br /><em>the good stuff.</em></h1>
               <p class="hero-sub" id="overview-sub">Your celebration is coming together.</p>
               <p class="hero-value" id="overview-value-prop">Catch overruns, hidden fees and date collisions before they cost you.</p>
-              <button type="button" class="outline-btn" id="edit-event-btn" aria-haspopup="dialog">Edit event details</button>
+              <div class="hero-cta-row">
+                <button type="button" class="primary-btn" id="hero-create-event-btn" aria-haspopup="dialog" hidden>Create your event</button>
+                <button type="button" class="outline-btn" id="edit-event-btn" aria-haspopup="dialog">Edit event details</button>
+              </div>
             </div>
             <div class="date-card" id="overview-date-card" role="group" aria-label="Event date">
               <span>THE BIG DAY</span>
@@ -134,7 +138,7 @@
 
           <div class="lower-grid">
             <section class="panel checklist-panel" aria-labelledby="next-up-heading">
-              <div class="panel-heading"><div><span class="eyebrow">KEEP MOVING</span><h2 id="next-up-heading">Next up</h2></div><button type="button" class="text-btn" id="goto-timeline-btn">View timeline <span aria-hidden="true">→</span></button></div>
+              <div class="panel-heading"><div><span class="eyebrow">KEEP MOVING</span><h2 id="next-up-heading" tabindex="-1">Next up</h2></div><button type="button" class="text-btn" id="goto-timeline-btn">View timeline <span aria-hidden="true">→</span></button></div>
               <ol class="task-list" id="overview-task-list"></ol>
             </section>
 

@@ -12,20 +12,37 @@ from app.domain.budget import (
 
 @pytest.mark.parametrize(
     "value,expected",
-    [(None, 0.0), (-3, 0.0), ("7.5", 7.5), ("abc", 0.0), ([], 0.0), (12, 12.0)],
+    [
+        (None, 0.0),
+        (-3, 0.0),
+        ("7.5", 7.5),
+        ("abc", 0.0),
+        ([], 0.0),
+        (12, 12.0),
+        ("nan", 0.0),
+        ("inf", 0.0),
+        (float("inf"), 0.0),
+        (float("nan"), 0.0),
+        ("1_000", 0.0),
+        (" 12 ", 12.0),
+        ("1e3", 1000.0),
+        (True, 1.0),
+    ],
 )
 def test_safe_non_negative_number(value, expected):
     assert safe_non_negative_number(value) == expected
 
 
 def test_format_money():
-    assert format_money(1234.5) == "$1,234"  # banker's rounding of .5 at 0 decimals
+    assert format_money(1234.5) == "$1,235"  # halves round up, exactly like JS Math.round
+    assert format_money(0.5) == "$1"
+    assert format_money(2.4999) == "$2"
     assert format_money(-5) == "$0"
     assert format_money("x", currency="EUR ") == "EUR 0"
 
 
 def test_validate_expense_rejects_non_dict():
-    assert validate_expense_input("nope") == (False, ["Expense payload must be a dictionary."])
+    assert validate_expense_input("nope") == (False, ["Expense payload must be an object."])
 
 
 @pytest.mark.parametrize(

@@ -133,16 +133,16 @@ describe('applyProposalAction', () => {
     assert.equal(event.expenses[0].category, 'design');
     assert.equal(event.expenses[0].planned_amount, 250);
     assert.equal(event.expenses[0].status, 'planned');
-    assert.equal(res.message, 'Reallocated $250 to design.');
+    assert.equal(res.message, 'Reallocated $250 to Design.');
     const none = applyProposalAction({ expenses: [] }, { action: 'reallocate', amount: 5 });
     assert.equal(none.message, 'Reallocated $5 to budget.');
   });
 
   test('savings clamp at zero and fall back to a generic message', () => {
     const event = { expenses: [{ category: 'c', planned_amount: 50 }] };
-    assert.match(applyProposalAction(event, { action: 'update_expense', category: 'c', savings: 500 }).message, /Saved \$500 on c/);
+    assert.match(applyProposalAction(event, { action: 'update_expense', category: 'c', savings: 500 }).message, /Saved \$500 on C/);
     assert.equal(event.expenses[0].planned_amount, 0);
-    assert.match(applyProposalAction(event, { action: 'adjust_expense', category: 'zz', delta_amount: -9 }).message, /Applied savings of \$9 to zz/);
+    assert.match(applyProposalAction(event, { action: 'adjust_expense', category: 'zz', delta_amount: -9 }).message, /Applied savings of \$9 to Zz/);
     assert.match(applyProposalAction({}, { action: 'adjust_expense' }).message, /to event/);
   });
 

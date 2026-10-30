@@ -4,6 +4,7 @@
  */
 
 import { PROPOSAL_TASK_LEAD_DAYS } from '../domain/constants.js';
+import { formatDollars, prettyLabel } from '../format.js';
 import { makeId, pushTo, isoDateFromNow } from './helpers.js';
 
 const absAmount = (...candidates) => Math.abs(Number(candidates.find(Boolean) || 0));
@@ -33,8 +34,8 @@ function reallocateBudget(event, proposal) {
   if (toExp) toExp.planned_amount += amount;
   else if (toCat) addAllocationExpense(event, toCat, amount);
 
-  const source = fromCat ? `from ${fromCat} ` : '';
-  return { success: true, message: `Reallocated $${amount.toLocaleString()} ${source}to ${toCat || 'budget'}.` };
+  const source = fromCat ? `from ${prettyLabel(fromCat)} ` : '';
+  return { success: true, message: `Reallocated ${formatDollars(amount)} ${source}to ${prettyLabel(toCat, 'budget')}.` };
 }
 
 function applySavings(event, proposal) {
@@ -43,9 +44,9 @@ function applySavings(event, proposal) {
   const targetExp = findByCategory(event, cat);
   if (targetExp && savings > 0) {
     targetExp.planned_amount = Math.max(0, targetExp.planned_amount - savings);
-    return { success: true, message: `Saved $${savings.toLocaleString()} on ${cat}.` };
+    return { success: true, message: `Saved ${formatDollars(savings)} on ${prettyLabel(cat)}.` };
   }
-  return { success: true, message: `Applied savings of $${savings.toLocaleString()} to ${cat || 'event'}.` };
+  return { success: true, message: `Applied savings of ${formatDollars(savings)} to ${prettyLabel(cat, 'event')}.` };
 }
 
 function createActionTask(event, proposal) {

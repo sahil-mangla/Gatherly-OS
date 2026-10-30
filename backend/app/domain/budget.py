@@ -5,6 +5,8 @@ Application code owns financial truth. No LLM arithmetic.
 
 from typing import Any
 
+from .numeric import format_amount, number_or, round_half_up, safe_non_negative_number
+
 EXPENSE_CATEGORIES = [
     "venue",
     "catering",
@@ -18,33 +20,19 @@ PERCENT_SCALE = 100
 PERCENT_CAP = 100
 
 
-def safe_non_negative_number(val: Any) -> float:
-    """Sanitize any numeric or string input into a valid non-negative float."""
-    try:
-        if val is None:
-            return 0.0
-        num = float(val)
-        return 0.0 if num < 0 else num
-    except (ValueError, TypeError):
-        return 0.0
-
-
 def format_money(val: Any, currency: str = "$") -> str:
     """Format numeric amount into a currency-prefixed string with comma grouping."""
-    num = safe_non_negative_number(val)
-    return f"{currency}{num:,.0f}"
+    return f"{currency}{format_amount(safe_non_negative_number(val))}"
 
 
 def _check_amount(
     item: dict[str, Any], key: str, default: Any, negative_msg: str, invalid_msg: str
 ) -> str | None:
     """Return an error message when ``item[key]`` is not a valid non-negative number."""
-    try:
-        if float(item.get(key, default)) < 0:
-            return negative_msg
-    except (ValueError, TypeError):
+    amount = number_or(item.get(key, default), None)
+    if amount is None:
         return invalid_msg
-    return None
+    return negative_msg if amount < 0 else None
 
 
 _AMOUNT_RULES = (
@@ -72,7 +60,7 @@ _AMOUNT_RULES = (
 def validate_expense_input(item: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate expense record fields and boundary conditions."""
     if not isinstance(item, dict):
-        return False, ["Expense payload must be a dictionary."]
+        return False, ["Expense payload must be an object."]
 
     errors: list[str] = []
     desc = item.get("description")
@@ -133,7 +121,7 @@ def _accumulate_expenses(
 
 def _percent_of(part: float, whole: float) -> int:
     """Rounded percentage of ``whole``; 0 when ``whole`` is not positive."""
-    return round((part / whole) * PERCENT_SCALE) if whole > 0 else 0
+    return round_half_up((part / whole) * PERCENT_SCALE) if whole > 0 else 0
 
 
 def _finalize_categories(category_map: dict[str, dict[str, Any]], total_budget: float) -> None:

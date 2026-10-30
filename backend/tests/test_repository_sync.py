@@ -66,3 +66,71 @@ def test_single_event_sync_commits_unless_deferred(db_session, repo, count_commi
     assert count_commits == []
     repo.sync_schedule(repo.get_event(f"{T1}-a9"), today=date(2026, 3, 4))
     assert len(count_commits) == 1
+
+
+@pytest.fixture
+def copies(monkeypatch):
+    """Count deepcopy calls made by the schedule sync (only that module's ``copy`` is patched)."""
+    import copy as real_copy
+    from types import SimpleNamespace
+
+    from app.db import schedule_sync
+
+    calls = []
+    monkeypatch.setattr(
+        schedule_sync,
+        "copy",
+        SimpleNamespace(deepcopy=lambda value: calls.append(1) or real_copy.deepcopy(value)),
+    )
+    return calls
+
+
+def add_event(db_session, event_id, state, date_="2026-03-01"):
+    db_session.add(EventModel(id=event_id, tenant_id=T1, name="E", date=date_, state_json=state))
+    db_session.commit()
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        {},
+        {"tasks": [{"due_date": "2026-01-01"}]},
+        {"schedule_anchor": None},
+        {"schedule_anchor": "not-a-date"},
+        {"schedule_anchor": 12345},
+        {"schedule_anchor": "2026-02-01"},  # anchored but less than a week behind "today"
+        [1, 2],  # a non-object document is left alone
+    ],
+)
+def test_events_that_need_no_shift_cost_no_copy_and_no_write(
+    db_session, repo, audits, count_commits, copies, state
+):
+    add_event(db_session, "e-calm", state)
+    count_commits.clear()
+    events = repo.sync_schedules(repo.list_events(), today=date(2026, 2, 4), user_id="u")
+    single = repo.sync_schedule(repo.get_event("e-calm"), today=date(2026, 2, 4))
+    assert copies == [] and count_commits == [] and audits("schedule_sync") == []
+    assert events[0].state_json == state == single.state_json
+    assert events[0].date == "2026-03-01" and not db_session.dirty and not db_session.new
+
+
+def test_an_anchored_event_that_is_due_is_copied_exactly_once_and_written(
+    db_session, repo, audits, count_commits, copies
+):
+    anchored(db_session, T1, 5)
+    db_session.commit()
+    count_commits.clear()
+    repo.sync_schedules(repo.list_events(), today=date(2026, 2, 4), user_id="u")
+    assert len(copies) == 1 and len(count_commits) == 1
+    assert len(audits("schedule_sync")) == 1
+    assert repo.get_event(f"{T1}-a5").state_json["schedule_anchor"] == "2026-02-04"
+
+
+def test_the_list_and_get_endpoints_do_not_copy_unanchored_events(
+    isolated_client, auth_headers, copies
+):
+    headers = auth_headers("owner", "tenant-sync-api")
+    created = isolated_client.post("/api/events", headers=headers, json={"name": "Fixed"}).json()
+    assert isolated_client.get("/api/events", headers=headers).status_code == 200
+    assert isolated_client.get(f"/api/events/{created['id']}", headers=headers).status_code == 200
+    assert copies == []

@@ -3,6 +3,8 @@
  * @description Overview dashboard renderer: hero, Mara's take, key metrics and the next-up list.
  */
 
+import { store } from '../store.js';
+import { INITIAL_TEMPLATES } from '../templates.js';
 import { formatMoney } from '../domain/budget.js';
 import { evaluateEventRisks } from '../domain/risks.js';
 import { parseDate } from '../domain/timeline-dates.js';
@@ -25,7 +27,7 @@ const HERO_COPY = {
   },
   wedding: {
     heading: 'Make room for<br /><em>the good stuff.</em>',
-    sub: () => 'Your wedding weekend is coming together beautifully, Maya.'
+    sub: (name) => `${name}: your wedding weekend is coming together beautifully.`
   }
 };
 
@@ -50,6 +52,16 @@ function renderHeroCopy(event) {
   setText('overview-sub', copy.sub(event.name));
 }
 
+/** True once the user has created an event of their own (the built-in sample events do not count). */
+export function hasOwnEvent() {
+  return store.getAllEvents().some(ev => !Object.hasOwn(INITIAL_TEMPLATES, ev.id));
+}
+
+function renderCta() {
+  const cta = document.getElementById('hero-create-event-btn');
+  if (cta) cta.hidden = hasOwnEvent();
+}
+
 function renderMaraQuote(ctx, risks) {
   const text = risks.critical_count > 0
     ? `“Alert: ${risks.risks[0].evidence} Want me to propose 3 ways to balance this without compromise?”`
@@ -69,6 +81,7 @@ export function renderOverview(ctx = createViewContext()) {
   renderDateCard(eventDate);
   renderEyebrow(eventDate, today);
   renderHeroCopy(event);
+  renderCta();
   renderMaraQuote(ctx, evaluateEventRisks(event));
   renderBudgetCard(ctx);
   renderTimelineCard(event);

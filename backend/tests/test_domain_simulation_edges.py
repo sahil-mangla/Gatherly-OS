@@ -54,10 +54,41 @@ def test_huge_guest_delta_breaches_capacity_and_budget():
     assert any("CRITICAL" in n for n in res["narrative"])
 
 
-def test_zero_capacity_always_breaches():
-    res = simulate_ripple(_event(venue_capacity=0))
-    assert res["projected"]["capacity_breach"] is True
-    assert res["projected"]["excess_guests"] == 100
+def test_zero_capacity_means_not_set_and_never_breaches():
+    res = simulate_ripple(_event(venue_capacity=0), {"guest_delta": 500})
+    assert res["projected"]["capacity_breach"] is False
+    assert res["projected"]["excess_guests"] == 0
+
+
+@pytest.mark.parametrize(
+    "delta,breach,excess",
+    [(19, False, 0), (20, False, 0), (21, True, 1), (22, True, 2)],
+)
+def test_capacity_boundary_is_exclusive(delta, breach, excess):
+    """Mutation guard for `>` vs `>=`: guests == capacity must hold, one more must breach."""
+    res = simulate_ripple(_event(), {"guest_delta": delta})
+    assert res["projected"]["guests"] == 100 + delta
+    assert res["projected"]["capacity_breach"] is breach
+    assert res["projected"]["excess_guests"] == excess
+
+
+def test_guests_exactly_at_capacity_use_the_comfortably_holds_message():
+    res = simulate_ripple(_event(), {"guest_delta": 20})
+    assert res["narrative"][3] == "✓ Venue capacity comfortably holds 120 guests (limit: 120)."
+    assert not any("CRITICAL" in line for line in res["narrative"])
+
+
+def test_one_guest_over_capacity_uses_the_critical_message():
+    res = simulate_ripple(_event(), {"guest_delta": 21})
+    assert res["narrative"][3] == (
+        "⚠️ CRITICAL: Projected 121 guests exceeds venue capacity of 120 by 1!"
+    )
+
+
+def test_zero_expected_guests_means_not_set_and_uses_default():
+    assert simulate_ripple(_event(expected_guests=0))["initial"]["guests"] == 100
+    assert simulate_ripple(_event(expected_guests=None))["initial"]["guests"] == 100
+    assert simulate_ripple(_event(expected_guests=-4))["initial"]["guests"] == 1
 
 
 @pytest.mark.parametrize(

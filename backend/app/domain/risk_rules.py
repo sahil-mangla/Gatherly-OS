@@ -4,57 +4,56 @@ Each rule takes ``(event, ctx)`` and returns a (possibly empty) list of risk dic
 ``ctx`` carries the already-computed budget summary and timeline progress.
 """
 
-from collections.abc import Callable
 from typing import Any
 
+from .numeric import format_amount, round_half_up, to_int
+from .risk_collision import rule_dependency_collision
+from .risk_common import (
+    DEFAULT_VENUE_CAPACITY,
+    SEVERITY_CRITICAL,
+    SEVERITY_NOTICE,
+    SEVERITY_RANK,
+    SEVERITY_WARNING,
+    UNKNOWN_SEVERITY_RANK,
+    RiskContext,
+    RiskRule,
+    make_risk,
+)
+from .risk_common import (
+    ask_mara as _ask_mara,
+)
 from .vendors import audit_quote_completeness
 
-DEFAULT_VENUE_CAPACITY = 999999
-SEVERITY_CRITICAL = "critical"
-SEVERITY_WARNING = "warning"
-SEVERITY_NOTICE = "notice"
-SEVERITY_RANK = {SEVERITY_CRITICAL: 1, SEVERITY_WARNING: 2, SEVERITY_NOTICE: 3}
-UNKNOWN_SEVERITY_RANK = 4
-
-RiskContext = dict[str, Any]
-RiskRule = Callable[[dict[str, Any], RiskContext], list[dict[str, Any]]]
-
-
-def make_risk(
-    risk_id: str,
-    risk_type: str,
-    severity: str,
-    title: str,
-    evidence: str,
-    consequence: str,
-    actions: list[dict[str, Any]],
-) -> dict[str, Any]:
-    """Build a risk record with the canonical shape (always starts as ``open``)."""
-    return {
-        "id": risk_id,
-        "type": risk_type,
-        "severity": severity,
-        "title": title,
-        "evidence": evidence,
-        "consequence": consequence,
-        "recommended_actions": actions,
-        "status": "open",
-    }
-
-
-def _ask_mara(label: str, prompt: str) -> dict[str, Any]:
-    return {"label": label, "action_type": "ask_mara", "prompt": prompt}
+__all__ = [
+    "DEFAULT_VENUE_CAPACITY",
+    "RISK_RULES",
+    "SEVERITY_CRITICAL",
+    "SEVERITY_NOTICE",
+    "SEVERITY_RANK",
+    "SEVERITY_WARNING",
+    "UNKNOWN_SEVERITY_RANK",
+    "RiskContext",
+    "RiskRule",
+    "make_risk",
+    "rule_budget_deficit",
+    "rule_capacity_breach",
+    "rule_category_overruns",
+    "rule_dependency_collision",
+    "rule_overdue_milestones",
+    "rule_undisclosed_vendor_fees",
+]
 
 
 def rule_capacity_breach(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
     """Expected guests above a known venue capacity."""
-    guests = int(event.get("expected_guests", 0))
+    guests = to_int(event.get("expected_guests"), 0)
     capacity = ctx["venue_capacity"]
     if not (guests > capacity > 0):
         return []
-    diff = int(guests - capacity)
+    diff = round_half_up(guests - capacity)
+    limit = round_half_up(capacity)
     prompt = (
-        f"Our venue capacity is {capacity:.0f} but expected guests is {guests}. "
+        f"Our venue capacity is {limit} but expected guests is {guests}. "
         "How should we handle this gracefully?"
     )
     return [
@@ -64,7 +63,7 @@ def rule_capacity_breach(event: dict[str, Any], ctx: RiskContext) -> list[dict[s
             SEVERITY_CRITICAL,
             "Venue Capacity Exceeded",
             f"Expected guest count ({guests}) exceeds confirmed venue capacity "
-            f"({capacity:.0f}) by {diff} guests.",
+            f"({limit}) by {diff} guests.",
             "Fire code safety violation or venue surcharge on the event day.",
             [
                 {
@@ -89,8 +88,9 @@ def rule_budget_deficit(event: dict[str, Any], ctx: RiskContext) -> list[dict[st
             "budget_overrun",
             SEVERITY_CRITICAL,
             "Total Budget Overrun",
-            f"Total allocated spend (${summary['total_allocated']:,.0f}) exceeds total budget "
-            f"(${summary['total_budget']:,.0f}) by ${summary['deficit_amount']:,.0f}.",
+            f"Total allocated spend (${format_amount(summary['total_allocated'])}) exceeds total "
+            f"budget (${format_amount(summary['total_budget'])}) by "
+            f"${format_amount(summary['deficit_amount'])}.",
             "Financial shortfall before final vendor retainers are disbursed.",
             [
                 _ask_mara(
@@ -109,13 +109,13 @@ def _category_overrun_risk(name: str, data: dict[str, Any]) -> dict[str, Any]:
         "category_overrun",
         SEVERITY_WARNING,
         f"Category Spend Overrun: {name}",
-        f"Category '{name}' allocated spend (${data['allocated']:,.0f}) exceeds planned "
-        f"budget (${data['planned']:,.0f}) by ${variance:,.0f}.",
+        f"Category '{name}' allocated spend (${format_amount(data['allocated'])}) exceeds "
+        f"planned budget (${format_amount(data['planned'])}) by ${format_amount(variance)}.",
         "Diverts funds away from remaining uncommitted items.",
         [
             _ask_mara(
                 "Rebalance with Mara",
-                f"Our {name} budget is over by ${variance:,.0f}. "
+                f"Our {name} budget is over by ${format_amount(variance)}. "
                 "Suggest reallocations from other categories.",
             )
         ],
@@ -193,5 +193,6 @@ RISK_RULES: tuple[RiskRule, ...] = (
     rule_budget_deficit,
     rule_category_overruns,
     rule_overdue_milestones,
+    rule_dependency_collision,
     rule_undisclosed_vendor_fees,
 )

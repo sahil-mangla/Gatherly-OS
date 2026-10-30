@@ -68,7 +68,7 @@ export function openAddIdeaModal() {
         </div>
         <div class="form-group">
           <label for="idea-author">Added By</label>
-          <input type="text" id="idea-author" name="author" autocomplete="name" value="Maya" />
+          <input type="text" id="idea-author" name="author" autocomplete="name" value="You" />
         </div>
       </div>
 

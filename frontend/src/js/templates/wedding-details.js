@@ -72,7 +72,7 @@ export const weddingIdeas = [
     id: 'idea-disposable-cameras',
     title: 'Disposable cameras at every table',
     description: 'For candid, unscripted moments we would never think to plan.',
-    author: 'Maya',
+    author: 'Leila',
     date_added: '2025-05-30',
     bg_color: 'idea-yellow',
     estimated_cost: 180,

@@ -5,25 +5,34 @@
 
 import { store } from '../store.js';
 import { calculateTimelineProgress } from '../domain/timeline.js';
+import { evaluateEventRisks } from '../domain/risks.js';
 import { openRescheduleModal } from '../components/forms.js';
 import { createViewContext } from './context.js';
 import { groupTasksByMonth, monthHtml } from './timeline-item.js';
 import { bindOnce, setText } from './helpers.js';
 
-function headlineFor(progress) {
+/** True when a milestone is due before a prerequisite; a dismissed radar alert must not hide it here. */
+export function hasDependencyCollision(event) {
+  const radar = evaluateEventRisks({ ...event, dismissed_risk_ids: [] });
+  return radar.risks.some(risk => risk.type === 'dependency_collision');
+}
+
+export function headlineFor(progress, collides = false) {
   if (progress.overdue_tasks.length > 0) return `${progress.overdue_tasks.length} task(s) need attention!`;
+  if (collides) return 'Some milestones are due before what they depend on.';
   return progress.percent_complete === 100 ? 'All milestones completed!' : 'You’re right on time.';
 }
 
-function renderSummary(progress) {
+function renderSummary(progress, collides) {
   const ring = document.getElementById('timeline-progress-ring');
   if (ring) {
     ring.innerHTML = `<span>${progress.percent_complete}</span><small>%</small>`;
     ring.style.background = `conic-gradient(var(--coral) ${progress.percent_complete}%, var(--track) 0)`;
     ring.setAttribute('aria-label', `${progress.percent_complete}% of milestones complete`);
   }
-  setText('timeline-status-headline', headlineFor(progress));
-  setText('timeline-status-sub', `${progress.completed} of ${progress.total} milestones complete`);
+  setText('timeline-status-headline', headlineFor(progress, collides));
+  const counts = `${progress.completed} of ${progress.total} milestones complete`;
+  setText('timeline-status-sub', collides ? `${counts}. Check the Risk Radar for the tasks affected.` : counts);
 }
 
 function onTimelineClick(e) {
@@ -40,7 +49,7 @@ function onTimelineClick(e) {
 
 export function renderTimeline(ctx = createViewContext()) {
   const tasks = ctx.event.tasks || [];
-  renderSummary(calculateTimelineProgress(tasks));
+  renderSummary(calculateTimelineProgress(tasks), hasDependencyCollision(ctx.event));
 
   const container = document.getElementById('timeline-events-container');
   if (!container) return;

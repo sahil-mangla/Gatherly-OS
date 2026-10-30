@@ -1,0 +1,93 @@
+/**
+ * Gatherly accessibility refinements: 24px minimum targets (WCAG 2.5.8), a toast-safe scroll margin
+ * and forced-colors (Windows High Contrast) support.
+ */
+
+/* Small inline controls still get a 24px-tall hit area. */
+.text-btn,
+.task-card-title,
+#overview-review-now,
+#goto-timeline-btn,
+#export-budget-btn,
+#reset-whatif-btn {
+  min-height: 24px;
+}
+
+.text-btn {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* A focused control scrolled into view is never hidden behind the fixed toast. */
+html {
+  scroll-padding-bottom: 6.5rem;
+}
+
+.hero-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.hero-cta-row .outline-btn {
+  margin-top: 0;
+}
+
+@media (forced-colors: active) {
+  .primary-btn,
+  .share-btn,
+  .more-btn,
+  .new-event-btn,
+  .enterprise-badge,
+  .convert-task-btn,
+  .select-quote-btn,
+  .toast-dismiss,
+  .text-btn {
+    border: 1px solid ButtonText;
+  }
+
+  .text-btn {
+    border-color: LinkText;
+  }
+
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
+  .progress-track,
+  .big-progress,
+  .tiny-bar,
+  .milestone-line span {
+    border: 1px solid CanvasText;
+  }
+
+  .progress-fill,
+  .big-progress div,
+  .tiny-bar span,
+  .milestone-line .done {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  .progress-ring {
+    border: 2px solid CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .progress-ring::after {
+    background: Canvas;
+    border: 2px solid Highlight;
+  }
+
+  .toast {
+    border: 1px solid CanvasText;
+  }
+}
+
+.hero-cta-row .primary-btn {
+  min-height: 40px;
+}

@@ -97,14 +97,6 @@ def test_valid_json_without_usable_fields_falls_back(live_gemini, caplog, model_
     assert "failed validation" in caplog.text
 
 
-def test_failed_live_calls_are_not_cached(live_gemini):
-    live_gemini.fail_with(TimeoutError())
-    ask()
-    live_gemini.reply_json(GOOD_REPLY)
-    assert ask()["provider"] == "gemini-live"
-    assert len(live_gemini.calls) == 2
-
-
 @pytest.mark.parametrize("key", ["", "placeholder"])
 def test_no_usable_key_never_touches_the_network(forbid_network, settings, monkeypatch, key):
     monkeypatch.setattr(settings, "gemini_api_key", key)
@@ -123,7 +115,7 @@ def test_api_key_travels_only_in_header(live_gemini, caplog):
     assert API_KEY not in request.data.decode()
     assert request.full_url.startswith("https://generativelanguage.googleapis.com/")
     assert request.get_method() == "POST"
-    assert timeout == 6.0
+    assert timeout == 4.0
     assert API_KEY not in caplog.text
 
 

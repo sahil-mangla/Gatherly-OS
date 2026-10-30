@@ -17,16 +17,16 @@ const MODAL_HTML = `
     <div class="modal-dialog modal-large" id="quote-modal" role="dialog" aria-modal="true" aria-labelledby="quote-modal-title" aria-describedby="quote-modal-desc" tabindex="-1">
       <div class="modal-header">
         <div>
-          <span class="eyebrow">INTELLIGENT VENDOR AUDIT</span>
-          <h2 id="quote-modal-title">Vendor Quote Comparison &amp; Seed Parser</h2>
+          <span class="eyebrow">VENDOR QUOTES</span>
+          <h2 id="quote-modal-title">Compare vendor quotes</h2>
         </div>
         <button type="button" class="modal-close" id="quote-modal-close" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
-      <p class="sr-only" id="quote-modal-desc">Compare vendor quotes side by side, or paste a raw quote for Mara to extract and audit.</p>
+      <p class="sr-only" id="quote-modal-desc">Compare vendor quotes side by side, or paste a vendor's quote text to extract its price, deposit and missing terms.</p>
 
       <div class="modal-tabs" role="tablist" aria-label="Quote tools">
         <button type="button" class="tab-btn active" role="tab" id="tab-compare" data-tab="compare-tab" aria-controls="compare-tab" aria-selected="true">Side-by-Side Comparison</button>
-        <button type="button" class="tab-btn" role="tab" id="tab-seed" data-tab="seed-tab" aria-controls="seed-tab" aria-selected="false" tabindex="-1">Paste Raw Quote (AI Seed Ingestion)</button>
+        <button type="button" class="tab-btn" role="tab" id="tab-seed" data-tab="seed-tab" aria-controls="seed-tab" aria-selected="false" tabindex="-1">Paste quote text</button>
       </div>
 
       <div class="modal-body">
@@ -36,10 +36,10 @@ const MODAL_HTML = `
 
         <div class="tab-pane" role="tabpanel" id="seed-tab" aria-labelledby="tab-seed" hidden>
           <div class="seed-parser-shell">
-            <p class="seed-intro" id="seed-intro">Paste an unstructured quote, proposal PDF text, or email from any vendor. Mara will extract normalized fees and flag hidden omissions.</p>
+            <p class="seed-intro" id="seed-intro">Paste a quote, proposal text or email from any vendor. Gatherly pulls out the price, deposit, hidden fees and the terms the vendor never mentioned.</p>
 
-            <div class="preset-row" role="group" aria-label="Quick demo seeds">
-              <span aria-hidden="true">Quick demo seeds:</span>
+            <div class="preset-row" role="group" aria-label="Example quotes to try">
+              <span aria-hidden="true">Try an example:</span>
               <button type="button" class="seed-chip" data-preset="photo"><span aria-hidden="true">📷</span> Photo Proposal</button>
               <button type="button" class="seed-chip" data-preset="cater"><span aria-hidden="true">🍽️</span> Catering Estimate</button>
             </div>
@@ -47,7 +47,7 @@ const MODAL_HTML = `
             <label for="raw-quote-text">Vendor quote text</label>
             <textarea id="raw-quote-text" name="raw_quote" rows="5" autocomplete="off" placeholder="Paste vendor email or quote text here..." aria-describedby="seed-intro raw-quote-error"></textarea>
             <p class="field-error" id="raw-quote-error" role="alert"></p>
-            <button type="button" class="primary-btn" id="parse-quote-btn"><span aria-hidden="true">✦</span> Extract &amp; Audit Quote with Mara</button>
+            <button type="button" class="primary-btn" id="parse-quote-btn"><span aria-hidden="true">✦</span> Extract details</button>
 
             <div id="parsed-quote-result" aria-live="polite" hidden></div>
           </div>

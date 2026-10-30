@@ -30,10 +30,10 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Node Dependencies
         run: |
@@ -69,13 +69,19 @@ jobs:
         run: |
           pip-audit -r requirements.txt
 
-      - name: Python Tests with Coverage Gate (>= 85%)
+      - name: Python Tests with Line + Branch Coverage Gate (>= 95%)
         run: |
-          python -m pytest backend/tests --cov=backend/app --cov-report=term-missing --cov-fail-under=85
+          python -m pytest backend/tests --cov=backend/app --cov-branch --cov-report=term-missing --cov-fail-under=95
 
-      - name: JavaScript Unit Tests
+      - name: JavaScript Tests with Coverage Gate and No-Skip Check
+        shell: bash
         run: |
-          node --test frontend/tests/*.test.js
+          # jsdom/axe come from `npm install`; a silent skip of the DOM tests would hide regressions.
+          node --test --experimental-test-coverage \
+            --test-coverage-include='frontend/src/**' \
+            --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-functions=85 \
+            --test-reporter=tap frontend/tests/*.test.js | tee node-test.log
+          grep -qE '^# skipped 0$' node-test.log
 
       - name: Enforce Max 200 Lines of Code Rule
         run: |

@@ -21,7 +21,7 @@ import {
 } from './components/forms.js';
 import { initTenantAuthBadge } from './components/tenant-auth-badge.js';
 import { initToast, showToast } from './components/toast.js';
-import { activeFocusKey, focusByKey, scrollBehavior } from './a11y.js';
+import { captureFocus, restoreFocus, scrollBehavior } from './a11y.js';
 import { setText } from './views/helpers.js';
 import { renderSidebar } from './views/sidebar.js';
 import { showView, refreshCurrentView, updateTitle } from './views/router.js';
@@ -69,6 +69,7 @@ const CLICK_ACTIONS = {
   'add-vendor-btn': openAddVendorModal,
   'add-idea-btn': openAddIdeaModal,
   'new-event-btn': openNewEventModal,
+  'hero-create-event-btn': openNewEventModal,
   'edit-event-btn': openEditEventModal,
   'compare-quotes-header-btn': () => openQuoteModal(),
   'goto-timeline-btn': () => navigate('timeline'),
@@ -97,13 +98,13 @@ function bindNavigation() {
 function renderAll() {
   const event = store.getActiveEvent();
   if (!event) return;
-  const key = activeFocusKey();
+  const snapshot = captureFocus();
   setText('topbar-event-name', event.name);
   setText('vendor-nav-count', (event.vendors || []).length);
   renderSidebar();
   refreshCurrentView();
   updateTitle();
-  if (key) focusByKey(key);
+  restoreFocus(snapshot);
 }
 
 function onStoreEvent({ type, payload }) {

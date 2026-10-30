@@ -115,14 +115,17 @@ def test_tenant_header_cannot_override_the_token_tenant(client, two_orgs):
     assert client.get("/api/events", headers=headers).json() == []
 
 
-def test_event_id_taken_in_another_tenant_is_a_409_without_overwrite(client, two_orgs):
+def test_another_tenants_event_id_cannot_be_probed_or_squatted(client, two_orgs):
     event = two_orgs["event"]
     res = client.post(
         "/api/events", headers=two_orgs["b"]["headers"], json={"id": event["id"], "name": "Squat"}
     )
-    assert res.status_code == 409
-    assert res.json() == {"detail": "Event id is already in use."}
+    assert res.status_code == 201  # same answer as for any unused id: no existence oracle
+    squat = res.json()
+    assert squat["id"] != event["id"] and squat["tenant_id"] == two_orgs["b"]["tenant_id"]
     assert event["tenant_id"] not in res.text
     kept = client.get(f"/api/events/{event['id']}", headers=two_orgs["a"]).json()
     assert kept["name"] == "Secret Gala"
-    assert client.get("/api/events", headers=two_orgs["b"]["headers"]).json() == []
+    assert [
+        e["id"] for e in client.get("/api/events", headers=two_orgs["b"]["headers"]).json()
+    ] == [squat["id"]]

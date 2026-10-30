@@ -26,7 +26,7 @@ function buildRuleContext(event, refDateStr) {
 }
 
 export function evaluateEventRisks(event, refDateStr = null) {
-  if (!event || typeof event !== 'object') return emptyRadar();
+  if (!event || typeof event !== 'object' || Array.isArray(event)) return emptyRadar();
 
   const dismissedIds = new Set(Array.isArray(event.dismissed_risk_ids) ? event.dismissed_risk_ids : []);
   const context = buildRuleContext(event, refDateStr);

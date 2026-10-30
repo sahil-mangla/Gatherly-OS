@@ -40,7 +40,7 @@ describe('askMara (mara-client.js)', () => {
       stubFetch((url) => (url.includes('demo-token') ? json({}, 500) : failure()));
       const res = await askMara('cost_saving_proposals', '');
       assert.equal(res.operation, 'cost_saving_proposals');
-      assert.equal(res.proposals.length, 3);
+      assert.match(res.response, /no savings changes to propose/);
     }
   });
 

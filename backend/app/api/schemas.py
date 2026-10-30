@@ -1,19 +1,23 @@
 """Pydantic schemas for request validation and response models."""
 
 import json
+from collections.abc import Callable
 from typing import Annotated, Any, Literal
 
 from pydantic import AfterValidator, BaseModel, Field
 
+from ..config import settings
+
 MAX_LIST = 100
 
 
-def _cap_json(max_bytes: int) -> AfterValidator:
-    """Reject free-form JSON documents whose serialised size exceeds ``max_bytes``."""
+def _cap_json(max_bytes: Callable[[], int]) -> AfterValidator:
+    """Reject free-form JSON documents whose serialised size exceeds ``max_bytes()`` (per call)."""
 
     def check(value: dict[str, Any]) -> dict[str, Any]:
-        if len(json.dumps(value, default=str)) > max_bytes:
-            raise ValueError(f"JSON document exceeds {max_bytes // 1024} KB limit")
+        limit = max_bytes()
+        if len(json.dumps(value, default=str)) > limit:
+            raise ValueError(f"JSON document exceeds {limit // 1024} KB limit")
         return value
 
     return AfterValidator(check)
@@ -22,8 +26,8 @@ def _cap_json(max_bytes: int) -> AfterValidator:
 Name = Annotated[str, Field(max_length=200)]
 Label = Annotated[str, Field(max_length=100)]
 Text = Annotated[str, Field(max_length=2000)]
-ContextJson = Annotated[dict[str, Any], _cap_json(256 * 1024)]
-EventJson = Annotated[dict[str, Any], _cap_json(512 * 1024)]
+ContextJson = Annotated[dict[str, Any], _cap_json(lambda: 256 * 1024)]
+EventJson = Annotated[dict[str, Any], _cap_json(lambda: settings.max_state_json_bytes)]
 
 
 class ExpenseSchema(BaseModel):

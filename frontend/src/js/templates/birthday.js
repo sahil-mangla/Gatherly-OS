@@ -120,7 +120,7 @@ export const birthdayTemplate = {
       id: 'idea-dad-timeline',
       title: '1965 to 2025 Life Milestone Wall',
       description: 'Photo clothesline displaying one notable memory per decade of Dad’s life.',
-      author: 'Maya',
+      author: 'You',
       date_added: '2025-08-12',
       bg_color: 'idea-yellow',
       estimated_cost: 45,

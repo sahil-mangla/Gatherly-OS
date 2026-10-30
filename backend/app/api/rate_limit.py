@@ -6,6 +6,8 @@ is a cheap abuse brake, not a distributed quota.
 
 import threading
 import time
+from collections import OrderedDict
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, status
@@ -20,9 +22,11 @@ _MAX_KEYS = 10_000
 class FixedWindowLimiter:
     """Counts hits per key inside fixed windows and reports how long to wait when exceeded."""
 
-    def __init__(self, window: int = WINDOW_SECONDS):
+    def __init__(self, window: int = WINDOW_SECONDS, max_keys: int = _MAX_KEYS):
         self.window = window
-        self._hits: dict[str, tuple[int, int]] = {}
+        self.max_keys = max_keys
+        # Insertion order == recency of the last hit, so the oldest key is always at the front.
+        self._hits: OrderedDict[str, tuple[int, int]] = OrderedDict()
         self._lock = threading.Lock()
 
     def hit(self, key: str, limit: int, now: float | None = None) -> int:
@@ -30,11 +34,12 @@ class FixedWindowLimiter:
         current = time.time() if now is None else now
         window_id = int(current // self.window)
         with self._lock:
-            if len(self._hits) >= _MAX_KEYS:
-                self._hits = {k: v for k, v in self._hits.items() if v[0] == window_id}
             start, count = self._hits.get(key, (window_id, 0))
             count = count + 1 if start == window_id else 1
             self._hits[key] = (window_id, count)
+            self._hits.move_to_end(key)
+            if len(self._hits) > self.max_keys:
+                self._hits.popitem(last=False)  # O(1) eviction of the least recently hit key
         if count <= limit:
             return 0
         return max(1, int((window_id + 1) * self.window - current))
@@ -84,5 +89,18 @@ def limit_by_user(scope: str, limit: int):
     ) -> AuthContext:
         _enforce(f"{scope}:{client_ip(request)}:{auth.user_id}", limit)
         return auth
+
+    return dependency
+
+
+def limit_globally(scope: str, limit: Callable[[], int]):
+    """Dependency enforcing one budget shared by every caller (a cap on upstream spend).
+
+    ``limit`` is a callable so the setting is read per request. Hits are only counted once the
+    request is authenticated when this is declared after an auth dependency.
+    """
+
+    def dependency() -> None:
+        _enforce(f"{scope}:global", limit())
 
     return dependency

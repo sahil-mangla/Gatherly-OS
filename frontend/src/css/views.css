@@ -348,6 +348,7 @@ h2 em {
   text-overflow: ellipsis;
   text-align: left;
   min-width: 0;
+  min-height: 24px;
 }
 .task-priority-tag {
   font:
@@ -664,7 +665,7 @@ h2 em {
   font-size: 0.75rem;
 }
 .coral-text {
-  color: var(--coral) !important;
+  color: var(--coral-text) !important; /* 5.53:1 on --cream (was --coral, 2.70:1) */
 }
 .vendor-grid {
   display: grid;
@@ -810,7 +811,7 @@ h2 em {
   font:
     600 0.75rem "DM Sans",
     sans-serif;
-  background: rgba(82, 54, 80, 0.12);
+  background: rgba(255, 255, 255, 0.6); /* plum text on the coral idea card: 7.8:1 (was 4.2:1) */
   color: var(--plum);
   padding: 4px 10px;
   border-radius: 4px;

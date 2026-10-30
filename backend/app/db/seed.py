@@ -1,6 +1,7 @@
 """Idempotent seed data: the default studio tenant and the isolated public demo tenant."""
 
 import logging
+import threading
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -55,13 +56,29 @@ def _commit_once(session: Session) -> None:
         logger.info("Seed rows already created by another worker.")
 
 
+# Databases (by URL) known to hold the demo tenant, so demo-token calls skip the existence read.
+_demo_seeded: set[str] = set()
+_demo_lock = threading.Lock()
+
+
+def reset_demo_seed_cache() -> None:
+    """Forget which databases are seeded (tests and database swaps)."""
+    with _demo_lock:
+        _demo_seeded.clear()
+
+
 def ensure_demo_tenant(session: Session) -> None:
     """Create the isolated demo tenant (no users, no credentials) with a sample wedding."""
-    if session.get(Tenant, DEMO_TENANT_ID):
-        return
-    session.add(Tenant(id=DEMO_TENANT_ID, name="Gatherly Demo", slug="gatherly-demo"))
-    session.add(_wedding_event("demo-wedding-leila-noor", DEMO_TENANT_ID))
-    _commit_once(session)
+    db_key = session.get_bind().url.render_as_string(hide_password=True)
+    with _demo_lock:
+        if db_key in _demo_seeded:
+            return
+    if not session.get(Tenant, DEMO_TENANT_ID):
+        session.add(Tenant(id=DEMO_TENANT_ID, name="Gatherly Demo", slug="gatherly-demo"))
+        session.add(_wedding_event("demo-wedding-leila-noor", DEMO_TENANT_ID))
+        _commit_once(session)
+    with _demo_lock:
+        _demo_seeded.add(db_key)
 
 
 def _seed_default_tenant(session: Session) -> None:

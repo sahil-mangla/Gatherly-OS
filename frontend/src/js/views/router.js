@@ -5,7 +5,7 @@
  */
 
 import { store } from '../store.js';
-import { activeFocusKey, focusByKey } from '../a11y.js';
+import { captureFocus, restoreFocus } from '../a11y.js';
 import { createViewContext } from './context.js';
 import { renderOverview } from './overview-view.js';
 import { renderBudget } from './budget-view.js';
@@ -42,9 +42,9 @@ function renderView(viewId) {
 /** Store changed: everything is stale, but only the visible view is rebuilt (focus is preserved). */
 export function refreshCurrentView() {
   Object.keys(VIEWS).forEach(id => dirty.add(id));
-  const key = activeFocusKey();
+  const snapshot = captureFocus();
   renderView(current);
-  if (key) focusByKey(key);
+  restoreFocus(snapshot);
 }
 
 function syncNav(viewId) {

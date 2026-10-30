@@ -9,19 +9,23 @@ from ..config import settings
 from .security import decode_access_token
 
 security_bearer = HTTPBearer(auto_error=False)
+DEMO_READ_ONLY = "Demo sessions are read-only."
 
 
 class AuthContext:
     """Authenticated context carrying user identity, tenant boundary, and RBAC role."""
 
-    def __init__(self, user_id: str, tenant_id: str, role: str, email: str = ""):
+    def __init__(
+        self, user_id: str, tenant_id: str, role: str, email: str = "", is_demo: bool = False
+    ):
         self.user_id = user_id
         self.tenant_id = tenant_id
         self.role = role
         self.email = email
+        self.is_demo = is_demo
 
     def has_role(self, *allowed_roles: str) -> bool:
-        """Check if user role matches allowed roles."""
+        """Check if user role matches allowed roles; ``owner`` intentionally passes every check."""
         return self.role in allowed_roles or self.role == "owner"
 
 
@@ -63,13 +67,20 @@ def get_current_user(
     user_id, tenant_id = payload.get("sub"), payload.get("tenant_id")
     if not user_id or not tenant_id:
         raise _unauthorized("Invalid or expired credentials.")
-    return AuthContext(user_id, tenant_id, payload["role"], payload.get("email", ""))
+    return AuthContext(
+        user_id, tenant_id, payload["role"], payload.get("email", ""), payload.get("demo", False)
+    )
 
 
-def require_role(*allowed_roles: str):
-    """Factory creating dependency to enforce RBAC permissions."""
+def require_role(*allowed_roles: str, mutating: bool = False):
+    """Factory creating dependency to enforce RBAC permissions.
+
+    ``mutating=True`` additionally rejects demo sessions, whose shared tenant is read-only.
+    """
 
     def role_checker(auth: Annotated[AuthContext, Depends(get_current_user)]) -> AuthContext:
+        if mutating and auth.is_demo:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=DEMO_READ_ONLY)
         if not auth.has_role(*allowed_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

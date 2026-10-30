@@ -4,9 +4,9 @@
  */
 
 import { escapeHtml } from '../views/helpers.js';
+import { formatDollars as usd } from '../format.js';
 
-const usd = (n) => `$${Number(n).toLocaleString()}`;
-const signedUsd = (n) => `${n >= 0 ? '+' : '-'}$${Math.abs(n).toLocaleString()}`;
+const signedUsd = (n) => `${n >= 0 ? '+' : '-'}${usd(Math.abs(n))}`;
 
 function statHtml(label, value, note, isDanger) {
   return `

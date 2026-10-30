@@ -41,9 +41,11 @@ class AuthTokenResponse(BaseModel):
     email: str
 
 
-def _token_response(user_id: str, tenant_id: str, role: str, email: str) -> dict[str, Any]:
+def _token_response(
+    user_id: str, tenant_id: str, role: str, email: str, demo: bool = False
+) -> dict[str, Any]:
     return {
-        "access_token": create_access_token(user_id, tenant_id, role=role),
+        "access_token": create_access_token(user_id, tenant_id, role=role, demo=demo),
         "token_type": "bearer",
         "tenant_id": tenant_id,
         "user_id": user_id,
@@ -121,6 +123,7 @@ def get_current_user_profile(
         "tenant_name": tenant.name if tenant else "Default Organization",
         "role": auth.role,
         "email": user.email if user else auth.email,
+        "is_demo": auth.is_demo,
     }
 
 
@@ -129,8 +132,8 @@ def issue_demo_token(
     db: Annotated[Session, Depends(get_db)],
     role: Literal["owner", "planner", "vendor", "collaborator"] = "owner",
 ) -> Any:
-    """Issue a sandbox token scoped to the isolated demo tenant (disabled when DEMO_MODE=false)."""
+    """Issue a read-only sandbox token for the shared demo tenant (404 when DEMO_MODE=false)."""
     if not settings.demo_mode:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found.")
     ensure_demo_tenant(db)
-    return _token_response("user-demo-planner", DEMO_TENANT_ID, role, "demo@gatherly.app")
+    return _token_response("user-demo-planner", DEMO_TENANT_ID, role, "demo@gatherly.app", True)

@@ -75,7 +75,7 @@ def test_seed_policy_prefers_the_configured_password(db_session, settings, monke
     )
 
 
-def test_api_list_defaults_to_100_and_honours_limit_and_offset(
+def test_api_list_defaults_to_50_and_honours_limit_and_offset(
     isolated_client, db_session, auth_headers
 ):
     seed_events(db_session, "tenant-page", 105)
@@ -84,7 +84,7 @@ def test_api_list_defaults_to_100_and_honours_limit_and_offset(
     def ids(query=""):
         return [e["id"] for e in isolated_client.get(f"/api/events{query}", headers=headers).json()]
 
-    assert len(ids()) == 100 and ids()[0] == "tenant-page-e0104"
+    assert len(ids()) == 50 and ids()[0] == "tenant-page-e0104"
     assert len(ids("?limit=500")) == 105
     assert ids("?limit=5&offset=100") == [f"tenant-page-e{i:04d}" for i in range(4, -1, -1)]
 

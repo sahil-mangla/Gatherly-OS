@@ -67,7 +67,8 @@ export function addVendorAction(event, rawVendor) {
     summary: orElse(rawVendor.summary, ''),
     inclusions: asArray(rawVendor.inclusions),
     exclusions: asArray(rawVendor.exclusions),
-    notes: orElse(rawVendor.notes, '')
+    notes: orElse(rawVendor.notes, ''),
+    ...(Array.isArray(rawVendor.quotes) && rawVendor.quotes.length > 0 ? { quotes: rawVendor.quotes } : {})
   });
 }
 

@@ -48,12 +48,24 @@ function runAction(act) {
   if (handler) handler(act);
 }
 
+/** Dismisses a risk, then keeps keyboard focus inside the (still open) tray on the next risk or the close button. */
+function dismissRisk(button) {
+  const buttons = [...document.querySelectorAll('#risk-tray-list .risk-dismiss-btn')];
+  const index = buttons.indexOf(button);
+  store.dismissRisk(button.dataset.riskId);
+  const remaining = document.querySelectorAll('#risk-tray-list .risk-dismiss-btn');
+  const next = remaining[Math.min(Math.max(index, 0), remaining.length - 1)];
+  (next || document.getElementById('risk-tray-close')).focus();
+}
+
+/** True when the click happened inside `el`, even if its target was detached by a re-render during the event. */
+const clickedInside = (e, el) => e.composedPath().includes(el);
+
 function onListClick(e) {
   const dismiss = e.target.closest('.risk-dismiss-btn');
   const action = e.target.closest('.risk-act-btn');
   if (dismiss) {
-    store.dismissRisk(dismiss.dataset.riskId);
-    (document.querySelector('#risk-tray-list .risk-dismiss-btn') || document.getElementById('risk-tray-close')).focus();
+    dismissRisk(dismiss);
   } else if (action) {
     runAction(currentActions[Number(action.dataset.actIdx)]);
   }
@@ -70,7 +82,7 @@ export function initRiskTray() {
   document.getElementById('risk-tray-close').addEventListener('click', closeRiskTray);
   document.getElementById('risk-tray-list').addEventListener('click', onListClick);
   document.addEventListener('click', (e) => {
-    const outside = !trayElement.contains(e.target) && !bellButton.contains(e.target);
+    const outside = !clickedInside(e, trayElement) && !clickedInside(e, bellButton);
     if (outside && trayElement.classList.contains('open')) closeRiskTray();
   });
 

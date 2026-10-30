@@ -19,7 +19,7 @@ function enumError(label, value, allowed) {
 }
 
 export function validateTask(task) {
-  if (!task || typeof task !== 'object') {
+  if (!task || typeof task !== 'object' || Array.isArray(task)) {
     return { valid: false, errors: ['Task must be an object.'] };
   }
 

@@ -5,6 +5,7 @@ from datetime import date
 from typing import Any
 
 from .budget import PERCENT_SCALE
+from .numeric import round_half_up
 from .timeline_dates import parse_date
 from .timeline_scheduler import evaluate_reschedule
 
@@ -35,7 +36,7 @@ def _choice_errors(value: Any, allowed: list[str], label: str) -> list[str]:
 def validate_task(task: dict[str, Any]) -> tuple[bool, list[str]]:
     """Validate task integrity and required date contracts."""
     if not isinstance(task, dict):
-        return False, ["Task must be a dictionary."]
+        return False, ["Task must be an object."]
 
     errors = [
         *_title_errors(task),
@@ -142,7 +143,9 @@ def calculate_timeline_progress(
         "completed": counts["done"],
         "in_progress": counts["in_progress"],
         "todo": counts["todo"],
-        "percent_complete": round((counts["done"] / total) * PERCENT_SCALE) if total > 0 else 0,
+        "percent_complete": round_half_up((counts["done"] / total) * PERCENT_SCALE)
+        if total > 0
+        else 0,
         "overdue_tasks": overdue_tasks,
         "next_task": upcoming_tasks[0] if upcoming_tasks else None,
         "upcoming_tasks": upcoming_tasks,

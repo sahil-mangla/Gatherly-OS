@@ -531,7 +531,7 @@
 }
 
 .draft-email-card h4,
-.parsed-header h4 {
+.parsed-header h3 {
   margin: 0 0 4px;
   font:
     600 1rem Fraunces,
@@ -546,4 +546,56 @@
 
 .tab-pane[hidden] {
   display: none;
+}
+
+/* Quote comparison: vendor picker and the labelled example note */
+.quote-picker {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px 12px;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.quote-picker legend {
+  font-weight: 600;
+  color: var(--plum);
+  padding: 0 6px;
+}
+.quote-picker legend small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.quote-pick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.quote-pick input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--plum);
+}
+.quote-pick label {
+  font-weight: 500;
+  color: var(--ink);
+}
+.quote-pick-price {
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 6px;
+}
+.quote-pick-reason {
+  flex-basis: 100%;
+  margin-left: 30px;
+  color: var(--warn-text);
+}
+.comparison-example {
+  background: #fff4e5;
+  border: 1px dashed var(--warn-text);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  color: var(--ink);
 }

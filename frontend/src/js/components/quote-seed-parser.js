@@ -6,15 +6,16 @@
 import { store } from '../store.js';
 import { askMara } from '../ai/mara-client.js';
 import { escapeHtml } from '../views/helpers.js';
+import { formatDollars as money } from '../format.js';
+import { makeId } from '../store/helpers.js';
 import { showToast } from './toast.js';
 
 export const seedPresets = {
-  photo: `Hi Maya! We would love to capture your wedding on Sep 14. Our standard package is $2,400 with a $720 retainer upon signing. Includes 8 hours of photography and a high-resolution online gallery. Second shooter available upon request. Let us know if you want to proceed!`,
-  cater: `Catering Estimate for Leila & Noor: 150 guests plated dinner buffet at $42/person plus welcome drinks ($6,300 base). Includes table linens and dinnerware. Deposit of $1,800 due on confirmation. Note: Bar setup and venue corkage billed separately.`
+  photo: `Hi there! We would love to capture your event. Our standard package is $2,400 with a $720 retainer upon signing. Includes 8 hours of photography and a high-resolution online gallery. Second shooter available upon request. Let us know if you want to proceed!`,
+  cater: `Catering estimate: 150 guests plated dinner buffet at $42/person plus welcome drinks ($6,300 base). Includes table linens and dinnerware. Deposit of $1,800 due on confirmation. Note: Bar setup and venue corkage billed separately.`
 };
 
-const BUTTON_LABEL = '<span aria-hidden="true">✦</span> Extract &amp; Audit Quote with Mara';
-const money = (n) => `$${Number(n || 0).toLocaleString()}`;
+const BUTTON_LABEL = '<span aria-hidden="true">✦</span> Extract details';
 
 function setSeedError(message) {
   const field = document.getElementById('raw-quote-text');
@@ -64,7 +65,7 @@ function resultHtml(eq, sourceText) {
       <div class="parsed-header">
         <span class="sparkle-icon" aria-hidden="true">✦</span>
         <div>
-          <h4 id="parsed-heading" tabindex="-1">Extracted: ${escapeHtml(eq.vendor_name)}</h4>
+          <h3 id="parsed-heading" tabindex="-1">Extracted: ${escapeHtml(eq.vendor_name)}</h3>
           <span class="badge-notice">${escapeHtml(String(eq.service_type || 'vendor').toUpperCase())}</span>
         </div>
         <div class="parsed-amount">${hasPrice ? money(eq.quoted_base_amount) : 'Price not found'}</div>
@@ -83,6 +84,21 @@ function resultHtml(eq, sourceText) {
     </div>`;
 }
 
+/** The extracted quote in the shape stored on a vendor and compared later by the quote matrix. */
+export function storedQuoteFrom(eq) {
+  return {
+    id: makeId('quote'),
+    name: eq.vendor_name,
+    base_amount: Number(eq.quoted_base_amount) || 0,
+    deposit_amount: Number(eq.deposit_amount) || 0,
+    hidden_fees: eq.hidden_fees || [],
+    inclusions: eq.inclusions || [],
+    missing_disclosures: eq.missing_fields || [],
+    service_type: eq.service_type,
+    flags: eq.flags || []
+  };
+}
+
 function saveVendor(eq, closeModalCallback) {
   try {
     store.addVendor({
@@ -91,10 +107,11 @@ function saveVendor(eq, closeModalCallback) {
       quoted_amount: eq.quoted_base_amount,
       deposit_paid: 0,
       summary: Number(eq.quoted_base_amount) > 0
-        ? `Imported via Mara raw seed parser. Base estimate: $${eq.quoted_base_amount}.`
-        : 'Imported via Mara raw seed parser. No price was found in the text.',
+        ? `Imported from pasted quote text. Base estimate: ${money(eq.quoted_base_amount)}.`
+        : 'Imported from pasted quote text. No price was found in the text.',
       inclusions: eq.inclusions || [],
-      exclusions: eq.missing_fields || []
+      exclusions: eq.missing_fields || [],
+      quotes: [storedQuoteFrom(eq)]
     });
   } catch (err) {
     setSeedError(err.message);
@@ -108,7 +125,7 @@ async function extractQuote(text) {
   const btn = document.getElementById('parse-quote-btn');
   btn.disabled = true;
   btn.setAttribute('aria-busy', 'true');
-  btn.textContent = 'Extracting entities with Mara...';
+  btn.textContent = 'Extracting details…';
   try {
     return await askMara('parse_quote_seed', text);
   } catch (err) {

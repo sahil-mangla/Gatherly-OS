@@ -207,7 +207,7 @@
   text-transform: uppercase;
   margin-bottom: 4px;
 }
-.proposal-card h4 {
+.proposal-card h3 {
   margin: 0 0 6px;
   font: 600 0.9375rem Fraunces;
   color: var(--plum);

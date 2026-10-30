@@ -6,7 +6,6 @@ from app.db.models import AuditLog
 from app.db.repository import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
-    EventIdConflictError,
     EventRepository,
 )
 
@@ -38,7 +37,7 @@ def test_missing_ids_are_reported_without_side_effects(repo, audits):
 
 def test_create_generates_an_id_and_applies_defaults(repo):
     event = repo.create_event({"name": "Gala"})
-    assert event.id.startswith("event-") and len(event.id) == 22
+    assert event.id.startswith("event-") and len(event.id) == 38
     assert (event.tenant_id, event.type, event.total_budget, event.state_json) == (
         T1,
         "wedding",
@@ -59,14 +58,13 @@ def test_tenants_cannot_see_or_touch_each_others_events(db_session, repo, audits
 
 
 @pytest.mark.parametrize("same_tenant", [True, False])
-def test_duplicate_ids_conflict_and_leave_the_session_usable(db_session, repo, audits, same_tenant):
-    repo.create_event({"id": "dup-1", "name": "First"})
+def test_supplied_ids_are_ignored_so_nothing_can_collide(db_session, repo, audits, same_tenant):
+    first = repo.create_event({"id": "dup-1", "name": "First"})
     taker = repo if same_tenant else EventRepository(db_session, T2)
-    with pytest.raises(EventIdConflictError):
-        taker.create_event({"id": "dup-1", "name": "Second"})
-    assert repo.get_event("dup-1").name == "First"
-    assert len(audits("create")) == 1  # the failed attempt rolled its audit row back
-    assert taker.create_event({"name": "After"}).name == "After"
+    second = taker.create_event({"id": "dup-1", "name": "Second"})
+    assert "dup-1" not in (first.id, second.id) and first.id != second.id
+    assert repo.get_event("dup-1") is None and taker.get_event("dup-1") is None
+    assert len(audits("create")) == 2
 
 
 @pytest.mark.parametrize(

@@ -4,18 +4,20 @@
  * Mirrors backend/app/domain/quote_parser.py rule-for-rule.
  */
 
-import { parseMoneyItems, pickBaseAmount, findDeposit, findHiddenFees, roundCents } from './quote-money.js';
+import { parseMoneyItems, pickBaseAmount, findDeposit, findHiddenFees, roundCents, roundHalfEven } from './quote-money.js';
 
 export const DEFAULT_VENDOR_NAME = 'Extracted Vendor';
 const DEFAULT_SERVICE_TYPE = 'decor';
 const CATEGORY_WORDS = 'Catering|Caterers|Photography|Photo|Photos|Florals|Floral|Flowers|Music|Venue|DJ|DJs'
   + '|Events|Studio|Bakery|Band|Video|Rentals|Entertainment';
-const CAP_WORD = String.raw`[A-Z][\w&'’-]*`;
-const GREETING_RE = /^\s*(?:hi|hello|hey|dear\s+\w+)\b(?:\s+(?:there|team|all))?[\s,!.:-]*/i;
+const WORD_CHAR = String.raw`\p{L}\p{N}_`;
+const CAP_WORD = String.raw`[A-Z][${WORD_CHAR}&'’-]*`;
+const GREETING_RE = /^\s*(?:hi|hello|hey|dear\s+[\p{L}\p{N}_]+)\b(?:\s+(?:there|team|all))?[\s,!.:-]*/iu;
 const LEADING_NAME_RE = new RegExp(
-  String.raw`^\W*(${CAP_WORD}(?:\s+(?:&\s+)?${CAP_WORD}){0,4})\s*(?:\bhere\b|\bquote\b|\bproposal\b|—|–|-|:)`
+  String.raw`^[^${WORD_CHAR}]*(${CAP_WORD}(?:\s+(?:&\s+)?${CAP_WORD}){0,4})\s*(?:\bhere\b|\bquote\b|\bproposal\b|—|–|-|:)`,
+  'u'
 );
-const CATEGORY_NAME_RE = new RegExp(String.raw`\b((?:${CAP_WORD}\s+(?:&\s+)?){1,3}(?:${CATEGORY_WORDS}))\b`);
+const CATEGORY_NAME_RE = new RegExp(String.raw`\b((?:${CAP_WORD}\s+(?:&\s+)?){1,3}(?:${CATEGORY_WORDS}))\b`, 'u');
 const CATEGORY_ONLY_RE = new RegExp(`^(?:${CATEGORY_WORDS})$`, 'i');
 const STOP_WORDS = new Set(
   'thanks thank hi hello hey dear please our the this quote here includes include package'.split(' ')
@@ -97,7 +99,7 @@ function confidence(hasAmount, hasName, depositStated, hasFees) {
 
 function followUpQuestions(base) {
   const first = base > 0
-    ? `Could you clarify if setup and post-event teardown are included in the $${Math.round(base).toLocaleString()} quote?`
+    ? `Could you clarify if setup and post-event teardown are included in the $${roundHalfEven(base, 0).toLocaleString('en-US')} quote?`
     : 'Could you confirm the total price and exactly what it covers?';
   return [
     first,

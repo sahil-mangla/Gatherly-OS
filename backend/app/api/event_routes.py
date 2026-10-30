@@ -10,7 +10,7 @@ from ..db.database import get_db
 from ..db.repository import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
-    EventIdConflictError,
+    EventLimitError,
     EventRepository,
 )
 from .event_schemas import EventCreateRequest, EventUpdateRequest
@@ -18,6 +18,7 @@ from .event_schemas import EventCreateRequest, EventUpdateRequest
 router = APIRouter(prefix="/api/events", tags=["Multi-Tenant Events"])
 
 NOT_FOUND = "Event not found."
+LIMIT_REACHED = "Event limit reached for this organization."
 NULLABLE_FIELDS = ("date", "theme")
 
 
@@ -74,17 +75,16 @@ def get_event(
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_event(
     req: EventCreateRequest,
-    auth: Annotated[AuthContext, Depends(require_role("owner", "planner"))],
+    auth: Annotated[AuthContext, Depends(require_role("owner", "planner", mutating=True))],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
-    """Create a new event within the authenticated tenant (409 if a supplied id is taken)."""
+    """Create an event in the authenticated tenant (server-generated id; 409 at the quota)."""
     repo = EventRepository(db, auth.tenant_id)
     try:
-        created = repo.create_event(req.model_dump(), user_id=auth.user_id)
-    except EventIdConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Event id is already in use."
-        ) from exc
+        # A client-supplied ``id`` is accepted for compatibility but always ignored.
+        created = repo.create_event(req.model_dump(exclude={"id"}), user_id=auth.user_id)
+    except EventLimitError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=LIMIT_REACHED) from exc
     return _format_event_response(repo.sync_schedule(created, user_id=auth.user_id))
 
 
@@ -92,7 +92,9 @@ def create_event(
 def update_event(
     event_id: str,
     req: EventUpdateRequest,
-    auth: Annotated[AuthContext, Depends(require_role("owner", "planner", "collaborator"))],
+    auth: Annotated[
+        AuthContext, Depends(require_role("owner", "planner", "collaborator", mutating=True))
+    ],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Update event data within the tenant boundary."""
@@ -107,7 +109,7 @@ def update_event(
 @router.delete("/{event_id}")
 def delete_event(
     event_id: str,
-    auth: Annotated[AuthContext, Depends(require_role("owner"))],
+    auth: Annotated[AuthContext, Depends(require_role("owner", mutating=True))],
     db: Annotated[Session, Depends(get_db)],
 ) -> dict[str, Any]:
     """Delete an event (requires administrative 'owner' RBAC role)."""

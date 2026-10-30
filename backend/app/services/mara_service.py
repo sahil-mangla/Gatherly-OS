@@ -5,6 +5,7 @@ Provides structured recommendations, diagnostic explanations, and fallback mode.
 
 import json
 import logging
+import threading
 import urllib.error
 import urllib.request
 from datetime import date
@@ -20,8 +21,13 @@ __all__ = ["generate_deterministic_mara_response", "query_mara_copilot"]
 logger = logging.getLogger("gatherly.mara")
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-GEMINI_TIMEOUT_SECONDS = 6.0
-_cache = TTLCache(ttl=60.0, max_entries=128)
+GEMINI_TIMEOUT_SECONDS = 4.0
+MAX_CONCURRENT_UPSTREAM = 8
+_cache = TTLCache(ttl=60.0, max_entries=128)  # successful responses
+# Failed upstream calls are remembered per request key so a retry storm of identical requests
+# goes straight to the deterministic fallback instead of hitting the upstream again.
+_failures = TTLCache(ttl=45.0, max_entries=128)
+_slots = threading.BoundedSemaphore(MAX_CONCURRENT_UPSTREAM)
 
 
 def _system_instruction() -> str:
@@ -64,11 +70,8 @@ def _call_gemini(api_key: str, payload: dict[str, Any]) -> Any:
     return json.loads(data["candidates"][0]["content"]["parts"][0]["text"])
 
 
-def _live_response(operation: str, prompt: str, context: dict[str, Any]) -> dict[str, Any] | None:
-    """Return a validated Gemini result, or None so the caller falls back deterministically."""
-    key = cache_key(settings.gemini_model, operation, prompt, context)
-    if (cached := _cache.get(key)) is not None:
-        return cached
+def _request_live(operation: str, prompt: str, context: dict[str, Any]) -> dict[str, Any] | None:
+    """Call Gemini once and validate the answer; None means "use the fallback"."""
     try:
         parsed = _call_gemini(settings.gemini_api_key, _build_payload(operation, prompt, context))
     except urllib.error.HTTPError as exc:
@@ -85,7 +88,27 @@ def _live_response(operation: str, prompt: str, context: dict[str, Any]) -> dict
         logger.warning("Gemini output failed validation; using deterministic fallback.")
         return None
     result["provider"] = "gemini-live"
-    _cache.set(key, result)
+    return result
+
+
+def _live_response(operation: str, prompt: str, context: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a validated Gemini result, or None so the caller falls back deterministically."""
+    key = cache_key(settings.gemini_model, operation, prompt, context)
+    if (cached := _cache.get(key)) is not None:
+        return cached
+    if _failures.get(key) is not None:
+        return None
+    if not _slots.acquire(blocking=False):  # never queue behind a saturated upstream
+        logger.warning("Gemini concurrency limit reached; using deterministic fallback.")
+        return None
+    try:
+        result = _request_live(operation, prompt, context)
+    finally:
+        _slots.release()
+    if result is None:
+        _failures.set(key, True)
+    else:
+        _cache.set(key, result)
     return result
 
 

@@ -22,7 +22,7 @@ export function addDays(d, n) {
 export function toIsoDate(d) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  return `${String(d.getFullYear()).padStart(4, '0')}-${m}-${day}`;
 }
 
 /** Whole calendar days from a to b (DST-safe: compares calendar dates, not elapsed ms). */
@@ -45,16 +45,19 @@ export function shiftIso(value, days) {
   return d ? toIsoDate(addDays(d, days)) : value;
 }
 
+const isRecord = (value) => Boolean(value) && typeof value === 'object';
+
+function shiftTask(task, days) {
+  task.due_date = shiftIso(task.due_date, days);
+  if (task.completed_at) task.completed_at = shiftIso(task.completed_at, days);
+}
+
 function shiftEventDates(event, days) {
   event.date = shiftIso(event.date, days);
-  for (const task of event.tasks || []) {
-    if (!task) continue;
-    task.due_date = shiftIso(task.due_date, days);
-    if (task.completed_at) task.completed_at = shiftIso(task.completed_at, days);
-  }
-  for (const idea of event.ideas || []) {
-    if (idea && idea.date_added) idea.date_added = shiftIso(idea.date_added, days);
-  }
+  (event.tasks || []).filter(isRecord).forEach(task => shiftTask(task, days));
+  (event.ideas || []).filter(idea => isRecord(idea) && idea.date_added).forEach(idea => {
+    idea.date_added = shiftIso(idea.date_added, days);
+  });
 }
 
 /** Legacy saves stored free text like "May 30"; swap in the template's real date so it can shift. */
