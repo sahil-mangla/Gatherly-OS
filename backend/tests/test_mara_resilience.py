@@ -77,10 +77,11 @@ def test_recovery_after_the_window_is_cached_for_60_seconds(live_gemini, clock):
     assert len(live_gemini.calls) == 3
 
 
-def test_upstream_timeout_is_4_seconds(live_gemini):
+def test_upstream_timeout_is_6_5_seconds_below_the_browser_abort(live_gemini):
     live_gemini.reply_json(GOOD_REPLY)
     ask()
-    assert live_gemini.calls[0][1] == 4.0 == mara_service.GEMINI_TIMEOUT_SECONDS
+    assert live_gemini.calls[0][1] == 6.5 == mara_service.GEMINI_TIMEOUT_SECONDS
+    assert mara_service.GEMINI_TIMEOUT_SECONDS < 8  # the browser client aborts at 8 s
 
 
 def test_at_most_eight_upstream_calls_may_run_concurrently():

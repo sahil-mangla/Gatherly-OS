@@ -115,7 +115,7 @@ def test_api_key_travels_only_in_header(live_gemini, caplog):
     assert API_KEY not in request.data.decode()
     assert request.full_url.startswith("https://generativelanguage.googleapis.com/")
     assert request.get_method() == "POST"
-    assert timeout == 4.0
+    assert timeout == 6.5
     assert API_KEY not in caplog.text
 
 

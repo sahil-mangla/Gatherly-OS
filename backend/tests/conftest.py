@@ -29,6 +29,7 @@ os.environ.update(
         "RATE_LIMIT_ENABLED": "false",
         "PBKDF2_ITERATIONS": "1000",
         "GEMINI_API_KEY": "",
+        "GEMINI_MODEL": "",  # a developer's .env may pin a model; tests must see the default
         "LLM_API_KEY": "",
         "VERCEL": "",
         "SEED_ADMIN_PASSWORD": "",

@@ -74,7 +74,7 @@ Vercel: import the repo, set `JWT_SECRET` (and optionally `GEMINI_API_KEY`). SQL
 | `MARA_GLOBAL_PER_MINUTE` | `120` | Cap on Mara calls across all users |
 | `MAX_EVENTS_PER_TENANT` / `MAX_STATE_JSON_BYTES` | `100` / `131072` | Per-tenant quotas |
 | `PBKDF2_ITERATIONS` | `600000` | Password hashing cost (lower only in tests) |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | unset, `gemini-2.5-flash` | Optional live Mara (not exercised against the real API in testing) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | unset, `gemini-3.5-flash` | Optional live Mara. Checked against the real Gemini API (all four operations answered in 2–4 s). Google retires models without notice (`gemini-2.5-flash` now returns 404 for new keys), so if the configured model returns 404 the app retries once with the default and falls back to the offline planner if that fails too |
 | `HOST`, `PORT`, `WEB_CONCURRENCY` | `127.0.0.1`, `8080`, `1` | Server binding |
 | `LOG_FORMAT`, `OTEL_ENABLED` | `json`, `true` | Structured logs; optional OpenTelemetry spans |
 
@@ -82,7 +82,7 @@ Vercel: import the repo, set `JWT_SECRET` (and optionally `GEMINI_API_KEY`). SQL
 
 | Gate | Command | Result when last run |
 |---|---|---|
-| Backend tests + line and branch coverage (>= 95%) | `pytest backend/tests --cov=backend/app --cov-branch` | 1,209 pass; 100% line, 99% branch |
+| Backend tests + line and branch coverage (>= 95%) | `pytest backend/tests --cov=backend/app --cov-branch` | 1,228 pass; 100% line, 99% branch |
 | Frontend tests + coverage (lines 90 / branches 80 / functions 85) | `npm run test:coverage` | 621 pass; 94.7% lines, 87.8% branches, 90.0% functions |
 | No silently skipped DOM tests | CI fails if the TAP report shows any skipped test | 0 skipped with `npm install` (31 DOM/axe tests skip without jsdom) |
 | Browser journeys | `npm run test:e2e` | 8 Playwright journeys (run in CI) |

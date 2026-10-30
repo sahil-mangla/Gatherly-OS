@@ -73,6 +73,10 @@ def _default_cors_origins() -> list[str]:
     return ["*"] if is_local_environment(_default_environment()) else []
 
 
+# Google retired gemini-2.5-flash for new API keys (HTTP 404); this one answers in about 3 s.
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
+
+
 class Settings(BaseModel):
     """Global configuration settings for Gatherly application."""
 
@@ -83,7 +87,9 @@ class Settings(BaseModel):
     gemini_api_key: str = Field(
         default_factory=lambda: os.getenv("GEMINI_API_KEY", os.getenv("LLM_API_KEY", ""))
     )
-    gemini_model: str = Field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+    gemini_model: str = Field(
+        default_factory=lambda: os.getenv("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL
+    )
     cors_origins: list[str] = Field(default_factory=_default_cors_origins)
     debug: bool = Field(default_factory=lambda: _flag("DEBUG", "false"))
     environment: str = Field(default_factory=_default_environment)
