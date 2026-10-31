@@ -72,6 +72,7 @@ function requestFrom(prompt, context) {
   };
 }
 
+/** Answers a Mara operation in the browser from the event's own numbers, used when the API is unreachable. */
 export function getLocalDeterministicMaraResponse(operation, prompt, context = {}) {
   const op = operation || 'general_advice';
   const request = requestFrom(prompt, context);

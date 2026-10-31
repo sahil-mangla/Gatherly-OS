@@ -4,7 +4,7 @@
  * and the labelled example quotes shown only when fewer than two real quotes exist.
  */
 
-import { statedTermsNote } from '../domain/vendors.js';
+import { statedTermsNote } from '../domain/quote-terms.js';
 
 export const MAX_COMPARED = 4;
 export const MIN_COMPARED = 2;
@@ -19,6 +19,7 @@ export const SAMPLE_QUOTES = [
 
 const priceOf = (quote) => Number(quote.base_amount ?? quote.price ?? quote.quoted_amount ?? 0) || 0;
 
+/** True when a stored quote has a price and was not flagged `no_amount_found`. */
 export function isComparable(quote) {
   return priceOf(quote) > 0 && !(quote.flags || []).includes('no_amount_found');
 }
@@ -61,6 +62,8 @@ export function quotedEntries(vendors, vendorId) {
   return [...entries.filter(e => e.vendorId === vendorId), ...entries.filter(e => e.vendorId !== vendorId)];
 }
 
+/** Keys of the first comparable entries, up to the maximum that can be compared. */
 export const defaultSelection = (entries) => entries.filter(e => e.comparable).slice(0, MAX_COMPARED).map(e => e.key);
 
+/** The labelled example quotes shown until two real quotes exist. */
 export const sampleEntries = () => SAMPLE_QUOTES.map(quote => entryFor({ id: quote.id, name: quote.name }, quote, 0));

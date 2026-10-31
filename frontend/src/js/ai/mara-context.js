@@ -17,6 +17,7 @@ function nextOpenTasks(event) {
     .map(t => ({ id: t.id, title: t.title, due_date: t.due_date, priority: t.priority }));
 }
 
+/** The event facts sent with every Mara request: identity, budget summary, active risks and the next open tasks. */
 export function buildMaraContext(event) {
   return {
     event: { id: event.id, name: event.name, expected_guests: event.expected_guests },

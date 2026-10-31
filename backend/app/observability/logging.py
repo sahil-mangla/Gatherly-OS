@@ -13,6 +13,7 @@ class JsonLogFormatter(logging.Formatter):
     """Custom formatter producing single-line JSON log events with OpenTelemetry context."""
 
     def format(self, record: logging.LogRecord) -> str:
+        """Render ``record`` as one JSON line with trace and correlation identifiers."""
         log_payload: dict[str, Any] = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,

@@ -1,11 +1,14 @@
 """Main FastAPI application entry point."""
 
+import os
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 
 from .api.errors import register_error_handlers
 from .api.event_routes import router as event_router
@@ -64,7 +67,10 @@ class CachedStaticFiles(StaticFiles):
 
     ASSET_SUFFIXES = (".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".webp", ".ico", ".woff2")
 
-    def file_response(self, full_path, *args, **kwargs):
+    def file_response(
+        self, full_path: str | os.PathLike[str], *args: Any, **kwargs: Any
+    ) -> Response:
+        """Serve the file, adding the Cache-Control header chosen for its type."""
         response = super().file_response(full_path, *args, **kwargs)
         is_asset = str(full_path).lower().endswith(self.ASSET_SUFFIXES)
         response.headers["Cache-Control"] = "public, max-age=3600" if is_asset else "no-cache"

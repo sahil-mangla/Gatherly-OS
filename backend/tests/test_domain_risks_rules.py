@@ -26,7 +26,15 @@ def _ctx(event, capacity=999999):
 
 
 def test_make_risk_shape():
-    risk = make_risk("id", "t", "notice", "T", "E", "C", [{"label": "x"}])
+    risk = make_risk(
+        risk_id="id",
+        risk_type="t",
+        severity="notice",
+        title="T",
+        evidence="E",
+        consequence="C",
+        actions=[{"label": "x"}],
+    )
     assert list(risk) == [
         "id",
         "type",

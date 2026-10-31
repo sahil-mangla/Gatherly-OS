@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..auth.dependencies import AuthContext, get_current_user, require_role
 from ..db.database import get_db
+from ..db.models import EventModel
 from ..db.repository import (
     DEFAULT_PAGE_SIZE,
     MAX_PAGE_SIZE,
@@ -22,7 +23,7 @@ LIMIT_REACHED = "Event limit reached for this organization."
 NULLABLE_FIELDS = ("date", "theme")
 
 
-def _format_event_response(event) -> dict[str, Any]:
+def _format_event_response(event: EventModel) -> dict[str, Any]:
     return {
         "id": event.id,
         "tenant_id": event.tenant_id,

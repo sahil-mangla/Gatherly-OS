@@ -113,6 +113,7 @@ function onStoreEvent({ type, payload }) {
   if (toast) showToast(...toast);
 }
 
+/** Boots the app: initialises every component, subscribes to store changes and renders the first view. */
 export function initApp() {
   initToast();
   initCopilotDrawer();

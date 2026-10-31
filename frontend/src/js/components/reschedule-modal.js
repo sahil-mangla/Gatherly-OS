@@ -61,6 +61,7 @@ function previewFor(taskId, date) {
   }
 }
 
+/** Renders the reschedule form for `task`, previews collisions and applies the new date. */
 export function openRescheduleModal(task, openFormModal, closeFormModal) {
   if (!task || !task.id) return;
   openFormModal('Milestone Reschedule & Dependency Audit', bodyHtml(task), { describedBy: 'reschedule-hint' });

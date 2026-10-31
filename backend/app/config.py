@@ -160,6 +160,7 @@ class Settings(BaseModel):
 
     @property
     def cors_allow_credentials(self) -> bool:
+        """Credentials are only allowed with an explicit origin list, never with ``*``."""
         return bool(self.cors_origins) and "*" not in self.cors_origins
 
 

@@ -34,6 +34,7 @@ export function initToast() {
   document.getElementById('toast-dismiss')?.addEventListener('click', hide);
 }
 
+/** Shows a dismissible toast that stays while it is hovered or focused. */
 export function showToast(title = 'Mara is on it', message = "I'll pull together a few thoughtful options.") {
   const toast = document.getElementById('app-toast');
   if (!toast) return;

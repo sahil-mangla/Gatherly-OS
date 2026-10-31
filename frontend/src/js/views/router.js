@@ -24,10 +24,12 @@ export const VIEWS = {
 const dirty = new Set(Object.keys(VIEWS));
 let current = 'overview';
 
+/** The id of the view currently shown. */
 export function currentView() {
   return current;
 }
 
+/** Sets the page title from the current view and active event. */
 export function updateTitle() {
   const event = store.getActiveEvent();
   const name = event ? ` · ${event.name}` : '';

@@ -46,7 +46,7 @@ def _collision_evidence(colliding: list[dict[str, Any]]) -> str:
     return f"Due before a prerequisite that is still open: {shown}{more}."
 
 
-def rule_dependency_collision(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
+def rule_dependency_collision(event: dict[str, Any], _ctx: RiskContext) -> list[dict[str, Any]]:
     """One warning summarising open tasks scheduled earlier than a prerequisite they depend on."""
     raw = event.get("tasks")
     tasks = [t for t in raw if isinstance(t, dict)] if isinstance(raw, list) else []
@@ -56,13 +56,13 @@ def rule_dependency_collision(event: dict[str, Any], ctx: RiskContext) -> list[d
         return []
     return [
         make_risk(
-            "risk-dependency-collision",
-            "dependency_collision",
-            SEVERITY_WARNING,
-            f"{len(colliding)} Dependency Collision(s)",
-            _collision_evidence(colliding),
-            "Work may be due before its prerequisites finish, forcing last-minute rescheduling.",
-            [
+            risk_id="risk-dependency-collision",
+            risk_type="dependency_collision",
+            severity=SEVERITY_WARNING,
+            title=f"{len(colliding)} Dependency Collision(s)",
+            evidence=_collision_evidence(colliding),
+            consequence="Work may be due before its prerequisites finish, forcing last-minute rescheduling.",
+            actions=[
                 {"label": "View Timeline", "action_type": "open_timeline"},
                 ask_mara(
                     "Resolve Dependency Conflicts",

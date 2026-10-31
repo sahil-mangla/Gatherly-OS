@@ -31,6 +31,7 @@ function narrativeHtml(ripple) {
     </div>`;
 }
 
+/** Markup for a what-if result: projected spend, breathing room, capacity and the narrative. */
 export function simulationHtml(ripple) {
   const p = ripple.projected;
   const overBudget = p.deficit > 0;
@@ -51,6 +52,7 @@ export function simulationSummary(ripple) {
   return `Projected spend ${usd(p.allocated)}, ${budget}, ${p.guests} guests, ${capacity}.`;
 }
 
+/** The question sent to Mara to discuss a what-if result. */
 export function consultPrompt(ripple) {
   const p = ripple.projected;
   const sign = p.cost_delta >= 0 ? '+' : '';

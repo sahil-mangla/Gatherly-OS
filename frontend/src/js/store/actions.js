@@ -22,6 +22,7 @@ function defaultExpenseStatus(rawExpense) {
   return rawExpense.actual_amount > 0 ? 'paid' : 'pending';
 }
 
+/** Validates and appends an expense to the event. */
 export function addExpenseAction(event, rawExpense) {
   failIfInvalid('Expense', validateExpenseInput(rawExpense));
 
@@ -38,6 +39,7 @@ export function addExpenseAction(event, rawExpense) {
   });
 }
 
+/** Validates and appends a milestone to the event. */
 export function addTaskAction(event, rawTask) {
   failIfInvalid('Task', validateNewTask(event.tasks || [], rawTask));
 
@@ -53,6 +55,7 @@ export function addTaskAction(event, rawTask) {
   });
 }
 
+/** Appends a shortlisted vendor, keeping any saved quotes. */
 export function addVendorAction(event, rawVendor) {
   if (!rawVendor.name) throw new Error('Vendor name is required.');
 
@@ -72,6 +75,7 @@ export function addVendorAction(event, rawVendor) {
   });
 }
 
+/** Appends an idea to the idea board. */
 export function addIdeaAction(event, rawIdea) {
   if (!rawIdea.title || !rawIdea.description) {
     throw new Error('Idea title and description are required.');
@@ -94,6 +98,7 @@ export function addIdeaAction(event, rawIdea) {
   return newIdea;
 }
 
+/** Turns an idea into a milestone and links the two. */
 export function convertIdeaToTaskAction(event, ideaId) {
   const idea = (event.ideas || []).find(i => i.id === ideaId);
   if (!idea) throw new Error('Idea not found.');

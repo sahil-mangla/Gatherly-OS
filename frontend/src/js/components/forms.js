@@ -24,6 +24,7 @@ export {
   openEditEventModal
 };
 
+/** Opens the reschedule dialog for `task` using the shared form dialog. */
 export function openRescheduleModal(task) {
   openRescheduleModalImpl(task, openFormModal, closeFormModal);
 }

@@ -133,6 +133,7 @@ async function extractQuote(text) {
   }
 }
 
+/** Extracts the pasted quote text through Mara and shows the result with a save action. */
 export async function handleParseQuote(closeModalCallback) {
   setSeedError('');
   const text = document.getElementById('raw-quote-text').value.trim();

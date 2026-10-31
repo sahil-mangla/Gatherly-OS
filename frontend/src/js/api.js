@@ -12,6 +12,7 @@ const UNMANAGED_PATHS = ['/auth/', '/health'];
 let demoTokenPromise = null;
 let demoTokenFailedAt = 0;
 
+/** The stored API token, or an empty string when none is saved or storage is unavailable. */
 export function getAuthToken() {
   try {
     return localStorage.getItem(AUTH_TOKEN_KEY) || '';
@@ -20,6 +21,7 @@ export function getAuthToken() {
   }
 }
 
+/** Persists the API token (or clears it when falsy); storage failures are ignored. */
 export function setAuthToken(token) {
   try {
     if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);

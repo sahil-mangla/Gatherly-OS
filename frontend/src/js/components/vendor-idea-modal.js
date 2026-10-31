@@ -9,6 +9,7 @@ import { openFormModal, bindFormSubmit } from './form-dialog.js';
 const value = (id) => document.getElementById(id).value;
 const amount = (id) => parseFloat(value(id)) || 0;
 
+/** Opens the dialog for adding a vendor to the shortlist. */
 export function openAddVendorModal() {
   openFormModal('Add Vendor to Team', `
     <form id="add-vendor-form" class="modal-form">
@@ -48,6 +49,7 @@ export function openAddVendorModal() {
   }));
 }
 
+/** Opens the dialog for adding an idea to the idea board. */
 export function openAddIdeaModal() {
   openFormModal('Add Idea Spark', `
     <form id="add-idea-form" class="modal-form">

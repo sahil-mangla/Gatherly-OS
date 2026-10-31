@@ -5,15 +5,9 @@
 
 import { safeNonNegativeNumber } from './budget.js';
 import { RISK_POINTS_PER_MISSING_TERM } from './constants.js';
+import { savedQuotesNote } from './quote-terms.js';
 
 export { extractQuoteFromRawText } from './vendors-extract.js';
-
-export const ESSENTIAL_QUOTE_FIELDS = [
-  { key: 'setup_cleanup', label: 'Setup & post-event cleanup' },
-  { key: 'service_staff', label: 'Service staff & gratuity policy' },
-  { key: 'overtime_rate', label: 'Overtime hourly rate' },
-  { key: 'cancellation_terms', label: 'Cancellation refund policy' }
-];
 
 /** Disclosure checks: a message is reported when none of its keywords appear in the quote text. */
 const DISCLOSURE_CHECKS = [
@@ -23,41 +17,6 @@ const DISCLOSURE_CHECKS = [
   { keywords: ['refund', 'cancellation', 'deposit milestone'], message: 'Cancellation milestones & deposit refund clause' }
 ];
 
-/** Extractor labels (prefix of a stored quote's missing_disclosures) -> audit keywords that the quote states the term. */
-const STATED_TERM_NOTES = [
-  ['Service staff', 'staff and gratuity policy stated'],
-  ['Post-event cleanup', 'cleanup and teardown covered'],
-  ['Overtime', 'overtime rate stated'],
-  ['Deposit milestones', 'refund and cancellation terms stated']
-];
-
-/** Extracted fee types -> audit keywords for the term the fee itself states. */
-const FEE_TYPE_NOTES = {
-  gratuity: 'staff and gratuity policy stated',
-  service_charge: 'staff and gratuity policy stated',
-  overtime: 'overtime rate stated',
-  cleanup: 'cleanup and teardown covered'
-};
-
-/** Audit keywords for every essential term one extracted quote states, by its text or by an extracted fee. */
-export function statedTermsNote(stored = {}) {
-  const missing = Array.isArray(stored.missing_disclosures) ? stored.missing_disclosures : null;
-  const fees = Array.isArray(stored.hidden_fees) ? stored.hidden_fees : [];
-  const fromText = missing
-    ? STATED_TERM_NOTES.filter(([label]) => !missing.some(m => String(m).startsWith(label))).map(([, note]) => note)
-    : [];
-  const fromFees = fees
-    .filter(fee => fee && Object.hasOwn(FEE_TYPE_NOTES, fee.type))
-    .map(fee => FEE_TYPE_NOTES[fee.type]);
-  return [...fromText, ...fromFees].join('; ');
-}
-
-const storedQuotesText = (quote) => (Array.isArray(quote.quotes) ? quote.quotes : [])
-  .filter(q => q && typeof q === 'object')
-  .map(statedTermsNote)
-  .join(' ')
-  .toLowerCase();
-
 const joinLower = (value) => (Array.isArray(value) ? value.join(' ') : '').toLowerCase();
 
 /** First value that is neither null nor undefined (mirrors a `??` chain). */
@@ -65,13 +24,14 @@ export const firstDefined = (...values) => values.find(v => v !== undefined && v
 /** First truthy value (mirrors a `||` chain). */
 export const firstTruthy = (...values) => values.find(Boolean);
 
+/** Which essential terms (cleanup, staffing, overtime, cancellation) a quote and its saved quotes never mention. */
 export function auditQuoteCompleteness(quote = {}) {
   const combined = [
     joinLower(quote.inclusions),
     String(quote.notes || '').toLowerCase(),
     String(quote.summary || '').toLowerCase(),
     joinLower(quote.missing_fields),
-    storedQuotesText(quote)
+    savedQuotesNote(quote)
   ].join(' ');
 
   const missing = DISCLOSURE_CHECKS
@@ -81,6 +41,7 @@ export function auditQuoteCompleteness(quote = {}) {
   return { isComplete: missing.length === 0, missing };
 }
 
+/** Normalizes a vendor quote for side-by-side comparison. */
 export function normalizeQuote(rawQuote = {}) {
   const basePrice = safeNonNegativeNumber(
     firstDefined(rawQuote.price, rawQuote.quoted_amount, rawQuote.quoted_base_amount, 0)
@@ -106,6 +67,7 @@ export function normalizeQuote(rawQuote = {}) {
   };
 }
 
+/** Compares quotes in a normalized matrix and names the cheapest and the most fully disclosed. */
 export function compareQuotes(quotes = []) {
   if (!quotes || quotes.length === 0) {
     return {
@@ -152,6 +114,7 @@ function questionFor(item) {
   return hit ? hit[1] : null;
 }
 
+/** Follow-up questions for each term the quote leaves undisclosed. */
 export function generateFollowUpQuestions(quote = {}) {
   const { missing } = auditQuoteCompleteness(quote);
   const questions = missing.map(questionFor).filter(Boolean);

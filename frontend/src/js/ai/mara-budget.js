@@ -76,6 +76,7 @@ export function planTrim(stats, room) {
 
 const NOTHING_TO_PROPOSE = 'I compared planned and spent amounts for every budget category. Nothing is over its plan and there is no unspent room worth trimming, so I have no savings changes to propose right now.';
 
+/** Mara's offline savings answer: reallocations toward over-plan categories plus an optional trim, or a plain note when there is nothing to propose. */
 export function costSavingResponse({ budget }) {
   const stats = categoryStats(budget);
   const { plans, room } = planReallocations(stats);

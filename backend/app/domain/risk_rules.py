@@ -58,14 +58,14 @@ def rule_capacity_breach(event: dict[str, Any], ctx: RiskContext) -> list[dict[s
     )
     return [
         make_risk(
-            "risk-capacity-breach",
-            "capacity_breach",
-            SEVERITY_CRITICAL,
-            "Venue Capacity Exceeded",
-            f"Expected guest count ({guests}) exceeds confirmed venue capacity "
+            risk_id="risk-capacity-breach",
+            risk_type="capacity_breach",
+            severity=SEVERITY_CRITICAL,
+            title="Venue Capacity Exceeded",
+            evidence=f"Expected guest count ({guests}) exceeds confirmed venue capacity "
             f"({limit}) by {diff} guests.",
-            "Fire code safety violation or venue surcharge on the event day.",
-            [
+            consequence="Fire code safety violation or venue surcharge on the event day.",
+            actions=[
                 {
                     "label": "Simulate Guest Adjustment",
                     "action_type": "open_whatif",
@@ -77,22 +77,22 @@ def rule_capacity_breach(event: dict[str, Any], ctx: RiskContext) -> list[dict[s
     ]
 
 
-def rule_budget_deficit(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
+def rule_budget_deficit(_event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
     """Total allocated spend above the total budget."""
     summary = ctx["budget_summary"]
     if not summary["is_over_budget"]:
         return []
     return [
         make_risk(
-            "risk-budget-deficit",
-            "budget_overrun",
-            SEVERITY_CRITICAL,
-            "Total Budget Overrun",
-            f"Total allocated spend (${format_amount(summary['total_allocated'])}) exceeds total "
+            risk_id="risk-budget-deficit",
+            risk_type="budget_overrun",
+            severity=SEVERITY_CRITICAL,
+            title="Total Budget Overrun",
+            evidence=f"Total allocated spend (${format_amount(summary['total_allocated'])}) exceeds total "
             f"budget (${format_amount(summary['total_budget'])}) by "
             f"${format_amount(summary['deficit_amount'])}.",
-            "Financial shortfall before final vendor retainers are disbursed.",
-            [
+            consequence="Financial shortfall before final vendor retainers are disbursed.",
+            actions=[
                 _ask_mara(
                     "Smart Ways to Save", "Show me smart ways to eliminate our budget deficit."
                 ),
@@ -105,14 +105,14 @@ def rule_budget_deficit(event: dict[str, Any], ctx: RiskContext) -> list[dict[st
 def _category_overrun_risk(name: str, data: dict[str, Any]) -> dict[str, Any]:
     variance = data["variance"]
     return make_risk(
-        f"risk-category-overrun-{name}",
-        "category_overrun",
-        SEVERITY_WARNING,
-        f"Category Spend Overrun: {name}",
-        f"Category '{name}' allocated spend (${format_amount(data['allocated'])}) exceeds "
+        risk_id=f"risk-category-overrun-{name}",
+        risk_type="category_overrun",
+        severity=SEVERITY_WARNING,
+        title=f"Category Spend Overrun: {name}",
+        evidence=f"Category '{name}' allocated spend (${format_amount(data['allocated'])}) exceeds "
         f"planned budget (${format_amount(data['planned'])}) by ${format_amount(variance)}.",
-        "Diverts funds away from remaining uncommitted items.",
-        [
+        consequence="Diverts funds away from remaining uncommitted items.",
+        actions=[
             _ask_mara(
                 "Rebalance with Mara",
                 f"Our {name} budget is over by ${format_amount(variance)}. "
@@ -122,7 +122,7 @@ def _category_overrun_risk(name: str, data: dict[str, Any]) -> dict[str, Any]:
     )
 
 
-def rule_category_overruns(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
+def rule_category_overruns(_event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
     """One warning per category whose allocated spend exceeds a positive plan."""
     return [
         _category_overrun_risk(name, data)
@@ -131,7 +131,7 @@ def rule_category_overruns(event: dict[str, Any], ctx: RiskContext) -> list[dict
     ]
 
 
-def rule_overdue_milestones(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
+def rule_overdue_milestones(_event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
     """Uncompleted tasks past their due date."""
     overdue = ctx["timeline_progress"]["overdue_tasks"]
     if not overdue:
@@ -139,13 +139,13 @@ def rule_overdue_milestones(event: dict[str, Any], ctx: RiskContext) -> list[dic
     titles = ", ".join(f"'{t.get('title')}'" for t in overdue)
     return [
         make_risk(
-            "risk-overdue-milestones",
-            "milestone_overdue",
-            SEVERITY_WARNING,
-            f"{len(overdue)} Milestone(s) Overdue",
-            f"Uncompleted milestone(s) past scheduled due date: {titles}.",
-            "May compress downstream tasks and vendor booking lead times.",
-            [
+            risk_id="risk-overdue-milestones",
+            risk_type="milestone_overdue",
+            severity=SEVERITY_WARNING,
+            title=f"{len(overdue)} Milestone(s) Overdue",
+            evidence=f"Uncompleted milestone(s) past scheduled due date: {titles}.",
+            consequence="May compress downstream tasks and vendor booking lead times.",
+            actions=[
                 {"label": "View Timeline", "action_type": "open_timeline"},
                 _ask_mara(
                     "Reschedule Assistance",
@@ -160,13 +160,13 @@ def _vendor_fee_risk(vendor: dict[str, Any], missing: list[str]) -> dict[str, An
     v_id = vendor.get("id", "vendor")
     name = vendor.get("name")
     return make_risk(
-        f"risk-vendor-missing-{v_id}",
-        "missing_quote_details",
-        SEVERITY_NOTICE,
-        f"Undisclosed Terms: {name}",
-        f"Quote received for {name} does not disclose: {'; '.join(missing)}.",
-        "Risk of surprise surcharges during final invoicing.",
-        [
+        risk_id=f"risk-vendor-missing-{v_id}",
+        risk_type="missing_quote_details",
+        severity=SEVERITY_NOTICE,
+        title=f"Undisclosed Terms: {name}",
+        evidence=f"Quote received for {name} does not disclose: {'; '.join(missing)}.",
+        consequence="Risk of surprise surcharges during final invoicing.",
+        actions=[
             {
                 "label": "Review Quote & Draft Questions",
                 "action_type": "open_quotes",
@@ -176,7 +176,7 @@ def _vendor_fee_risk(vendor: dict[str, Any], missing: list[str]) -> dict[str, An
     )
 
 
-def rule_undisclosed_vendor_fees(event: dict[str, Any], ctx: RiskContext) -> list[dict[str, Any]]:
+def rule_undisclosed_vendor_fees(event: dict[str, Any], _ctx: RiskContext) -> list[dict[str, Any]]:
     """Shortlisted vendors whose quotes omit essential fee disclosures."""
     risks: list[dict[str, Any]] = []
     for vendor in event.get("vendors", []):

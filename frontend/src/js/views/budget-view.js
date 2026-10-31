@@ -88,6 +88,7 @@ function renderExpenses({ event, cur }) {
     : expenses.map(exp => expenseRowHtml(exp, cur)).join(''));
 }
 
+/** Renders the Budget view. */
 export function renderBudget(ctx = createViewContext()) {
   renderOverviewBar(ctx);
   renderCategories(ctx);

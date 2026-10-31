@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import Any
 
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
@@ -52,7 +52,8 @@ def _log_fields(
 class ObservabilityMiddleware(BaseHTTPMiddleware):
     """Intercepts all HTTP traffic to record correlation IDs, spans, and structured logs."""
 
-    async def dispatch(self, request: Request, call_next) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        """Wrap the request in a span and log it with its correlation ID."""
         request.scope["path"] = normalize_path(request.scope.get("path", ""))
         correlation_id = safe_id(
             request.headers.get("X-Correlation-ID"), f"corr-{uuid.uuid4().hex[:12]}"

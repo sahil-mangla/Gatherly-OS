@@ -6,6 +6,7 @@
 import { openFormModal, closeFormModal } from './form-dialog.js';
 import { escapeHtml } from '../views/helpers.js';
 
+/** Opens a confirm/cancel dialog; `onConfirm` runs only when the user confirms. */
 export function openConfirmDialog({ title, message, confirmLabel = 'Confirm', onConfirm }) {
   openFormModal(title, `
     <p class="confirm-message" id="confirm-message">${escapeHtml(message)}</p>

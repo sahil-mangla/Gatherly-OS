@@ -38,7 +38,10 @@ class _NoOpTracer:
     """Fallback no-op tracer when OpenTelemetry is unavailable."""
 
     @contextmanager
-    def start_as_current_span(self, name: str, *args, **kwargs):
+    def start_as_current_span(
+        self, _name: str, *_args: Any, **_kwargs: Any
+    ) -> Generator[_NoOpSpan, None, None]:
+        """Accept the real tracer's arguments and yield a span that records nothing."""
         yield _NoOpSpan()
 
 

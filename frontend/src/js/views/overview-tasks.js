@@ -10,6 +10,7 @@ const PRIORITIES = ['low', 'medium', 'high', 'critical', 'normal'];
 const STATUSES = ['todo', 'in_progress', 'done'];
 const MAX_TASKS = 3;
 
+/** Up to three tasks for Next Up: open ones by due date first, then completed ones. */
 export function pickNextTasks(tasks) {
   const pending = tasks
     .filter(t => t.status !== 'done')
@@ -49,6 +50,7 @@ function onListClick(e) {
   }
 }
 
+/** Renders the Next Up cards for the event, or a completion note when no milestones remain. */
 export function renderNextUp(event) {
   const list = document.getElementById('overview-task-list');
   if (!list) return;

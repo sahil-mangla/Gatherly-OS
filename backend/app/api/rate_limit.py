@@ -22,7 +22,7 @@ _MAX_KEYS = 10_000
 class FixedWindowLimiter:
     """Counts hits per key inside fixed windows and reports how long to wait when exceeded."""
 
-    def __init__(self, window: int = WINDOW_SECONDS, max_keys: int = _MAX_KEYS):
+    def __init__(self, window: int = WINDOW_SECONDS, max_keys: int = _MAX_KEYS) -> None:
         self.window = window
         self.max_keys = max_keys
         # Insertion order == recency of the last hit, so the oldest key is always at the front.
@@ -45,6 +45,7 @@ class FixedWindowLimiter:
         return max(1, int((window_id + 1) * self.window - current))
 
     def reset(self) -> None:
+        """Forget every recorded hit."""
         with self._lock:
             self._hits.clear()
 
@@ -72,7 +73,7 @@ def _enforce(key: str, limit: int) -> None:
         )
 
 
-def limit_by_ip(scope: str, limit: int):
+def limit_by_ip(scope: str, limit: int) -> Callable[..., None]:
     """Dependency limiting unauthenticated endpoints (login, register) per client IP."""
 
     def dependency(request: Request) -> None:
@@ -81,7 +82,7 @@ def limit_by_ip(scope: str, limit: int):
     return dependency
 
 
-def limit_by_user(scope: str, limit: int):
+def limit_by_user(scope: str, limit: int) -> Callable[..., AuthContext]:
     """Dependency requiring auth and limiting per (client IP, user); returns the auth context."""
 
     def dependency(
@@ -93,7 +94,7 @@ def limit_by_user(scope: str, limit: int):
     return dependency
 
 
-def limit_globally(scope: str, limit: Callable[[], int]):
+def limit_globally(scope: str, limit: Callable[[], int]) -> Callable[..., None]:
     """Dependency enforcing one budget shared by every caller (a cap on upstream spend).
 
     ``limit`` is a callable so the setting is read per request. Hits are only counted once the
