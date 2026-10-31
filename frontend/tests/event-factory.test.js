@@ -1,6 +1,7 @@
 /**
  * @file event-factory.test.js
- * @description createEventFromTemplate: shape, budget allocation, per-guest scaling, date shifting (pure domain, no DOM).
+ * @description createEventFromTemplate: shape, budget allocation, per-guest scaling, date shifting
+ * (pure domain, no DOM).
  */
 
 import { test, describe } from 'node:test';

@@ -13,8 +13,24 @@ export const NO_PRICE_REASON = 'Price not found in the pasted text, so this quot
 
 /** Example quotes (clearly labelled in the UI) used until the event has two comparable quotes of its own. */
 export const SAMPLE_QUOTES = [
-  { id: 'sample-sol', name: 'Sol Studio (example)', price: 2400, deposit: 720, inclusions: ['8 hrs coverage', 'Online gallery'], hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 120, amount: 120 }], missing_fields: ['Overtime fee rate', 'Teardown terms'] },
-  { id: 'sample-lumina', name: 'Lumina Collective (example)', price: 2150, deposit: 500, inclusions: ['7 hrs coverage', 'Second shooter'], hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 90, amount: 90 }], missing_fields: ['Raw clip policy', 'Cancellation refund clause'] }
+  {
+    id: 'sample-sol',
+    name: 'Sol Studio (example)',
+    price: 2400,
+    deposit: 720,
+    inclusions: ['8 hrs coverage', 'Online gallery'],
+    hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 120, amount: 120 }],
+    missing_fields: ['Overtime fee rate', 'Teardown terms']
+  },
+  {
+    id: 'sample-lumina',
+    name: 'Lumina Collective (example)',
+    price: 2150,
+    deposit: 500,
+    inclusions: ['7 hrs coverage', 'Second shooter'],
+    hidden_fees: [{ type: 'fee', label: 'Additional fee', unit: 'flat', rate: 90, amount: 90 }],
+    missing_fields: ['Raw clip policy', 'Cancellation refund clause']
+  }
 ];
 
 const priceOf = (quote) => Number(quote.base_amount ?? quote.price ?? quote.quoted_amount ?? 0) || 0;

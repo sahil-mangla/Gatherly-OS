@@ -1,0 +1,96 @@
+/* budget: budget summary, categories and pills */
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 43px;
+}
+.view-header h1 {
+  font-size: 3.3125rem;
+  max-width: 720px;
+}
+.budget-overview {
+  background: var(--plum);
+  padding: 27px 31px;
+  border-radius: 12px;
+  color: #fff;
+  margin-bottom: 15px;
+}
+.big-number {
+  font: 500 2.375rem Fraunces;
+}
+.big-number small {
+  font: 400 0.75rem DM Sans;
+  color: #e0cfdb;
+  margin-left: 7px;
+}
+.big-progress {
+  height: 10px;
+  border-radius: 99px;
+  background: #3a2739;
+  margin: 26px 0 11px;
+  overflow: hidden;
+}
+.big-progress div {
+  height: 100%;
+  background: var(--coral);
+  border-radius: 99px;
+}
+.budget-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #e6d6e1;
+}
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.category {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 10px;
+  position: relative;
+}
+.category-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  grid-row: span 2;
+}
+.category strong {
+  display: block;
+  font: 600 1.375rem Fraunces;
+  margin: 14px 0;
+  color: var(--plum);
+}
+.tiny-bar {
+  height: 4px;
+  background: var(--track);
+  border-radius: 99px;
+}
+.tiny-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+}
+.budget-table {
+  padding: 24px 25px;
+}
+.pill {
+  width: max-content;
+  border-radius: 99px;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+}
+.pill.paid {
+  background: #e4f0e4;
+  color: #2f5c3a;
+}
+.pill.pending {
+  background: #fff0d6;
+  color: #7a4d0c;
+}

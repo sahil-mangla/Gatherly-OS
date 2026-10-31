@@ -1,0 +1,94 @@
+/* quote-tabs: quote dialog: comparison basics, paste form, presets and parsed result */
+.comparison-banner {
+  background: #fdf3ed;
+  border: 1px solid #f6cfc2;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: #553e4b;
+  margin-bottom: 20px;
+}
+.email-preview {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 14px;
+  border-radius: 8px;
+  font:
+    0.75rem/1.5 "DM Mono",
+    monospace;
+  white-space: pre-wrap;
+  margin: 12px 0;
+}
+.seed-parser-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.seed-intro {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 6px;
+}
+.preset-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.seed-chip {
+  background: var(--paper);
+  border: 1px solid var(--border-ui);
+  border-radius: 99px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  min-height: 28px;
+}
+.seed-chip:hover {
+  background: var(--line);
+}
+.seed-parser-shell textarea {
+  width: 100%;
+  border: 1px solid var(--border-ui);
+  border-radius: 8px;
+  padding: 12px;
+  font: 0.8125rem/1.5 inherit;
+}
+.parsed-result-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+.parsed-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.parsed-amount {
+  margin-left: auto;
+  font: 600 1.5rem Fraunces;
+  color: var(--plum);
+}
+.parsed-grid {
+  display: flex;
+  gap: 20px;
+  font-size: 0.75rem;
+}
+.parsed-missing {
+  background: #fdf3ed;
+  border: 1px solid #f6cfc2;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.75rem;
+}
+.parsed-missing ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}

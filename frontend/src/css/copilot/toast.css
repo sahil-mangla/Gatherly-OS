@@ -1,0 +1,44 @@
+/**
+ * Gatherly overlays: Mara copilot drawer, risk radar tray and toast.
+ */
+
+.toast {
+  position: fixed;
+  right: 28px;
+  bottom: 26px;
+  background: var(--plum);
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  box-shadow: 0 12px 28px rgba(43, 29, 42, 0.25);
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+  pointer-events: none;
+  z-index: 1100;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.toast > span {
+  color: #f6a37f;
+  font-size: 1.25rem;
+}
+.toast div {
+  display: grid;
+  gap: 3px;
+}
+.toast b {
+  font-size: 0.8125rem;
+}
+.toast small {
+  font-size: 0.75rem;
+  color: #cdbbc8;
+}

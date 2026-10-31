@@ -1,0 +1,38 @@
+/**
+ * Gatherly responsive overrides. Kept last so breakpoints win the cascade.
+ */
+
+@media (max-width: 950px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .main-content {
+    margin-left: 210px;
+    width: calc(100% - 210px);
+  }
+
+  .stats-grid,
+  .vendor-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .category-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .copilot-drawer {
+    width: 100vw;
+  }
+
+  .whatif-controls-grid,
+  .whatif-stats-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,102 @@
+/* ideas: idea board */
+.idea-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+.idea-card {
+  min-height: 205px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 7px;
+  box-shadow: 4px 6px 0 rgba(74, 49, 65, 0.08);
+  transform: rotate(-1deg);
+}
+.idea-card:nth-child(2) {
+  transform: rotate(1.2deg);
+}
+.idea-card:nth-child(3) {
+  transform: rotate(-0.5deg);
+}
+.idea-card:nth-child(4) {
+  transform: rotate(1deg);
+}
+.idea-pin {
+  font-size: 1.375rem;
+  color: #5a3548;
+}
+.idea-card p {
+  font: 500 1.3125rem/1.15 Fraunces;
+  color: var(--plum);
+  margin: 28px 0 auto;
+}
+.idea-card small {
+  font-size: 0.75rem;
+  color: #4a3141;
+}
+.idea-yellow {
+  background: #f5d36b;
+}
+.idea-coral {
+  background: #f39b7f;
+}
+.idea-green {
+  background: #b5d1b5;
+}
+.idea-pink {
+  background: #dfafbd;
+}
+.add-idea {
+  background: transparent;
+  border: 1px dashed var(--border-ui);
+  box-shadow: none;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  transform: none !important;
+  color: var(--muted);
+}
+.add-idea span {
+  font-size: 1.75rem;
+  color: var(--coral-text);
+}
+.add-idea b {
+  font: 600 1.125rem Fraunces;
+  color: var(--plum);
+  margin-top: 8px;
+}
+.add-idea small {
+  margin-top: 6px;
+}
+.idea-action-row {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px dashed rgba(82, 54, 80, 0.2);
+  padding-top: 10px;
+}
+.convert-task-btn {
+  font:
+    600 0.75rem "DM Sans",
+    sans-serif;
+  background: rgba(255, 255, 255, 0.6); /* plum text on the coral idea card: 7.8:1 (was 4.2:1) */
+  color: var(--plum);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 0;
+  transition: 0.15s;
+  min-height: 28px;
+}
+.convert-task-btn:hover {
+  background: var(--plum);
+  color: #fff;
+}
+.idea-converted-tag {
+  font:
+    600 0.75rem "DM Mono",
+    monospace;
+  color: #2f5c3a;
+}

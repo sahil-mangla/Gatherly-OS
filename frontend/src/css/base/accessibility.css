@@ -1,0 +1,73 @@
+/* accessibility: screen-reader utilities, skip link and focus rings */
+/* ==========================================================================
+   Accessibility foundations: utilities, skip link, focus, reduced motion
+   ========================================================================== */
+html {
+  scroll-padding-top: 1rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.skip-link {
+  position: fixed;
+  left: 12px;
+  top: -80px;
+  z-index: 2000;
+  background: var(--plum);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: 12px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--plum);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #fff;
+}
+
+.assistant-card :focus-visible,
+.budget-overview :focus-visible,
+.toast :focus-visible,
+.user-msg :focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 2px var(--plum);
+}
+
+main:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+h1[tabindex="-1"]:focus-visible {
+  outline-offset: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,67 @@
+/* reschedule: reschedule dialog and collision list */
+/* ==========================================================================
+   Reschedule dialog
+   ========================================================================== */
+.reschedule-summary {
+  padding: 14px;
+  border-radius: 10px;
+  background: #f9f6f3;
+}
+
+.reschedule-summary-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.reschedule-summary p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+
+.fixed-flag {
+  font-weight: 600;
+  color: var(--coral-text);
+}
+
+.collision-preview:empty {
+  display: none;
+}
+
+.collision {
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+}
+
+.collision.conflict {
+  background: #fff3f0;
+  border-left: 4px solid #a8281a;
+  color: #5c2d22;
+}
+
+.collision.conflict strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #a3301f;
+}
+
+.collision.conflict ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.collision.conflict small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.collision.feasible {
+  background: #f0f9f3;
+  border-left: 4px solid #2e7d32;
+  color: #1b5e20;
+}

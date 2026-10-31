@@ -9,7 +9,9 @@ import { createViewContext } from './context.js';
 import { escapeHtml, upperEscaped, bindOnce, setHtml } from './helpers.js';
 
 const PHOTO_CLASSES = {
-  cake: 'cake', bakery: 'cake', photo: 'photo', photography: 'photo', florals: 'flower', flowers: 'flower', floral: 'flower'
+  cake: 'cake', bakery: 'cake',
+  photo: 'photo', photography: 'photo',
+  florals: 'flower', flowers: 'flower', floral: 'flower'
 };
 
 function photoClass(category) {

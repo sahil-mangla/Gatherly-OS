@@ -1,0 +1,41 @@
+/* vendors-refinements: vendors and ideas additions */
+/* ==========================================================================
+   Vendors & ideas additions
+   ========================================================================== */
+.general-photo {
+  background: #e6dcd3;
+}
+
+.vendor-bottom {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.add-idea {
+  min-height: 205px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.event-type {
+  min-width: 6.5rem;
+  text-align: right;
+}
+
+.stat-footer {
+  gap: 12px;
+}
+
+.stat-footer > span:first-child {
+  white-space: nowrap;
+}
+
+.lower-grid > *,
+.stats-grid > * {
+  min-width: 0;
+}
+
+.task-card-sub {
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}

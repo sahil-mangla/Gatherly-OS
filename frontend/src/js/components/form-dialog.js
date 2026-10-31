@@ -6,7 +6,7 @@
 import { openLayer, closeLayer } from './dialog-focus.js';
 
 const ERROR_ID = 'form-modal-error';
-const FIELD_SELECTOR = '#form-modal-body input:invalid, #form-modal-body select:invalid, #form-modal-body textarea:invalid';
+const FIELD_SELECTOR = ['input', 'select', 'textarea'].map(tag => `#form-modal-body ${tag}:invalid`).join(', ');
 const FIRST_FIELD = 'input:not([type="hidden"]), select, textarea';
 let backdrop = null;
 let dialog = null;
@@ -94,7 +94,12 @@ export function openFormModal(title, bodyHtml, options = {}) {
   else dialog.removeAttribute('aria-describedby');
 
   backdrop.classList.add('open');
-  openLayer({ container: dialog, roots: [backdrop], close: closeFormModal, initialFocus: options.initialFocus || FIRST_FIELD });
+  openLayer({
+    container: dialog,
+    roots: [backdrop],
+    close: closeFormModal,
+    initialFocus: options.initialFocus || FIRST_FIELD
+  });
 }
 
 /** Wires a form's submit: runs `onSubmit`, closes on success and shows failures inline. */

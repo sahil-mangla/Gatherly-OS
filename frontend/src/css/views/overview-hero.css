@@ -1,0 +1,143 @@
+/**
+ * Gatherly page views: overview, budget, timeline, vendors and idea board.
+ */
+
+.hero-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.hero-row h1,
+.view-header h1 {
+  font:
+    600 clamp(2.625rem, 5vw, 4.1875rem)/0.98 Fraunces,
+    serif;
+  letter-spacing: -2.8px;
+  margin: 15px 0 15px;
+  color: var(--plum);
+}
+h1 em,
+h2 em {
+  font-style: italic;
+  color: var(--coral-strong); /* large display text: 3.7:1 on --paper (the brand coral was 2.5:1) */
+  font-weight: 500;
+}
+.hero-sub,
+.view-header p {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin: 0;
+}
+.date-card {
+  position: relative;
+  width: 131px;
+  height: 141px;
+  background: var(--yellow);
+  padding: 18px 18px;
+  transform: rotate(3deg);
+  box-shadow: 7px 8px 0 rgba(225, 174, 63, 0.18);
+  display: flex;
+  flex-direction: column;
+}
+.date-card span {
+  font: 500 0.75rem "DM Mono";
+  letter-spacing: 1px;
+}
+.date-card strong {
+  font: 600 3.375rem/0.86 Fraunces;
+  color: var(--plum);
+  margin-top: 16px;
+}
+.date-card b {
+  font: 600 0.8125rem DM Sans;
+  letter-spacing: 2px;
+}
+.date-card small {
+  font-size: 0.75rem;
+  margin-top: 11px;
+}
+.date-sparkle {
+  position: absolute;
+  right: 13px;
+  top: 39px;
+  font-size: 1.1875rem;
+  color: #d37d55;
+}
+.assistant-card {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  background: var(--plum);
+  color: #fff;
+  border-radius: 12px;
+  margin: 57px 0 44px;
+  padding: 23px 25px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+.assistant-card:after {
+  content: "";
+  position: absolute;
+  width: 210px;
+  height: 210px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  right: -60px;
+  top: -92px;
+}
+.assistant-orb {
+  width: 45px;
+  height: 45px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #f7b094, #ed6e63);
+  display: grid;
+  place-items: center;
+  color: #fff8e9;
+  font-size: 1.4375rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  flex: none;
+}
+.assistant-copy {
+  flex: 1;
+}
+.assistant-label {
+  font: 500 0.75rem "DM Mono";
+  letter-spacing: 0.5px;
+  color: #f8c0a5;
+}
+.assistant-label i {
+  font: 400 0.75rem DM Sans;
+  color: #d9c5d3;
+  margin-left: 7px;
+}
+.assistant-copy p {
+  font: 500 1rem/1.45 Fraunces;
+  margin: 6px 0 13px;
+  max-width: 680px;
+}
+.suggestion-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.suggestion {
+  font-size: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 99px;
+  padding: 7px 11px;
+  color: #eadde7;
+}
+.suggestion:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.suggestion span {
+  margin-left: 10px;
+  color: #f4a384;
+}
+.assistant-arrow {
+  font-size: 1.75rem;
+  color: #e9b0a0;
+  position: relative;
+  z-index: 1;
+}

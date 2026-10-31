@@ -35,7 +35,7 @@ export function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-/** Returns `value` (lower-cased) when it is in `allowed`, otherwise `fallback`. Use for values that become CSS class names. */
+/** Returns `value` (lower-cased) when it is in `allowed`, otherwise `fallback`; for values used as CSS class names. */
 export function safeToken(value, allowed, fallback) {
   const token = String(value ?? '').toLowerCase();
   return allowed.includes(token) ? token : fallback;

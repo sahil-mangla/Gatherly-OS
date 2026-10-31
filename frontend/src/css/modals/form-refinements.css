@@ -1,0 +1,120 @@
+/* form-refinements: required marks, field errors, milestone dependencies and confirm dialog */
+/* ==========================================================================
+   Form feedback
+   ========================================================================== */
+.req {
+  color: var(--coral-text);
+}
+
+.form-note {
+  margin: 0 0 12px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.form-error {
+  margin: 0;
+  color: #a3301f;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.form-error:not(:empty) {
+  padding: 10px 26px;
+  background: #fde8e5;
+  border-bottom: 1px solid #f1c4bc;
+}
+
+.field-error {
+  margin: 0;
+  color: #a3301f;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.field-error:empty {
+  display: none;
+}
+
+.field-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.field-warning {
+  margin: 0;
+  color: var(--warn-text);
+  font-weight: 600;
+}
+
+.field-warning:empty {
+  display: none;
+}
+
+/* Milestone "Depends on" checkbox group */
+.dep-fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 0;
+  min-width: 0;
+}
+
+.dep-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.dep-fieldset .optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.dep-list {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  max-height: 11rem;
+  overflow-y: auto;
+}
+
+.dep-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 4px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.dep-option input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.dep-due {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+[aria-invalid="true"] {
+  border-color: #a3301f !important;
+  box-shadow: 0 0 0 1px #a3301f;
+}
+
+.confirm-message {
+  margin: 0 0 16px;
+  font-size: 0.875rem;
+}
+
+.danger-btn {
+  background: #a8281a;
+}
+
+.danger-btn:hover {
+  background: #8f2013;
+}

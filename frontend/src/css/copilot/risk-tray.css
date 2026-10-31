@@ -1,0 +1,158 @@
+/* risk-tray: Risk Radar tray, badge and sparkle */
+@keyframes pulseRisk {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+.risk-tray {
+  position: fixed;
+  top: 75px;
+  right: 5vw;
+  width: 420px;
+  max-width: 90vw;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  z-index: 950;
+  display: none;
+  overflow: hidden;
+}
+.risk-tray.open {
+  display: block;
+  animation: slideDownFade 0.2s ease-out;
+}
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.risk-tray-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fffaf6;
+}
+.risk-tray-header h2 {
+  margin: 3px 0 0;
+  font: 600 1.125rem Fraunces;
+  color: var(--plum);
+}
+.risk-tray-list {
+  max-height: 460px;
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.risk-item-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 14px;
+  position: relative;
+}
+.risk-item-card.critical {
+  border-left: 4px solid #d84534;
+}
+.risk-item-card.warning {
+  border-left: 4px solid var(--coral);
+}
+.risk-item-card.notice {
+  border-left: 4px solid #ddb04d;
+}
+.risk-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.risk-badge {
+  font:
+    700 0.75rem "DM Mono",
+    monospace;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.8px;
+}
+.badge-critical {
+  background: #fde8e5;
+  color: #a3301f;
+}
+.badge-warning {
+  background: #fff0d6;
+  color: #7d4c10;
+}
+.badge-notice {
+  background: #eef4f9;
+  color: #245076;
+}
+.risk-dismiss-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  cursor: pointer;
+  min-width: 28px;
+  min-height: 28px;
+}
+.risk-dismiss-btn:hover {
+  color: var(--ink);
+}
+.risk-item-card h3 {
+  margin: 0 0 6px;
+  font: 600 0.875rem Fraunces;
+  color: var(--plum);
+}
+.risk-evidence {
+  font-size: 0.75rem;
+  color: #443844;
+  margin: 0 0 6px;
+}
+.risk-consequence {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+.risk-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.risk-act-btn {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--plum);
+  cursor: pointer;
+  transition: 0.15s;
+  min-height: 28px;
+}
+.risk-act-btn:hover {
+  background: var(--plum);
+  color: #fff;
+  border-color: var(--plum);
+}
+.risk-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--muted);
+}
+.sparkle-icon {
+  display: inline-block;
+  font-size: 1.5rem;
+  color: var(--coral);
+  margin-bottom: 8px;
+}

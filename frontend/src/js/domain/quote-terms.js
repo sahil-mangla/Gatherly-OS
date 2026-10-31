@@ -3,7 +3,7 @@
  * @description Which essential vendor terms a saved, extracted quote already states (by its text or by a fee).
  */
 
-/** Extractor labels (prefix of a stored quote's missing_disclosures) -> audit keywords that the quote states the term. */
+/** Extractor labels (prefix of a stored quote's missing_disclosures) -> keywords showing the quote states the term. */
 const STATED_TERM_NOTES = [
   ['Service staff', 'staff and gratuity policy stated'],
   ['Post-event cleanup', 'cleanup and teardown covered'],

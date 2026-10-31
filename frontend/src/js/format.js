@@ -1,6 +1,7 @@
 /**
  * @file format.js
- * @description One place for user-facing money and enum-label formatting (no raw `photo_music`, `$5,330.5` or `in_progress`).
+ * @description One place for user-facing money and enum-label formatting
+ * (no raw `photo_music`, `$5,330.5` or `in_progress`).
  */
 
 const CENTS = 100;

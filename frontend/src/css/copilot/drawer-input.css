@@ -1,0 +1,48 @@
+/* drawer-input: input bar and notification dot */
+.drawer-input-bar {
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  background: #fff;
+}
+.drawer-input-bar input {
+  flex: 1;
+  border: 1px solid var(--border-ui);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+}
+.drawer-input-bar button {
+  width: 38px;
+  height: 38px;
+  background: var(--plum);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  display: grid;
+  place-items: center;
+}
+.notification-dot {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: var(--coral-text);
+  color: #fff;
+  font:
+    700 0.75rem "DM Sans",
+    sans-serif;
+  box-shadow: 0 0 0 2px #fff;
+}
+.notification-dot.critical {
+  background: #a8281a;
+  animation: pulseRisk 2s infinite;
+}

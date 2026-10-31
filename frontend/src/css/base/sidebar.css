@@ -1,0 +1,123 @@
+/* sidebar: sidebar shell, brand and navigation */
+.sidebar {
+  width: 250px;
+  background: #fffaf6;
+  border-right: 1px solid var(--line);
+  padding: 25px 16px 17px;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  inset: 0 auto 0 0;
+  overflow-y: auto;
+}
+.brand {
+  font:
+    600 1.5rem Fraunces,
+    serif;
+  letter-spacing: -0.7px;
+  padding: 0 12px 25px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--plum);
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  background: var(--coral);
+  color: var(--ink);
+  border-radius: 8px;
+  font-size: 0.9375rem;
+}
+.workspace-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: 9px 10px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+.workspace-avatar,
+.user-avatar {
+  display: grid;
+  place-items: center;
+  background: #f3c1a7;
+  color: #7f473b;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.workspace-avatar {
+  width: 29px;
+  height: 29px;
+  font-size: 0.75rem;
+}
+.workspace-switcher span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 2px;
+}
+.workspace-switcher small,
+.user-link small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.workspace-switcher strong {
+  font-size: 0.75rem;
+}
+.primary-nav {
+  display: grid;
+  gap: 3px;
+}
+.nav-item {
+  height: 39px;
+  border-radius: 8px;
+  text-align: left;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  min-height: 39px;
+}
+.nav-item:hover,
+.nav-item.active {
+  background: #f2e9e4;
+  color: var(--plum);
+  font-weight: 600;
+}
+.nav-icon {
+  font-size: 1.0625rem;
+  width: 18px;
+  text-align: center;
+}
+.nav-count {
+  margin-left: auto;
+  border-radius: 99px;
+  background: var(--coral-text);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+.sidebar-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 23px 0 20px;
+}
+.side-label {
+  font:
+    500 0.75rem "DM Mono",
+    monospace;
+  color: var(--label);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 0 12px 10px;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}

@@ -55,7 +55,8 @@ function feasibleHtml(result) {
 function previewFor(taskId, date) {
   try {
     const result = evaluateReschedule(store.getActiveEvent().tasks || [], taskId, date);
-    return { conflicts: result.has_conflicts, html: result.has_conflicts ? conflictHtml(result) : feasibleHtml(result) };
+    const html = result.has_conflicts ? conflictHtml(result) : feasibleHtml(result);
+    return { conflicts: result.has_conflicts, html };
   } catch (err) {
     return { conflicts: false, html: `<div class="collision conflict">${escapeHtml(err.message)}</div>` };
   }

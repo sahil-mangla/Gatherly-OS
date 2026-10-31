@@ -1,0 +1,88 @@
+/* vendors: vendor cards and category art */
+.vendor-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.vendor-summary > div {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 19px;
+  display: grid;
+  gap: 8px;
+}
+.vendor-summary strong {
+  font: 600 1.9375rem Fraunces;
+  color: var(--plum);
+}
+.vendor-summary small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.coral-text {
+  color: var(--coral-text) !important; /* 5.53:1 on --cream (was --coral, 2.70:1) */
+}
+.vendor-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+}
+.vendor-card-large {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+}
+.vendor-photo {
+  height: 146px;
+  display: grid;
+  place-items: center;
+  font-size: 3.5rem;
+}
+.cake-photo {
+  background: #f3ceac;
+}
+.photo-photo {
+  background: #d4b9cd;
+}
+.flower-photo {
+  background: #b9d2bb;
+}
+.vendor-details {
+  padding: 18px;
+}
+.vendor-category {
+  font: 500 0.75rem "DM Mono";
+  letter-spacing: 1px;
+  color: var(--label);
+}
+.vendor-details h3 {
+  font: 600 1.4375rem Fraunces;
+  margin: 9px 0 7px;
+  color: var(--plum);
+}
+.vendor-details p {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--muted);
+  min-height: 3.2em;
+}
+.vendor-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 15px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.vendor-bottom button {
+  font-size: 0.75rem;
+  color: var(--coral-text);
+  font-weight: 600;
+  min-height: 24px;
+  padding: 4px 0;
+}

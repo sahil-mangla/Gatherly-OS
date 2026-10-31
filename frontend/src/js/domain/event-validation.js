@@ -40,7 +40,9 @@ function ruleDate(raw, today) {
   const value = text(raw);
   const parsed = /^\d{4}-\d{2}-\d{2}$/.test(value) ? parseDate(value) : null;
   if (!parsed || toIsoDate(parsed) !== value) return fail('Choose a valid event date.');
-  if (parsed < addDays(today, -EVENT_LIMITS.pastGraceDays)) return fail('That date is in the past. Choose today or a later date.');
+  if (parsed < addDays(today, -EVENT_LIMITS.pastGraceDays)) {
+    return fail('That date is in the past. Choose today or a later date.');
+  }
   const latest = new Date(today.getFullYear() + EVENT_LIMITS.yearsAhead, today.getMonth(), today.getDate());
   return parsed > latest ? fail(`Choose a date within the next ${EVENT_LIMITS.yearsAhead} years.`) : ok(value);
 }

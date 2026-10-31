@@ -1,0 +1,91 @@
+/* timeline-refinements: timeline additions */
+/* ==========================================================================
+   Timeline additions
+   ========================================================================== */
+.timeline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.month-label {
+  margin: 0;
+  font:
+    500 0.75rem "DM Mono",
+    monospace;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.timeline-event::before {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: #e7ded9;
+}
+
+.timeline-dot {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: -28px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.timeline-dot::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 2px solid var(--border-ui);
+  background: var(--cream);
+}
+
+.timeline-dot span {
+  position: relative;
+}
+
+.timeline-event.complete .timeline-dot::before {
+  background: var(--green-text);
+  border-color: var(--green-text);
+}
+
+.timeline-event-body {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.timeline-event b {
+  font-size: 0.8125rem;
+}
+
+.timeline-event small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.reschedule-btn {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--coral-text);
+}
+
+.reschedule-btn:hover {
+  background: #f9ece7;
+}

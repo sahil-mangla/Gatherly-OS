@@ -4,7 +4,9 @@
  */
 
 import { store } from '../store.js';
-import { EVENT_TYPES, CAPACITY_WARNING, EVENT_LIMITS, validateEventBasics, validateEventEdit, isOverCapacity } from '../domain/event-validation.js';
+import {
+  EVENT_TYPES, CAPACITY_WARNING, EVENT_LIMITS, validateEventBasics, validateEventEdit, isOverCapacity
+} from '../domain/event-validation.js';
 import { escapeHtml, capitalize, requestView } from '../views/helpers.js';
 import { openFormModal, closeFormModal, showFormError } from './form-dialog.js';
 
@@ -15,7 +17,11 @@ const NUMBER = 'type="number" autocomplete="off"';
 const FIELDS = {
   type: { label: 'Event type', hint: 'Starts you off with a ready-made budget and timeline.' },
   name: { label: 'Event name', hint: `Up to ${EVENT_LIMITS.nameMax} characters.`, attrs: 'type="text" autocomplete="off" placeholder="e.g. Priya &amp; Sam’s wedding"' },
-  date: { label: 'Event date', hint: 'Today or later, within the next 5 years.', attrs: 'type="date" autocomplete="off"' },
+  date: {
+    label: 'Event date',
+    hint: 'Today or later, within the next 5 years.',
+    attrs: 'type="date" autocomplete="off"'
+  },
   guests: { label: 'Expected guests', hint: 'A whole number from 1 to 5,000.', attrs: `${NUMBER} inputmode="numeric" min="1" max="5000" step="1" placeholder="80"` },
   capacity: { label: 'Venue capacity', hint: 'The most people your venue can hold.', attrs: `${NUMBER} inputmode="numeric" min="1" step="1" placeholder="100"` },
   budget: { label: 'Total budget ($)', hint: 'Up to $10,000,000.', attrs: `${NUMBER} inputmode="decimal" min="0.01" max="10000000" step="0.01" placeholder="15000"` }
@@ -37,7 +43,9 @@ function controlHtml(field, value) {
 
 function fieldHtml(field, value) {
   const id = fieldId(field);
-  const warning = field === 'capacity' ? '<p class="field-hint field-warning" id="ev-capacity-warning" role="status"></p>' : '';
+  const warning = field === 'capacity'
+    ? '<p class="field-hint field-warning" id="ev-capacity-warning" role="status"></p>'
+    : '';
   return `
     <div class="form-group">
       <label for="${id}">${FIELDS[field].label} <span class="req" aria-hidden="true">*</span></label>

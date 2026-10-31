@@ -1,0 +1,98 @@
+/* budget-refinements: budget additions */
+/* ==========================================================================
+   Budget additions
+   ========================================================================== */
+.budget-meta .is-ok {
+  color: #a9d2a9;
+}
+
+.budget-meta .is-deficit {
+  color: #ffb4a8;
+  font-weight: 600;
+}
+
+.category-head {
+  display: grid;
+  grid-template-columns: 10px 1fr;
+  gap: 3px 7px;
+  align-items: center;
+}
+
+.category-head h3 {
+  margin: 0;
+  font:
+    600 0.8125rem "DM Sans",
+    sans-serif;
+}
+
+.category-head small {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.category-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.category-note.is-overrun {
+  color: #a8281a;
+}
+
+.expense-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.expense-table th,
+.expense-table td {
+  padding: 14px 8px 14px 0;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid #eee7e2;
+}
+
+.expense-table thead th {
+  padding-top: 25px;
+  font:
+    500 0.75rem "DM Mono",
+    monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--label);
+}
+
+.expense-table tbody th {
+  font-weight: 400;
+}
+
+.expense-table tbody th b {
+  display: block;
+}
+
+.expense-table tbody th small {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.expense-table .num {
+  padding-right: 0;
+  text-align: right;
+}
+
+.expense-table tbody tr:last-child th,
+.expense-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.table-empty {
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+}

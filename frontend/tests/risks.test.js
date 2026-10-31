@@ -8,7 +8,9 @@ import assert from 'node:assert/strict';
 import { evaluateEventRisks } from '../src/js/domain/risks.js';
 import { RISK_RULES, makeRisk, capacityRule, vendorFeesRule } from '../src/js/domain/risk-rules.js';
 
-const calmEvent = { total_budget: 10000, expected_guests: 50, venue_capacity: 100, expenses: [], tasks: [], vendors: [] };
+const calmEvent = {
+  total_budget: 10000, expected_guests: 50, venue_capacity: 100, expenses: [], tasks: [], vendors: []
+};
 
 describe('evaluateEventRisks', () => {
   test('returns an empty radar for non-objects and calm events', () => {

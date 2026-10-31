@@ -1,0 +1,44 @@
+/**
+ * Gatherly base styles: tokens, shell layout (sidebar/topbar), shared buttons and accessibility foundations.
+ */
+
+:root {
+  --ink: #2a2030;
+  --muted: #6b606c;
+  --paper: #f8f4ef;
+  --cream: #fffdf9;
+  --line: #e9e1dc;
+  --coral: #f47763;
+  --plum: #523650;
+  --yellow: #f5d36b;
+  --green: #799f83;
+  --shadow: 0 16px 40px rgba(69, 42, 56, 0.08);
+  --label: #6f6270;
+  --coral-text: #b83d29;
+  --green-text: #456c50;
+  --warn-text: #a0441f;
+  --border-ui: #8a7f8c;
+  --track: #eee5df;
+  --coral-strong: #dc4f3a;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "DM Sans", sans-serif;
+  font-size: 0.875rem;
+}
+button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}

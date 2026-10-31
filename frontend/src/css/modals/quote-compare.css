@@ -1,0 +1,147 @@
+/* quote-compare: side-by-side quote matrix and draft email */
+/* ==========================================================================
+   Quote comparison matrix
+   ========================================================================== */
+.banner-summary p {
+  margin: 4px 0 0;
+}
+
+.comparison-matrix {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.matrix-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.matrix-card.highlight-card {
+  border-color: var(--coral-text);
+  box-shadow: 0 8px 24px rgba(244, 119, 99, 0.12);
+}
+
+.matrix-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-cheapest,
+.badge-risk-low {
+  padding: 3px 8px;
+  border-radius: 99px;
+  font:
+    700 0.75rem "DM Mono",
+    monospace;
+  text-transform: uppercase;
+}
+
+.badge-cheapest {
+  background: var(--plum);
+  color: #fff;
+}
+
+.badge-risk-low {
+  background: #e4f0e4;
+  color: #2f5c3a;
+}
+
+.matrix-card h3 {
+  margin: 0;
+  font:
+    600 1.25rem Fraunces,
+    serif;
+  color: var(--plum);
+}
+
+.price-val {
+  display: block;
+  font:
+    600 1.625rem Fraunces,
+    serif;
+  color: var(--plum);
+}
+
+.matrix-price small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.matrix-section b {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.matrix-section ul {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #524750;
+}
+
+.risk-section {
+  padding: 12px;
+  background: #fffaf8;
+  border: 1px dashed #c98f80;
+  border-radius: 8px;
+}
+
+.missing-li {
+  color: #a3301f;
+}
+
+.clean-li {
+  color: var(--green-text);
+}
+
+.select-quote-btn {
+  margin-top: auto;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--plum);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--plum);
+}
+
+.select-quote-btn:hover {
+  background: var(--plum);
+  color: #fff;
+}
+
+.draft-email-card {
+  margin-top: 24px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.draft-email-card h4,
+.parsed-header h3 {
+  margin: 0 0 4px;
+  font:
+    600 1rem Fraunces,
+    serif;
+  color: var(--plum);
+}
+
+.seed-parser-shell label {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.tab-pane[hidden] {
+  display: none;
+}
