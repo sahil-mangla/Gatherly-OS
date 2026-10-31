@@ -31,6 +31,8 @@ EventJson = Annotated[dict[str, Any], _cap_json(lambda: settings.max_state_json_
 
 
 class ExpenseSchema(BaseModel):
+    """One budget line with planned, actual and committed amounts."""
+
     id: str | None = Field(default=None, max_length=64)
     category: Label
     description: Text
@@ -43,6 +45,8 @@ class ExpenseSchema(BaseModel):
 
 
 class TaskSchema(BaseModel):
+    """One timeline milestone with its due date, status and prerequisites."""
+
     id: str | None = Field(default=None, max_length=64)
     title: Name
     category: Label = "General"
@@ -54,6 +58,8 @@ class TaskSchema(BaseModel):
 
 
 class ProposalSchema(BaseModel):
+    """A Mara suggestion the user can approve or dismiss."""
+
     id: str = Field(max_length=100)
     action: Literal["reallocate", "update_expense", "add_task", "custom"]
     title: Name
@@ -68,12 +74,16 @@ class ProposalSchema(BaseModel):
 
 
 class MaraRequest(BaseModel):
+    """Question or operation sent to the Mara copilot, with the event context."""
+
     operation: str = Field(default="general_advice", max_length=64)
     prompt: str = Field(default="", max_length=4000)
     context: ContextJson = Field(default_factory=dict)
 
 
 class MaraResponse(BaseModel):
+    """Mara's answer; which fields are set depends on the operation."""
+
     success: bool
     summary: str | None = None
     response: str | None = None
@@ -88,19 +98,27 @@ class MaraResponse(BaseModel):
 
 
 class SimulationRequest(BaseModel):
+    """What-if deltas applied to an event by ``/api/simulate``."""
+
     event: ContextJson
     guest_delta: int = Field(default=0, ge=-100_000, le=100_000)
     catering_variance_pct: float = Field(default=0.0, ge=-100.0, le=1000.0)
 
 
 class QuoteParseRequest(BaseModel):
+    """Raw vendor quote text to extract structured terms from."""
+
     text: str = Field(max_length=20_000)
 
 
 class QuotesListRequest(BaseModel):
+    """Quotes to compare side by side."""
+
     quotes: list[dict[str, Any]] = Field(max_length=MAX_LIST)
 
 
 class EventPayloadRequest(BaseModel):
+    """An event snapshot sent to the stateless risk and budget endpoints."""
+
     event: ContextJson
     ref_date: str | None = Field(default=None, max_length=32)

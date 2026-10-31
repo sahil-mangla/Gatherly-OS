@@ -46,6 +46,7 @@ const BUILDERS = [
   [(r) => Boolean(r.cause), diagnosisHtml]
 ];
 
+/** Markup for one Mara response: proposals, advice, diagnosis or plain text, all values escaped. */
 export function replyHtml(response) {
   const match = BUILDERS.find(([test]) => test(response));
   const body = (match ? match[1] : plainHtml)(response);

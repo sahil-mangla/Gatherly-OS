@@ -57,6 +57,7 @@ const MODAL_HTML = `
   </div>
 `;
 
+/** Builds the quote dialog and wires its tabs, presets and actions. */
 export function initQuoteModal() {
   if (modalElement) return;
 
@@ -81,6 +82,7 @@ export function initQuoteModal() {
   document.getElementById('parse-quote-btn').addEventListener('click', () => handleParseQuote(closeQuoteModal));
 }
 
+/** Opens the quote dialog, on the comparison for `vendorId` when one is given. */
 export function openQuoteModal(vendorId = null) {
   if (!modalElement) initQuoteModal();
   renderComparisonView(vendorId);
@@ -89,6 +91,7 @@ export function openQuoteModal(vendorId = null) {
   openLayer({ container: dialogElement, roots: [modalElement], close: closeQuoteModal, initialFocus: '#tab-compare' });
 }
 
+/** Closes the quote dialog and restores focus. */
 export function closeQuoteModal() {
   if (!modalElement) return;
   modalElement.classList.remove('open');

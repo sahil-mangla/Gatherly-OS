@@ -27,6 +27,7 @@ function onListClick(e) {
   showToast('Event Switched', `Viewing ${store.getActiveEvent().name}`);
 }
 
+/** Renders the event list and wires event switching. */
 export function renderSidebar() {
   const list = document.getElementById('sidebar-event-list');
   const active = store.getActiveEvent();

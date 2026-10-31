@@ -71,6 +71,7 @@ function onListClick(e) {
   }
 }
 
+/** Builds the Risk Radar tray and keeps its badge in sync with the active event. */
 export function initRiskTray() {
   bellButton = document.getElementById('topbar-risk-btn');
   if (!bellButton || trayElement) return;
@@ -93,12 +94,14 @@ export function initRiskTray() {
   updateRiskBadge();
 }
 
+/** Opens the Risk Radar tray when closed, closes it when open. */
 export function toggleRiskTray() {
   if (!trayElement) initRiskTray();
   if (trayElement.classList.contains('open')) closeRiskTray();
   else openRiskTray();
 }
 
+/** Opens the Risk Radar tray and moves focus into it. */
 export function openRiskTray() {
   if (!trayElement) initRiskTray();
   renderRiskList();
@@ -107,6 +110,7 @@ export function openRiskTray() {
   openLayer({ container: trayElement, roots: [trayElement], close: closeRiskTray, initialFocus: '#risk-tray-close' });
 }
 
+/** Closes the Risk Radar tray and returns focus. */
 export function closeRiskTray() {
   if (!trayElement) return;
   trayElement.classList.remove('open');

@@ -21,7 +21,7 @@ class EventLimitError(Exception):
 class EventRepository(ScheduleSyncMixin):
     """Multi-tenant event repository."""
 
-    def __init__(self, db: Session, tenant_id: str):
+    def __init__(self, db: Session, tenant_id: str) -> None:
         self.db = db
         self.tenant_id = tenant_id
 

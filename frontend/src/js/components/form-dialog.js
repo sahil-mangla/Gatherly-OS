@@ -19,6 +19,7 @@ function toggleToken(el, attr, token, on) {
   else el.removeAttribute(attr);
 }
 
+/** Clears the dialog's error message and the invalid state of its fields. */
 export function clearFormError() {
   const box = document.getElementById(ERROR_ID);
   if (box) box.textContent = '';
@@ -39,6 +40,7 @@ export function showFormError(message, fieldId = null) {
   field.focus();
 }
 
+/** Creates the shared form dialog once and wires its close, backdrop and input handlers. */
 export function initFormModals() {
   if (backdrop) return;
 
@@ -64,6 +66,7 @@ export function initFormModals() {
   document.getElementById('form-modal-body').addEventListener('input', clearFormError);
 }
 
+/** Closes the shared form dialog and restores focus to the control that opened it. */
 export function closeFormModal() {
   if (!backdrop) return;
   backdrop.classList.remove('open');

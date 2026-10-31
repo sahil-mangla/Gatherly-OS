@@ -16,7 +16,8 @@ from sqlalchemy.orm import relationship
 from .database import Base
 
 
-def utc_now():
+def utc_now() -> datetime:
+    """Timezone-aware current time, used as the default for audit columns."""
     return datetime.now(UTC)
 
 

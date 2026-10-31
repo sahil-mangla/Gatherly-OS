@@ -5,6 +5,7 @@
 
 import { parseDate } from '../domain/timeline-dates.js';
 
+/** An ISO date as "Feb 7, 2027"; empty input gives an empty string. */
 export function formatDateSub(dateStr) {
   if (!dateStr) return '';
   const d = parseDate(dateStr) || new Date(dateStr);
@@ -17,11 +18,13 @@ export function formatAdded(value) {
   return d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : (value || 'Recently');
 }
 
+/** `str` with its first letter upper-cased. */
 export function capitalize(str) {
   if (!str) return '';
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+/** `str` with HTML-significant characters escaped; null and undefined become an empty string. */
 export function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)

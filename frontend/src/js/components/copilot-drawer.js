@@ -48,6 +48,7 @@ const DRAWER_HTML = `
   <div class="drawer-backdrop" id="copilot-backdrop"></div>
 `;
 
+/** Builds the Mara drawer and wires its toggle, suggestions, form and keyboard handling. */
 export function initCopilotDrawer() {
   if (drawerElement) return;
 
@@ -73,6 +74,7 @@ export function initCopilotDrawer() {
   });
 }
 
+/** Opens the Mara drawer, optionally sending `prompt` for `operation` straight away. */
 export function openCopilot(prompt = '', operation = null) {
   if (!drawerElement) initCopilotDrawer();
   drawerElement.inert = false;
@@ -83,6 +85,7 @@ export function openCopilot(prompt = '', operation = null) {
   if (prompt) handleUserAction(operation || 'general_advice', prompt);
 }
 
+/** Closes the Mara drawer and returns focus to where it was opened from. */
 export function closeCopilot() {
   if (!drawerElement) return;
   drawerElement.classList.remove('open');

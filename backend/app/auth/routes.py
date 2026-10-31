@@ -21,6 +21,8 @@ DemoLimit = Depends(limit_by_ip("demo-token", 30))
 
 
 class RegisterRequest(BaseModel):
+    """Body of ``POST /api/auth/register``."""
+
     organization_name: str = Field(..., min_length=2, max_length=120)
     full_name: str = Field(..., min_length=2, max_length=120)
     email: EmailStr = Field(..., max_length=254)
@@ -28,11 +30,15 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
+    """Body of ``POST /api/auth/login``."""
+
     email: EmailStr = Field(..., max_length=254)
     password: str = Field(..., min_length=1, max_length=128)
 
 
 class AuthTokenResponse(BaseModel):
+    """Bearer token returned after a successful login or registration."""
+
     access_token: str
     token_type: str = "bearer"
     tenant_id: str

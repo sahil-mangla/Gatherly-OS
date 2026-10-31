@@ -1,5 +1,6 @@
 """FastAPI dependencies for JWT authentication and Role-Based Access Control (RBAC)."""
 
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security, status
@@ -17,7 +18,7 @@ class AuthContext:
 
     def __init__(
         self, user_id: str, tenant_id: str, role: str, email: str = "", is_demo: bool = False
-    ):
+    ) -> None:
         self.user_id = user_id
         self.tenant_id = tenant_id
         self.role = role
@@ -72,7 +73,7 @@ def get_current_user(
     )
 
 
-def require_role(*allowed_roles: str, mutating: bool = False):
+def require_role(*allowed_roles: str, mutating: bool = False) -> Callable[..., AuthContext]:
     """Factory creating dependency to enforce RBAC permissions.
 
     ``mutating=True`` additionally rejects demo sessions, whose shared tenant is read-only.

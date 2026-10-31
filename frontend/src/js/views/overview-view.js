@@ -73,6 +73,7 @@ function renderMood(event) {
   if (event.theme) setText('overview-mood-caption', `“${event.theme}”`);
 }
 
+/** Renders the Overview view. */
 export function renderOverview(ctx = createViewContext()) {
   const { event } = ctx;
   const today = new Date();

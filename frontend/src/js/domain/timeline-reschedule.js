@@ -61,6 +61,7 @@ function collidesWith(dep, newDate) {
   return Boolean(depDue) && depDue <= newDate;
 }
 
+/** Evaluates moving a task's due date and detects the downstream collisions it would cause. */
 export function evaluateReschedule(tasks, taskId, newDateStr) {
   const targetTask = (tasks || []).find(t => t.id === taskId);
   if (!targetTask) throw new Error(`Task with id '${taskId}' not found.`);

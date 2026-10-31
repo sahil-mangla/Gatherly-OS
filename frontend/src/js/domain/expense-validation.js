@@ -33,6 +33,7 @@ function categoryErrors(item) {
   return [`Invalid category '${item.category}'. Allowed: ${EXPENSE_CATEGORIES.join(', ')}`];
 }
 
+/** Validation messages for an expense record; an empty list means it is valid. */
 export function validateExpenseInput(item) {
   if (!item || typeof item !== 'object' || Array.isArray(item)) {
     return { valid: false, errors: ['Expense payload must be an object.'] };

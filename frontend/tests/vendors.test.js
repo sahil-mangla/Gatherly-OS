@@ -10,11 +10,11 @@ import {
   compareQuotes,
   generateFollowUpQuestions,
   auditQuoteCompleteness,
-  statedTermsNote,
   firstDefined,
   firstTruthy,
   extractQuoteFromRawText
 } from '../src/js/domain/vendors.js';
+import { statedTermsNote } from '../src/js/domain/quote-terms.js';
 import { extractVendorName, detectServiceType, NO_AMOUNT_NOTE } from '../src/js/domain/vendors-extract.js';
 
 describe('normalizeQuote', () => {

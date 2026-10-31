@@ -117,10 +117,12 @@ function openEventModal(mode, values) {
   updateCapacityWarning();
 }
 
+/** Opens the dialog for creating a new event. */
 export function openNewEventModal() {
   openEventModal('create', {});
 }
 
+/** Opens the dialog for editing the active event's details. */
 export function openEditEventModal() {
   const event = store.getActiveEvent();
   openEventModal('edit', {

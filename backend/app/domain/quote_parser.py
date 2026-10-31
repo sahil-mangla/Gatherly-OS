@@ -91,8 +91,8 @@ def extract_inclusions(text: str) -> list[str]:
     """Items listed after 'includes'/'including' (never after 'does not include')."""
     items: list[str] = []
     for found in INCLUDES_RE.finditer(text):
-        for part in INCLUSION_SPLIT_RE.split(found.group(1)):
-            part = part.strip()
+        for raw_part in INCLUSION_SPLIT_RE.split(found.group(1)):
+            part = raw_part.strip()
             if part and len(part) <= MAX_INCLUSION_LEN:
                 items.append(part[:1].upper() + part[1:])
     return items[:MAX_INCLUSIONS]

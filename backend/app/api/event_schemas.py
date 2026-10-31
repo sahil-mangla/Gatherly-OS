@@ -12,6 +12,8 @@ Count = Annotated[int, Field(ge=0, le=10_000_000)]
 
 
 class EventCreateRequest(BaseModel):
+    """Body of ``POST /api/events``."""
+
     id: EventId | None = None
     name: Name = Field(min_length=1)
     type: str = Field(default="wedding", max_length=64)
@@ -24,6 +26,8 @@ class EventCreateRequest(BaseModel):
 
 
 class EventUpdateRequest(BaseModel):
+    """Body of ``PUT /api/events/{id}``; omitted fields stay unchanged."""
+
     name: Name | None = Field(default=None, min_length=1)
     type: str | None = Field(default=None, max_length=64)
     date: str | None = Field(default=None, max_length=32)

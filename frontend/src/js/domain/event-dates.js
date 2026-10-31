@@ -11,14 +11,17 @@ const COUNTDOWN_WEEKS_THRESHOLD_DAYS = 2 * DAYS_PER_WEEK;
 const SATURDAY_ROUNDING_CUTOFF = 3;
 const SATURDAY = 6;
 
+/** Local midnight of the given date. */
 export function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
+/** The date `n` calendar days after `d` (negative `n` goes back). */
 export function addDays(d, n) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 }
 
+/** Local calendar date as `YYYY-MM-DD`. */
 export function toIsoDate(d) {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
@@ -103,6 +106,7 @@ export function syncEventSchedule(event, today = new Date(), templates = {}) {
   return true;
 }
 
+/** Syncs every event's schedule to `today`; returns true when anything changed. */
 export function normalizeAllEventDates(events, today = new Date(), templates = {}) {
   let changed = false;
   for (const event of Object.values(events || {})) {

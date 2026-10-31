@@ -11,6 +11,7 @@ import { escapeHtml, setHtml, setText, dateText, requestView } from './helpers.j
 const MAX_PILLS = 12;
 const MAX_AVATARS = 4;
 
+/** The Overview budget card: committed against total with a progress bar. */
 export function renderBudgetCard({ budget, cur }) {
   const pct = budget.percent_committed;
   setHtml('overview-budget-val', `${escapeHtml(formatMoney(budget.total_allocated, cur))} <span>/ ${escapeHtml(formatMoney(budget.total_budget, cur))}</span>`);
@@ -37,6 +38,7 @@ function pillsHtml(completed, total) {
   return Array.from({ length: count }, (_, i) => `<span class="${i < done ? 'done' : ''}"></span>`).join('');
 }
 
+/** The Overview timeline card: progress and the next milestone. */
 export function renderTimelineCard(event) {
   const timeline = calculateTimelineProgress(event.tasks || []);
   setHtml('overview-timeline-val', `${timeline.completed} <span>of ${timeline.total} milestones</span>`);
@@ -64,6 +66,7 @@ function avatarsHtml(vendors) {
   return extra > 0 ? `${shown}<span class="avatar-more">+${extra}</span>` : shown;
 }
 
+/** The Overview vendor card: shortlisted and booked vendors. */
 export function renderVendorCard(event) {
   const vendors = event.vendors || [];
   const booked = vendors.filter(v => v.status === 'booked').length;

@@ -30,6 +30,7 @@ function submitMilestone(tasks) {
   store.addTask(draft);
 }
 
+/** Opens the dialog for adding a milestone, with optional prerequisites. */
 export function openAddMilestoneModal() {
   const tasks = store.getActiveEvent().tasks || [];
   const prioOptions = TASK_PRIORITIES.map(p => `<option value="${p}">${p.toUpperCase()}</option>`).join('');

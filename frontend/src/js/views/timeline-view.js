@@ -17,6 +17,7 @@ export function hasDependencyCollision(event) {
   return radar.risks.some(risk => risk.type === 'dependency_collision');
 }
 
+/** The timeline status headline: overdue tasks, then collisions, then completion. */
 export function headlineFor(progress, collides = false) {
   if (progress.overdue_tasks.length > 0) return `${progress.overdue_tasks.length} task(s) need attention!`;
   if (collides) return 'Some milestones are due before what they depend on.';
@@ -47,6 +48,7 @@ function onTimelineClick(e) {
   }
 }
 
+/** Renders the Timeline view. */
 export function renderTimeline(ctx = createViewContext()) {
   const tasks = ctx.event.tasks || [];
   renderSummary(calculateTimelineProgress(tasks), hasDependencyCollision(ctx.event));

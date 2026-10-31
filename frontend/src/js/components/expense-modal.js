@@ -10,6 +10,7 @@ import { openFormModal, bindFormSubmit } from './form-dialog.js';
 const value = (id) => document.getElementById(id).value;
 const amount = (id) => parseFloat(value(id)) || 0;
 
+/** Opens the dialog for adding a budget expense to the active event. */
 export function openAddExpenseModal() {
   const catOptions = EXPENSE_CATEGORIES.map(c => `<option value="${c}">${c.replace('_', ' & ').toUpperCase()}</option>`).join('');
 

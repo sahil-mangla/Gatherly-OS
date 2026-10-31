@@ -18,6 +18,7 @@ export function groupTasksByMonth(tasks) {
   return groups;
 }
 
+/** `YYYY-MM` as "February 2027"; unparseable keys are returned unchanged. */
 export function monthLabel(key) {
   const d = new Date(`${key}-01T00:00:00Z`);
   return isNaN(d.getTime())
@@ -36,6 +37,7 @@ export function dependencyNoteHtml(t, tasks) {
   return parts.length ? `<small class="dep-note">${parts.join(' · ')}</small>` : '';
 }
 
+/** Markup for one milestone row with its status, due date and dependency note. */
 export function taskRowHtml(t, tasks = []) {
   const isDone = t.status === 'done';
   const id = escapeHtml(t.id);
@@ -54,6 +56,7 @@ export function taskRowHtml(t, tasks = []) {
     </li>`;
 }
 
+/** Markup for one month group of milestones. */
 export function monthHtml(key, group, allTasks = group) {
   const id = `month-${escapeHtml(key)}`;
   return `

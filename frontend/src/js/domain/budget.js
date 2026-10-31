@@ -21,6 +21,7 @@ export { safeNonNegativeNumber };
 const PERCENT = 100;
 const TASK_KEYWORDS = ['guest', 'seating', 'stationer', 'cater', 'tasting', 'invitation'];
 
+/** Formats a non-negative amount with comma grouping and a currency prefix. */
 export function formatMoney(val, currency = '$') {
   return `${currency}${formatAmount(safeNonNegativeNumber(val))}`;
 }
@@ -58,6 +59,7 @@ function finalizeCategory(entry, totalBudget) {
   entry.percent_of_budget = totalBudget > 0 ? roundHalfUp((entry.allocated / totalBudget) * PERCENT) : 0;
 }
 
+/** Authoritative budget totals and per-category variance for an event (spent + committed, no double counting). */
 export function calculateBudgetSummary(event) {
   if (!isRecord(event)) {
     throw new Error('calculateBudgetSummary requires a valid event object.');
@@ -133,6 +135,7 @@ function buildRippleNarrative(n) {
   ];
 }
 
+/** Projects budget and capacity for a what-if guest and catering change, with a plain-language narrative. */
 export function simulateRipple(event, deltas = {}) {
   const currentSummary = calculateBudgetSummary(event);
   const change = isRecord(deltas) ? deltas : {};

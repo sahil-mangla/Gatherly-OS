@@ -8,6 +8,7 @@ import { api, setAuthToken } from '../api.js';
 const ROLES = ['owner', 'planner', 'vendor'];
 const DEFAULT_TENANT = 'Gatherly Studio';
 
+/** Shows the demo workspace and role badge and switches the API token when the role changes. */
 export async function initTenantAuthBadge(showToast) {
   const badge = document.getElementById('enterprise-auth-badge');
   if (!badge) return;

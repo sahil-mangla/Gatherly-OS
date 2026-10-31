@@ -18,6 +18,7 @@ function enumError(label, value, allowed) {
   return [`Invalid ${label} '${value}'. Allowed: ${allowed.join(', ')}`];
 }
 
+/** Validates task integrity and required date contracts. */
 export function validateTask(task) {
   if (!task || typeof task !== 'object' || Array.isArray(task)) {
     return { valid: false, errors: ['Task must be an object.'] };
@@ -35,6 +36,7 @@ export function validateTask(task) {
   return { valid: errors.length === 0, errors };
 }
 
+/** Detects cycles in the task dependency graph with an iterative DFS (no recursion limit). */
 export function checkCircularDependencies(tasks) {
   const taskMap = new Map();
   for (const t of tasks) {
@@ -102,6 +104,7 @@ function tallyTasks(taskList, refDate) {
   return tally;
 }
 
+/** Milestone completion statistics, overdue tasks and the next item. */
 export function calculateTimelineProgress(tasks = [], refDateStr = null) {
   const taskList = Array.isArray(tasks) ? tasks : [];
   const total = taskList.length;

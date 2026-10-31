@@ -3,6 +3,7 @@
  * @description Defensive localStorage access: never throws when storage is missing, blocked or corrupt.
  */
 
+/** The stored string for `key`, or null when absent or storage is unavailable. */
 export function readStorage(key) {
   try {
     return globalThis.localStorage.getItem(key);
@@ -11,6 +12,7 @@ export function readStorage(key) {
   }
 }
 
+/** Stores `value` under `key`; returns false when storage is unavailable or full. */
 export function writeStorage(key, value) {
   if (!globalThis.localStorage) return false;
   try {
@@ -22,6 +24,7 @@ export function writeStorage(key, value) {
   }
 }
 
+/** Removes `key`; does nothing when storage is unavailable. */
 export function removeStorage(key) {
   try {
     globalThis.localStorage.removeItem(key);

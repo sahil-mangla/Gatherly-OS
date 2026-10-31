@@ -50,6 +50,7 @@ function onGridClick(e) {
   }
 }
 
+/** Renders the idea board. */
 export function renderIdeas(ctx = createViewContext()) {
   const grid = document.getElementById('idea-board-grid');
   if (!grid) return;

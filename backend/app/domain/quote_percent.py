@@ -1,4 +1,4 @@
-"""Clause-aware percentage classification for raw vendor quote text.
+r"""Clause-aware percentage classification for raw vendor quote text.
 
 Every ``N%`` token is classified exactly once, in this order:
 

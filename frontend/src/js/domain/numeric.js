@@ -15,6 +15,7 @@ export function numberOr(value, fallback) {
   return Number.isFinite(num) ? num : fallback;
 }
 
+/** `val` as a finite number clamped to zero or more (invalid input becomes 0). */
 export function safeNonNegativeNumber(val) {
   return Math.max(0, numberOr(val, 0));
 }

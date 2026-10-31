@@ -15,6 +15,7 @@ RiskRule = Callable[[dict[str, Any], RiskContext], list[dict[str, Any]]]
 
 
 def make_risk(
+    *,
     risk_id: str,
     risk_type: str,
     severity: str,

@@ -137,6 +137,7 @@ function introHtml() {
   return `<p class="comparison-example" id="quote-example-note"><b>${EXAMPLE_NOTE}</b><br />${escapeHtml(hint)}</p>`;
 }
 
+/** Renders the quote comparison for the active event, starting from the quotes of `vendorId`. */
 export function renderComparisonView(vendorId) {
   const container = byId('quote-comparison-content');
   if (!container) return;

@@ -4,13 +4,8 @@ from typing import Any
 
 from .budget import safe_non_negative_number
 from .quote_parser import extract_quote_from_raw_text
+from .quote_terms import saved_quotes_note
 
-ESSENTIAL_QUOTE_FIELDS = [
-    ("setup_cleanup", "Setup & post-event cleanup"),
-    ("service_staff", "Service staff & gratuity policy"),
-    ("overtime_rate", "Overtime hourly rate"),
-    ("cancellation_terms", "Cancellation refund policy"),
-]
 HIDDEN_RISK_PER_MISSING = 15
 DEFAULT_QUOTE_ID = "quote-1"
 DEFAULT_QUOTE_NAME = "Vendor Quote"
@@ -28,57 +23,13 @@ AUDIT_CHECKS = (
 )
 
 
-# Extractor labels (as a prefix of a stored quote's missing_disclosures) -> audit keywords that the
-# quote states the term when the label is absent
-STATED_TERM_NOTES = (
-    ("Service staff", "staff and gratuity policy stated"),
-    ("Post-event cleanup", "cleanup and teardown covered"),
-    ("Overtime", "overtime rate stated"),
-    ("Deposit milestones", "refund and cancellation terms stated"),
-)
-# Extracted fee types -> audit keywords for the term the fee itself states
-FEE_TYPE_NOTES = {
-    "gratuity": "staff and gratuity policy stated",
-    "service_charge": "staff and gratuity policy stated",
-    "overtime": "overtime rate stated",
-    "cleanup": "cleanup and teardown covered",
-}
-
-
-def stated_terms_note(stored: dict[str, Any]) -> str:
-    """Audit keywords for every essential term one extracted quote states (by text or by fee)."""
-    notes: list[str] = []
-    missing = stored.get("missing_disclosures")
-    if isinstance(missing, list):
-        notes += [
-            note
-            for label, note in STATED_TERM_NOTES
-            if not any(str(m).startswith(label) for m in missing)
-        ]
-    fees = stored.get("hidden_fees")
-    if isinstance(fees, list):
-        notes += [
-            FEE_TYPE_NOTES[fee["type"]]
-            for fee in fees
-            if isinstance(fee, dict) and fee.get("type") in FEE_TYPE_NOTES
-        ]
-    return "; ".join(notes)
-
-
-def _stored_quotes_text(quote: dict[str, Any]) -> str:
-    stored = quote.get("quotes")
-    if not isinstance(stored, list):
-        return ""
-    return " ".join(stated_terms_note(q) for q in stored if isinstance(q, dict)).lower()
-
-
 def audit_quote_completeness(quote: dict[str, Any]) -> tuple[bool, list[str]]:
     """Audit quote text, inclusions and saved extracted quotes to identify undisclosed fees."""
     inclusions = " ".join(quote.get("inclusions", [])).lower()
     notes = str(quote.get("notes", "")).lower()
     summary = str(quote.get("summary", "")).lower()
     missing_fields = " ".join(quote.get("missing_fields", [])).lower()
-    combined = f"{inclusions} {notes} {summary} {missing_fields} {_stored_quotes_text(quote)}"
+    combined = f"{inclusions} {notes} {summary} {missing_fields} {saved_quotes_note(quote)}"
 
     missing = [
         label for keywords, label in AUDIT_CHECKS if not any(k in combined for k in keywords)

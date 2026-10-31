@@ -9,6 +9,7 @@ import { UNLIMITED_VENUE_CAPACITY } from './constants.js';
 import { parseDate } from './timeline-dates.js';
 import { auditQuoteCompleteness } from './vendors.js';
 
+/** Builds a risk record with the canonical shape (always starts as open). */
 export function makeRisk({ id, type, severity, title, evidence, consequence, actions }) {
   return {
     id,
@@ -25,6 +26,7 @@ export function makeRisk({ id, type, severity, title, evidence, consequence, act
 const askMara = (label, prompt) => ({ label, action_type: 'ask_mara', prompt });
 const money = (n) => `$${formatAmount(n)}`;
 
+/** Expected guests above a known venue capacity. */
 export function capacityRule({ event }) {
   const expectedGuests = toInt(event.expected_guests, 0);
   const venueCapacity = safeNonNegativeNumber(event.venue_capacity ?? UNLIMITED_VENUE_CAPACITY);
@@ -49,6 +51,7 @@ export function capacityRule({ event }) {
   })];
 }
 
+/** Total allocated spend above the total budget. */
 export function budgetDeficitRule({ budgetSummary: s }) {
   if (!s.is_over_budget) return [];
   return [makeRisk({
@@ -81,12 +84,14 @@ function categoryOverrunRisk(catName, catData) {
   });
 }
 
+/** One warning per category whose allocated spend exceeds a positive plan. */
 export function categoryOverrunRule({ budgetSummary }) {
   return Object.entries(budgetSummary.categories)
     .filter(([, data]) => data.is_overrun && data.planned > 0)
     .map(([name, data]) => categoryOverrunRisk(name, data));
 }
 
+/** Uncompleted tasks past their due date. */
 export function overdueMilestonesRule({ timelineProgress }) {
   const overdue = timelineProgress.overdue_tasks || [];
   if (overdue.length === 0) return [];
@@ -131,6 +136,7 @@ function collisionEvidence(colliding) {
   return `Due before a prerequisite that is still open: ${shown}${extra > 0 ? ` and ${extra} more` : ''}.`;
 }
 
+/** One warning summarising open tasks scheduled earlier than a prerequisite they depend on. */
 export function dependencyCollisionRule({ event }) {
   const tasks = (Array.isArray(event.tasks) ? event.tasks : []).filter(t => t && typeof t === 'object');
   const byId = new Map(tasks.filter(t => isIdKey(t.id)).map(t => [t.id, t]));
@@ -175,6 +181,7 @@ function vendorFeeRisk(vendor) {
   });
 }
 
+/** Shortlisted vendors whose quotes omit essential fee disclosures. */
 export function vendorFeesRule({ event }) {
   const vendors = Array.isArray(event.vendors) ? event.vendors : [];
   return vendors.map(vendorFeeRisk).filter(Boolean);

@@ -74,6 +74,7 @@ export const PROPOSAL_HANDLERS = new Map([
   ['review_risks', createActionTask]
 ]);
 
+/** Applies an approved Mara proposal to the event and reports what changed. */
 export function applyProposalAction(event, proposal) {
   if (!proposal || typeof proposal !== 'object') throw new Error('Invalid proposal payload.');
 

@@ -50,11 +50,12 @@ async def _send_json(send: Send, status: int, detail: str) -> None:
 class BodySizeLimitMiddleware:
     """Rejects request bodies above ``max_bytes`` with 413, even for chunked uploads."""
 
-    def __init__(self, app: ASGIApp, max_bytes: int | None = None):
+    def __init__(self, app: ASGIApp, max_bytes: int | None = None) -> None:
         self.app = app
         self.max_bytes = max_bytes or settings.max_body_bytes
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Reject oversized bodies by header or while streaming; pass everything else through."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return
@@ -90,7 +91,7 @@ class BodySizeLimitMiddleware:
 class SecurityHeadersMiddleware:
     """Adds hardening headers (CSP, nosniff, framing, referrer, HSTS in production)."""
 
-    def __init__(self, app: ASGIApp):
+    def __init__(self, app: ASGIApp) -> None:
         self.app = app
 
     def _headers_for(self, path: str) -> dict[str, str]:
@@ -104,6 +105,7 @@ class SecurityHeadersMiddleware:
         return headers
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Add the security headers to every HTTP response start message."""
         if scope["type"] != "http":
             await self.app(scope, receive, send)
             return

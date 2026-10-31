@@ -25,6 +25,7 @@ function buildRuleContext(event, refDateStr) {
   };
 }
 
+/** Evaluates every risk rule against the event and returns severity counts plus the open risks. */
 export function evaluateEventRisks(event, refDateStr = null) {
   if (!event || typeof event !== 'object' || Array.isArray(event)) return emptyRadar();
 

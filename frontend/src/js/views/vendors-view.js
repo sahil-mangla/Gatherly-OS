@@ -52,6 +52,7 @@ function onGridClick(e) {
   if (btn) openQuoteModal(btn.dataset.id);
 }
 
+/** Renders the Vendors view. */
 export function renderVendors(ctx = createViewContext()) {
   const vendors = ctx.event.vendors || [];
   setHtml('vendor-summary-cards', summaryHtml(vendors, ctx));
