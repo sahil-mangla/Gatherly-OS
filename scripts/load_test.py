@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """High-throughput async load testing harness with automated SLA gating."""
 
 import argparse
@@ -81,7 +80,7 @@ async def execute_request(
             res = await client.post(url, json=body, headers=headers, timeout=5.0)
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         return elapsed_ms, res.status_code in (200, 201)
-    except Exception:
+    except Exception:  # noqa: BLE001 - any failure is a failed request, never a crashed load run
         elapsed_ms = (time.perf_counter() - start) * 1000.0
         return elapsed_ms, False
 
@@ -156,7 +155,7 @@ def main():
                 res = probe.get(f"{args.url.rstrip('/')}/api/health")
                 if res.status_code != 200:
                     use_asgi = True
-        except Exception:
+        except httpx.HTTPError:
             use_asgi = True
 
     print(
