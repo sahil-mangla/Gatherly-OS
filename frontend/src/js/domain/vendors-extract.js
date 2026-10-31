@@ -4,7 +4,9 @@
  * Mirrors backend/app/domain/quote_parser.py rule-for-rule.
  */
 
-import { parseMoneyItems, pickBaseAmount, findDeposit, findHiddenFees, roundCents, roundHalfEven } from './quote-money.js';
+import {
+  parseMoneyItems, pickBaseAmount, findDeposit, findHiddenFees, roundCents, roundHalfEven
+} from './quote-money.js';
 
 export const DEFAULT_VENDOR_NAME = 'Extracted Vendor';
 const DEFAULT_SERVICE_TYPE = 'decor';

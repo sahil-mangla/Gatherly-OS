@@ -23,7 +23,9 @@ export function categoryStats(budget) {
     .map(([key, c]) => {
       const planned = Number(c.planned) || 0;
       const spent = Number(c.allocated) || 0;
-      return { key, label: prettyLabel(key), planned, spent, unspent: Math.max(0, planned - spent), deficit: Math.max(0, spent - planned) };
+      const unspent = Math.max(0, planned - spent);
+      const deficit = Math.max(0, spent - planned);
+      return { key, label: prettyLabel(key), planned, spent, unspent, deficit };
     })
     .filter(s => s.planned > 0 || s.spent > 0);
 }
@@ -42,13 +44,18 @@ function reallocationProposal(from, to, amount) {
   };
 }
 
-/** Largest-deficit categories first; each donor gives at most half its unspent amount, at most $1,200, rounded down to $10. */
+/**
+ * Largest-deficit categories first; each donor gives at most half its unspent amount,
+ * at most $1,200, rounded down to $10.
+ */
 export function planReallocations(stats) {
   const room = new Map(stats.map(s => [s.key, s.unspent]));
   const plans = [];
   const needy = stats.filter(s => s.deficit > 0).sort((a, b) => b.deficit - a.deficit);
   for (const to of needy) {
-    const from = stats.filter(s => s.key !== to.key && room.get(s.key) > 0).sort((a, b) => room.get(b.key) - room.get(a.key))[0];
+    const from = stats
+      .filter(s => s.key !== to.key && room.get(s.key) > 0)
+      .sort((a, b) => room.get(b.key) - room.get(a.key))[0];
     const amount = from ? roundDown(Math.min(room.get(from.key) * SHARE_OF_UNSPENT, to.deficit, MAX_MOVE)) : 0;
     if (amount < ROUND_TO || plans.length >= MAX_REALLOCATIONS) continue;
     plans.push(reallocationProposal({ ...from, unspent: room.get(from.key) }, to, amount));
@@ -57,7 +64,10 @@ export function planReallocations(stats) {
   return { plans, room };
 }
 
-/** Trims TRIM_PERCENT of the PLANNED amount of the category with the most unspent money (never the contingency buffer). */
+/**
+ * Trims TRIM_PERCENT of the PLANNED amount of the category with the most unspent money
+ * (never the contingency buffer).
+ */
 export function planTrim(stats, room) {
   const best = stats.filter(s => s.key !== BUFFER_CATEGORY && s.deficit === 0)
     .sort((a, b) => room.get(b.key) - room.get(a.key))[0];
@@ -74,15 +84,22 @@ export function planTrim(stats, room) {
   };
 }
 
-const NOTHING_TO_PROPOSE = 'I compared planned and spent amounts for every budget category. Nothing is over its plan and there is no unspent room worth trimming, so I have no savings changes to propose right now.';
+const NOTHING_TO_PROPOSE = 'I compared planned and spent amounts for every budget category. '
+  + 'Nothing is over its plan and there is no unspent room worth trimming, '
+  + 'so I have no savings changes to propose right now.';
 
-/** Mara's offline savings answer: reallocations toward over-plan categories plus an optional trim, or a plain note when there is nothing to propose. */
+/**
+ * Mara's offline savings answer: reallocations toward over-plan categories plus an optional trim,
+ * or a plain note when there is nothing to propose.
+ */
 export function costSavingResponse({ budget }) {
   const stats = categoryStats(budget);
   const { plans, room } = planReallocations(stats);
   const trim = planTrim(stats, room);
   const proposals = trim ? [...plans, trim] : plans;
-  if (proposals.length === 0) return { operation: 'cost_saving_proposals', summary: NOTHING_TO_PROPOSE, response: NOTHING_TO_PROPOSE };
+  if (proposals.length === 0) {
+    return { operation: 'cost_saving_proposals', summary: NOTHING_TO_PROPOSE, response: NOTHING_TO_PROPOSE };
+  }
   return {
     operation: 'cost_saving_proposals',
     summary: `I compared planned and spent amounts per category and found ${proposals.length} adjustment${proposals.length === 1 ? '' : 's'} grounded in your numbers:`,

@@ -51,7 +51,10 @@ function cycleProblem(tasks, draft, byId) {
 }
 
 function lateProblem(draft, byId) {
-  const late = depIds(draft).map(id => byId.get(id)).find(dep => dep.due_date && draft.due_date && String(dep.due_date).slice(0, 10) > String(draft.due_date).slice(0, 10));
+  const day = (value) => String(value).slice(0, 10);
+  const late = depIds(draft)
+    .map(id => byId.get(id))
+    .find(dep => dep.due_date && draft.due_date && day(dep.due_date) > day(draft.due_date));
   if (!late) return null;
   return {
     offender: late.id,

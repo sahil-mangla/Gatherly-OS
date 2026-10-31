@@ -25,6 +25,8 @@ function buildRuleContext(event, refDateStr) {
   };
 }
 
+const rankOf = (risk) => SEVERITY_RANK[risk.severity] || UNKNOWN_SEVERITY_RANK;
+
 /** Evaluates every risk rule against the event and returns severity counts plus the open risks. */
 export function evaluateEventRisks(event, refDateStr = null) {
   if (!event || typeof event !== 'object' || Array.isArray(event)) return emptyRadar();
@@ -35,7 +37,7 @@ export function evaluateEventRisks(event, refDateStr = null) {
   const activeRisks = RISK_RULES
     .flatMap(rule => rule(context))
     .filter(r => !dismissedIds.has(r.id))
-    .sort((a, b) => (SEVERITY_RANK[a.severity] || UNKNOWN_SEVERITY_RANK) - (SEVERITY_RANK[b.severity] || UNKNOWN_SEVERITY_RANK));
+    .sort((a, b) => rankOf(a) - rankOf(b));
 
   return {
     critical_count: countBySeverity(activeRisks, 'critical'),

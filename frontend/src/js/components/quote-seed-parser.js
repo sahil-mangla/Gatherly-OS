@@ -48,8 +48,12 @@ function noticeHtml(eq) {
   const flags = eq.flags || [];
   const lines = [];
   if (flags.includes('no_amount_found')) lines.push('No price was found in this text, so no base amount is shown.');
-  else if (flags.includes('amount_estimated')) lines.push('The base amount is an estimate pieced together from the text, so please confirm it with the vendor.');
-  if (eq.deposit_stated === false && eq.quoted_base_amount > 0) lines.push('No deposit was stated; the deposit shown is an estimate.');
+  else if (flags.includes('amount_estimated')) {
+    lines.push('The base amount is an estimate pieced together from the text, so please confirm it with the vendor.');
+  }
+  if (eq.deposit_stated === false && eq.quoted_base_amount > 0) {
+    lines.push('No deposit was stated; the deposit shown is an estimate.');
+  }
   return lines.map(l => `<p class="parsed-note">${escapeHtml(l)}</p>`).join('');
 }
 

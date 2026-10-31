@@ -1,0 +1,93 @@
+/* timeline: timeline progress and events */
+.timeline-shell {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 28px;
+}
+.timeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 24px;
+}
+.progress-ring {
+  width: 57px;
+  height: 57px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--coral) 25%, #eee6e1 0);
+  position: relative;
+  font: 600 1.0625rem Fraunces;
+  color: var(--plum);
+}
+.progress-ring:after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  background: var(--cream);
+  border-radius: 50%;
+  z-index: 0;
+}
+.progress-ring > * {
+  position: relative;
+  z-index: 1;
+}
+.progress-ring small {
+  font: 500 0.75rem DM Sans;
+  margin-left: -2px;
+}
+.timeline-progress div:last-child {
+  display: grid;
+  gap: 5px;
+}
+.timeline-progress b {
+  font: 600 1.0625rem Fraunces;
+}
+.timeline-progress span {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.timeline {
+  padding: 25px 20px;
+}
+.timeline-month {
+  position: relative;
+  margin-bottom: 18px;
+}
+.timeline-event {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0 20px 15px;
+  margin-left: 28px;
+  border-bottom: 1px solid #eee7e2;
+  position: relative;
+}
+.timeline-event:before {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: #e7ded9;
+}
+.timeline-event b {
+  font-size: 0.8125rem;
+}
+.timeline-event .dep-note {
+  color: var(--muted);
+}
+
+.timeline-event .dep-blocked {
+  color: var(--warn-text);
+  font-weight: 600;
+}
+
+.timeline-event small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}

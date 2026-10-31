@@ -88,7 +88,7 @@ Vercel: import the repo, set `JWT_SECRET` (and optionally `GEMINI_API_KEY`). SQL
 | Browser journeys | `npm run test:e2e` | 8 Playwright journeys (run in CI) |
 | Complexity < 10 per function (Python) | `ruff --select C901` + `scripts/check_complexity.py` | max 9 |
 | Complexity < 10 per function (JS) | `npm run lint:js` (ESLint `complexity: 9`) | zero violations |
-| File length < 200 lines | `python scripts/check_line_limits.py` | all `.py`/`.js` files comply (CSS and HTML are exempt) |
+| File length < 200 lines | `python scripts/check_line_limits.py` | all `.py`/`.js`/`.css` files comply (HTML is exempt) |
 | Lint / format | `ruff check`, `ruff format --check` | clean |
 | Security scan | `bandit -r backend -ll`, `pip-audit` (advisory) | no medium/high findings |
 | Load smoke test | `npm run test:load` | in-process ASGI, 200 requests: roughly 1,400–1,800 req/s depending on the machine, p95 about 20 ms, 0 errors |

@@ -1,0 +1,68 @@
+/* proposals: proposal cards with approve and dismiss actions */
+.proposal-stack {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+.proposal-card {
+  background: #fffaf6;
+  border: 1px solid #ebdcd5;
+  border-radius: 9px;
+  padding: 14px;
+}
+.prop-badge {
+  font:
+    500 0.75rem "DM Mono",
+    monospace;
+  color: var(--coral-text);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.proposal-card h3 {
+  margin: 0 0 6px;
+  font: 600 0.9375rem Fraunces;
+  color: var(--plum);
+}
+.prop-desc {
+  font-size: 0.75rem;
+  color: #554854;
+  margin: 0 0 8px;
+}
+.prop-consequence {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: #fdf3ed;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+.prop-actions {
+  display: flex;
+  gap: 8px;
+}
+.apply-prop-btn {
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 0;
+  transition: 0.15s;
+  min-height: 32px;
+}
+.apply-prop-btn:hover {
+  background: #f58a79;
+  color: var(--ink);
+}
+.dismiss-prop-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  padding: 7px 10px;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  min-height: 32px;
+}

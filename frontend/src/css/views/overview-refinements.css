@@ -1,0 +1,68 @@
+/* overview-refinements: overview additions */
+/* ==========================================================================
+   Overview additions
+   ========================================================================== */
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-value {
+  max-width: 34rem;
+  margin: 14px 0 0;
+  font:
+    500 1rem/1.45 Fraunces,
+    serif;
+  color: var(--plum);
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.assistant-arrow {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.assistant-arrow:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.task-card-link {
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+}
+
+.task-card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.next-task-card:focus-within {
+  border-color: var(--plum);
+}
+
+.empty-task-card {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.empty-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}

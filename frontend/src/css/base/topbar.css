@@ -1,0 +1,109 @@
+/* topbar: main column, topbar, breadcrumbs and page header */
+.main-content {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-height: 100vh;
+}
+.topbar {
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5.2vw;
+  background: rgba(255, 253, 249, 0.65);
+  min-height: 69px;
+  gap: 12px;
+}
+.breadcrumbs {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--label);
+  font-size: 0.75rem;
+}
+.breadcrumbs i {
+  font-style: normal;
+  color: var(--label);
+}
+.breadcrumbs strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.icon-btn {
+  font-size: 1.375rem;
+  position: relative;
+  color: var(--muted);
+}
+.share-btn,
+.primary-btn {
+  background: var(--plum);
+  color: white;
+  border-radius: 7px;
+  padding: 10px 16px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 5px 12px rgba(82, 54, 80, 0.16);
+}
+.share-btn:hover,
+.primary-btn:hover {
+  background: #6a4567;
+  transform: translateY(-1px);
+}
+.more-btn {
+  font-size: 1rem;
+  color: var(--plum);
+}
+.page-content {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 53px 5.2vw 75px;
+}
+.view {
+  display: none;
+}
+.view.active {
+  display: block;
+}
+.eyebrow {
+  font:
+    500 0.75rem "DM Mono",
+    monospace;
+  letter-spacing: 1.3px;
+  color: var(--label);
+  text-transform: uppercase;
+}
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--coral);
+  margin-right: 7px;
+  vertical-align: 1px;
+  box-shadow: 0 0 0 4px #f8dfd9;
+}
+.text-btn {
+  font-size: 0.75rem;
+  color: var(--coral-text);
+  font-weight: 600;
+}
+.text-btn span {
+  margin-left: 6px;
+  font-size: 0.9375rem;
+}
+.event-type {
+  font: 500 0.75rem "DM Mono";
+  color: var(--label);
+  letter-spacing: 1px;
+}
+.user-msg {
+  align-self: flex-end;
+  background: var(--plum);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}

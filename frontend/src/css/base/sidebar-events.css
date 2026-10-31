@@ -1,0 +1,117 @@
+/* sidebar-events: event list, new-event button, help and user card */
+.event-list {
+  display: grid;
+  gap: 4px;
+}
+.event-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  text-align: left;
+  min-height: 44px;
+}
+.new-event-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 9px 12px;
+  min-height: 44px;
+  border: 1px dashed var(--border-ui);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--plum);
+  text-align: left;
+}
+.new-event-btn:hover {
+  background: #f5eee9;
+}
+.outline-btn {
+  margin-top: 16px;
+  padding: 9px 16px;
+  min-height: 40px;
+  border: 1px solid var(--plum);
+  border-radius: 7px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--plum);
+}
+.outline-btn:hover {
+  background: #f5eee9;
+}
+.event-link.selected,
+.event-link:hover {
+  background: #f5eee9;
+}
+.event-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.event-dot.coral {
+  background: var(--coral);
+}
+.event-dot.mint {
+  background: #8eb58c;
+}
+.event-dot.gold {
+  background: #ddb04d;
+}
+.event-link b {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.event-link small {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.sidebar-bottom {
+  margin-top: auto;
+  display: grid;
+  gap: 13px;
+}
+.help-link {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: left;
+  padding: 9px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 36px;
+}
+.help-link span {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-ui);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.user-link {
+  border-top: 1px solid var(--line);
+  padding: 14px 7px 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 0.75rem;
+  background: #d6b9dc;
+  color: #6c4269;
+}
+.user-link span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+.user-link b {
+  font-size: 0.75rem;
+}

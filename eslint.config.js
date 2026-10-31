@@ -1,6 +1,6 @@
 /**
  * @file eslint.config.js
- * @description ESLint flat config (ESLint 8.57+): enforces cyclomatic complexity < 10 on every function.
+ * @description ESLint flat config (ESLint 8.57+): cyclomatic complexity < 10 on every function and a 120-column limit.
  */
 
 const BROWSER_GLOBALS = [
@@ -12,6 +12,9 @@ const BROWSER_GLOBALS = [
   'AbortSignal', 'DOMException', 'setImmediate', 'performance', 'TextEncoder', 'TextDecoder'
 ];
 const NODE_GLOBALS = ['process', 'Buffer', 'global', 'globalThis', '__dirname'];
+
+/** Template literals (HTML), regexes and URLs cannot be wrapped sensibly, so they never count. */
+const UNWRAPPABLE = { ignoreTemplateLiterals: true, ignoreRegExpLiterals: true, ignoreUrls: true };
 
 const readonly = (names) => Object.fromEntries(names.map(name => [name, 'readonly']));
 
@@ -27,7 +30,13 @@ export default [
     rules: {
       complexity: ['error', 9],
       'no-unused-vars': 'error',
-      'no-undef': 'error'
+      'no-undef': 'error',
+      // Tests keep long literal strings (fixtures, expected messages) on one line.
+      'max-len': ['error', { code: 120, ignoreStrings: true, ...UNWRAPPABLE }]
     }
+  },
+  {
+    files: ['frontend/src/**/*.js'],
+    rules: { 'max-len': ['error', { code: 120, ...UNWRAPPABLE }] }
   }
 ];

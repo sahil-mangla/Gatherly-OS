@@ -1,6 +1,7 @@
 /**
  * @file ui2-honesty.test.js
- * @description Honest UI: the event's own copy, vendor quote comparison from saved quotes, and the Create-your-event CTA.
+ * @description Honest UI: the event's own copy, vendor quote comparison from saved quotes,
+ * and the Create-your-event CTA.
  * Skipped automatically when jsdom is not installed.
  */
 

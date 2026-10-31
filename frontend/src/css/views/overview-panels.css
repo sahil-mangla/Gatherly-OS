@@ -1,0 +1,138 @@
+/* overview-panels: section headings, stat panels, milestones and vendor avatars */
+.section-heading,
+.panel-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.section-heading {
+  margin-bottom: 17px;
+}
+.section-heading h2,
+.panel-heading h2 {
+  font: 600 1.6875rem Fraunces;
+  margin: 6px 0 0;
+  letter-spacing: -0.8px;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+}
+.stat-card,
+.panel {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.stat-card {
+  padding: 19px 19px 17px;
+  min-height: 167px;
+}
+.stat-top {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.stat-icon {
+  font-size: 1.125rem;
+  color: var(--coral);
+}
+.card-kicker {
+  font: 500 0.75rem "DM Mono";
+  letter-spacing: 1px;
+  color: var(--label);
+  text-transform: uppercase;
+  margin: 0;
+  font-weight: 500;
+}
+.stat-value {
+  font: 600 1.6875rem Fraunces;
+  color: var(--plum);
+  margin: 21px 0 13px;
+}
+.stat-value span {
+  font: 400 0.75rem DM Sans;
+  color: var(--muted);
+}
+.progress-track {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--track);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--coral-strong);
+  border-radius: 99px;
+}
+.stat-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: var(--label);
+  font-size: 0.75rem;
+}
+.good {
+  color: var(--green-text);
+}
+.warn {
+  color: var(--warn-text);
+}
+.milestone-line {
+  display: flex;
+  gap: 4px;
+}
+.milestone-line span {
+  height: 8px;
+  border-radius: 99px;
+  background: var(--track);
+  flex: 1;
+}
+.milestone-line .done {
+  background: var(--green);
+}
+.avatar-stack {
+  display: flex;
+  margin-top: 20px;
+}
+.vendor-avatar,
+.avatar-more {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--cream);
+  margin-left: -5px;
+  font-size: 0.8125rem;
+}
+.vendor-avatar:first-child {
+  margin-left: 0;
+}
+.va-1 {
+  background: #f4d9b8;
+}
+.va-2 {
+  background: #dfc6d9;
+}
+.va-3 {
+  background: #c4ddc4;
+}
+.va-4 {
+  background: #d9c5b4;
+}
+.avatar-more {
+  background: #f2e7dd;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.lower-grid {
+  display: grid;
+  grid-template-columns: 1.13fr 0.87fr;
+  gap: 13px;
+  margin-top: 29px;
+}
+.panel {
+  padding: 24px;
+}

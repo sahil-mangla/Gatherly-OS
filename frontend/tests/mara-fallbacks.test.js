@@ -11,7 +11,9 @@ import { calculateBudgetSummary } from '../src/js/domain/budget.js';
 import { weddingTemplate } from '../src/js/templates/wedding.js';
 
 const budgetOf = (expenses, total = 10000) => calculateBudgetSummary({ total_budget: total, expenses });
-const exp = (category, planned, actual = 0, committed = 0) => ({ category, planned_amount: planned, actual_amount: actual, committed_amount: committed });
+const exp = (category, planned, actual = 0, committed = 0) => ({
+  category, planned_amount: planned, actual_amount: actual, committed_amount: committed
+});
 const ctx = (expenses, extra = {}) => ({ budget: budgetOf(expenses), ...extra });
 
 describe('getLocalDeterministicMaraResponse routing', () => {

@@ -12,10 +12,16 @@ let env = null;
 before(async () => { env = await bootApp(); });
 
 function poison(event) {
-  Object.assign(event.vendors[0], { name: PAYLOAD, category: PAYLOAD, status: PAYLOAD, avatar_emoji: PAYLOAD, summary: PAYLOAD, id: PAYLOAD });
-  Object.assign(event.tasks[0], { title: PAYLOAD, category: PAYLOAD, status: PAYLOAD, priority: PAYLOAD, due_date: PAYLOAD, id: PAYLOAD });
+  Object.assign(event.vendors[0], {
+    name: PAYLOAD, category: PAYLOAD, status: PAYLOAD, avatar_emoji: PAYLOAD, summary: PAYLOAD, id: PAYLOAD
+  });
+  Object.assign(event.tasks[0], {
+    title: PAYLOAD, category: PAYLOAD, status: PAYLOAD, priority: PAYLOAD, due_date: PAYLOAD, id: PAYLOAD
+  });
   Object.assign(event.expenses[0], { description: PAYLOAD, category: PAYLOAD, status: PAYLOAD });
-  if (event.ideas[0]) Object.assign(event.ideas[0], { title: PAYLOAD, description: PAYLOAD, author: PAYLOAD, bg_color: PAYLOAD });
+  if (event.ideas[0]) {
+    Object.assign(event.ideas[0], { title: PAYLOAD, description: PAYLOAD, author: PAYLOAD, bg_color: PAYLOAD });
+  }
   event.name = PAYLOAD;
 }
 

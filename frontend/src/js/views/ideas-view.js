@@ -14,7 +14,9 @@ const PINS = ['✦', '✺', '❋', '◌'];
 const BG_COLORS = ['idea-yellow', 'idea-coral', 'idea-green', 'idea-pink'];
 
 function actionHtml(idea, title) {
-  if (idea.converted_task_id) return '<span class="idea-converted-tag"><span aria-hidden="true">✓</span> Converted to Task</span>';
+  if (idea.converted_task_id) {
+    return '<span class="idea-converted-tag"><span aria-hidden="true">✓</span> Converted to Task</span>';
+  }
   const id = escapeHtml(idea.id);
   return `<button type="button" class="convert-task-btn" data-id="${id}" data-focus-key="idea:${id}:convert" aria-label="Convert to task: ${title}">+ Convert to Task</button>`;
 }

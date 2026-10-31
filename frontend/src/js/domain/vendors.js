@@ -14,7 +14,10 @@ const DISCLOSURE_CHECKS = [
   { keywords: ['clean', 'teardown', 'breakdown'], message: 'Post-event cleanup and teardown fees' },
   { keywords: ['staff', 'server', 'labor', 'crew'], message: 'Service staff staffing & gratuity terms' },
   { keywords: ['overtime', 'extra hour', 'curfew'], message: 'Overtime hourly rate and curfew policy' },
-  { keywords: ['refund', 'cancellation', 'deposit milestone'], message: 'Cancellation milestones & deposit refund clause' }
+  {
+    keywords: ['refund', 'cancellation', 'deposit milestone'],
+    message: 'Cancellation milestones & deposit refund clause'
+  }
 ];
 
 const joinLower = (value) => (Array.isArray(value) ? value.join(' ') : '').toLowerCase();
@@ -60,7 +63,9 @@ export function normalizeQuote(rawQuote = {}) {
     deposit_percent: basePrice > 0 ? Math.round((deposit / basePrice) * 100) : 0,
     inclusions: Array.isArray(rawQuote.inclusions) ? rawQuote.inclusions : [],
     exclusions: Array.isArray(rawQuote.exclusions) ? rawQuote.exclusions : [],
-    hidden_fees: Array.isArray(rawQuote.hidden_fees) ? rawQuote.hidden_fees.filter(f => f && typeof f === 'object') : [],
+    hidden_fees: Array.isArray(rawQuote.hidden_fees)
+      ? rawQuote.hidden_fees.filter(f => f && typeof f === 'object')
+      : [],
     missing_disclosures: missing,
     is_fully_disclosed: isComplete,
     estimated_hidden_risk_score: missing.length * RISK_POINTS_PER_MISSING_TERM
@@ -97,8 +102,15 @@ export function compareQuotes(quotes = []) {
 
 /** Follow-up question per missing-term message; matched by a case-insensitive fragment. */
 const FOLLOW_UP_QUESTIONS = [
-  ['cleanup', 'Does the quoted fee include full post-event cleanup and waste removal, or is there an auxiliary teardown surcharge?'],
-  ['staff', 'How many service staff members are included on-site during the contracted hours, and what is the gratuity policy?'],
+  [
+    'cleanup',
+    'Does the quoted fee include full post-event cleanup and waste removal, '
+      + 'or is there an auxiliary teardown surcharge?'
+  ],
+  [
+    'staff',
+    'How many service staff members are included on-site during the contracted hours, and what is the gratuity policy?'
+  ],
   ['overtime', 'What is the billing rate if speeches or dancing extend 30 to 60 minutes past the scheduled timeline?'],
   ['cancellation', 'What are the refund milestones if an unexpected postponement or date change occurs?']
 ];

@@ -17,17 +17,19 @@ const TYPE_THEMES = {
 
 const toCents = (amount) => Math.round(Number(amount || 0) * 100);
 
-/** Splits `totalCents` in proportion to `weights`; the rounding remainder goes to the largest weight so the sum is exact. */
+/** Splits `totalCents` in proportion to `weights`; the rounding remainder goes to the largest weight (exact sum). */
 function allocateCents(weights, totalCents) {
   if (weights.length === 0) return [];
   const sum = weights.reduce((a, w) => a + w, 0);
-  const shares = weights.map(w => (sum > 0 ? Math.round((w * totalCents) / sum) : Math.floor(totalCents / weights.length)));
+  const shares = weights.map(w => (
+    sum > 0 ? Math.round((w * totalCents) / sum) : Math.floor(totalCents / weights.length)
+  ));
   const drift = totalCents - shares.reduce((a, s) => a + s, 0);
   shares[weights.indexOf(Math.max(...weights))] += drift;
   return shares;
 }
 
-/** Per-guest rates keep the template's relationship: they follow the budget scale and divide across the new headcount. */
+/** Per-guest rates keep the template's relationship: they follow the budget scale and divide by the new headcount. */
 function scaledRate(rate, planned, source, ctx) {
   const budgetScale = source.planned_amount > 0 ? planned / source.planned_amount : 1;
   return Math.round(Number(rate || 0) * budgetScale * (ctx.templateGuests / ctx.guests) * 100) / 100;
@@ -56,7 +58,7 @@ function dueDateFor(task, ctx) {
   return toIsoDate(shifted < ctx.today ? ctx.today : shifted);
 }
 
-/** Keeps each task's distance from the event date; anything that would land before today is clamped to today (order kept). */
+/** Keeps each task's distance from the event date; anything that would land before today is clamped (order kept). */
 function buildTasks(tasks, ctx) {
   const ids = new Map(tasks.map(t => [t.id, makeId('task')]));
   return tasks.map(source => {
@@ -119,7 +121,7 @@ export function createEventFromTemplate(input, templates, now = new Date()) {
   };
 }
 
-/** Moves every task by the same number of days as the event; open tasks that would slip behind today are clamped to today. */
+/** Moves every task by the same number of days as the event; open tasks that would slip behind today are clamped. */
 function moveSchedule(event, newDate, today) {
   const days = daysBetween(parseDate(event.date), parseDate(newDate));
   for (const task of event.tasks || []) {

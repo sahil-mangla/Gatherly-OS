@@ -1,0 +1,59 @@
+/* shell-refinements: responsive shell tweaks and the enterprise badge */
+/* ==========================================================================
+   Shell additions
+   ========================================================================== */
+.nav-text {
+  min-width: 0;
+}
+
+.event-meta {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.enterprise-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-ui);
+  border-radius: 14px;
+  background: #f4eee8;
+  color: var(--ink);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2e7d32;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+}
+
+.more-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.more-btn:hover {
+  background: #f2e9e4;
+}

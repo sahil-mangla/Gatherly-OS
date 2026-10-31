@@ -12,7 +12,12 @@ import { costSavingResponse } from './mara-budget.js';
 const plain = (operation, text) => ({ operation, summary: text, response: text });
 
 function prioritizeTasksResponse({ tasks }) {
-  if (tasks.length === 0) return plain('prioritize_tasks', 'You have no open milestones right now. Add one on the Timeline when something new comes up.');
+  if (tasks.length === 0) {
+    return plain(
+      'prioritize_tasks',
+      'You have no open milestones right now. Add one on the Timeline when something new comes up.'
+    );
+  }
   const lines = tasks.slice(0, 3).map((t, i) => `${i + 1}. ${t.title} (due ${dateText(t.due_date)}${t.priority ? `, ${t.priority} priority` : ''})`);
   return plain('prioritize_tasks', `Your next open milestones by due date: ${lines.join('; ')}.`);
 }

@@ -11,7 +11,10 @@ import { numberOr } from './numeric.js';
  * [field, value used when the field is absent (undefined = required), negative message, invalid message].
  */
 const AMOUNT_RULES = [
-  ['planned_amount', undefined, 'Planned amount must be a positive number or zero.', 'Planned amount must be a valid number.'],
+  [
+    'planned_amount', undefined,
+    'Planned amount must be a positive number or zero.', 'Planned amount must be a valid number.'
+  ],
   ['actual_amount', 0, 'Actual amount cannot be negative.', 'Actual amount must be a valid number.'],
   ['committed_amount', 0, 'Committed amount cannot be negative.', 'Committed amount must be a valid number.']
 ];

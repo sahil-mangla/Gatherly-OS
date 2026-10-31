@@ -1,7 +1,8 @@
 /**
  * @file ui-env.js
  * @description jsdom harness for UI tests: loads the real index.html, installs browser globals and boots app.js.
- * jsdom is optional; set GATHERLY_JSDOM_DIR to a folder whose node_modules contains jsdom/axe-core if not installed locally.
+ * jsdom is optional; set GATHERLY_JSDOM_DIR to a folder whose node_modules contains jsdom/axe-core
+ * if not installed locally.
  */
 
 import { readFileSync } from 'node:fs';

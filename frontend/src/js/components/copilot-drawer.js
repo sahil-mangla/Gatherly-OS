@@ -80,7 +80,12 @@ export function openCopilot(prompt = '', operation = null) {
   drawerElement.inert = false;
   drawerElement.classList.add('open');
   backdropElement.classList.add('open');
-  openLayer({ container: drawerElement, roots: [drawerElement, backdropElement], close: closeCopilot, initialFocus: '#copilot-input' });
+  openLayer({
+    container: drawerElement,
+    roots: [drawerElement, backdropElement],
+    close: closeCopilot,
+    initialFocus: '#copilot-input'
+  });
 
   if (prompt) handleUserAction(operation || 'general_advice', prompt);
 }
@@ -107,7 +112,10 @@ async function fetchResponse(operation, userText) {
     return await askMara(operation, userText, buildMaraContext(store.getActiveEvent()));
   } catch (err) {
     console.error('Mara copilot error:', err);
-    return { response: "I encountered a minor hitch retrieving advice. Here's my quick recommendation: check your critical path milestones." };
+    return {
+      response: "I encountered a minor hitch retrieving advice. "
+        + "Here's my quick recommendation: check your critical path milestones."
+    };
   }
 }
 

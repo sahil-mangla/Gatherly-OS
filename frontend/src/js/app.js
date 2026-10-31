@@ -83,7 +83,9 @@ function bindActions() {
     document.getElementById(id)?.addEventListener('click', () => action());
   });
   document.querySelectorAll('.suggestion').forEach(btn => {
-    btn.addEventListener('click', () => openCopilot(btn.dataset.message || btn.textContent.trim(), btn.dataset.op || 'general_advice'));
+    btn.addEventListener('click', () => {
+      openCopilot(btn.dataset.message || btn.textContent.trim(), btn.dataset.op || 'general_advice');
+    });
   });
 }
 

@@ -1,11 +1,11 @@
-"""Enforce strict < 200 LOC per file across Python and JavaScript code."""
+"""Enforce strict < 200 LOC per file across Python, JavaScript and CSS code."""
 
 import os
 import sys
 
 MAX_LINES = 200
 TARGET_DIRS = ["backend", "frontend", "scripts", "tests", "api"]
-EXTENSIONS = (".py", ".js")
+EXTENSIONS = (".py", ".js", ".css")
 SKIP_DIRS = ("node_modules", "__pycache__", ".pytest_cache")
 
 
